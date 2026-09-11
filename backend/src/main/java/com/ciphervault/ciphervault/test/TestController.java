@@ -1,5 +1,6 @@
 package com.ciphervault.ciphervault.test;
 
+import com.ciphervault.ciphervault.util.ConsoleLogger;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,22 +14,17 @@ public class TestController {
     public String protectedEndpoint(
             Authentication authentication) {
 
-        System.out.println(
-                "[INFO] Protected endpoint accessed."
+        ConsoleLogger.info(
+                "Protected endpoint accessed."
         );
 
         String email = authentication.getName();
 
-        System.out.println(
-                "[SUCCESS] Authenticated user: "
-                        + email
+        ConsoleLogger.success(
+                "Authenticated user: " + email
         );
 
         return "Protected endpoint accessed successfully. User: "
                 + email;
     }
 }
-
-
-
-
