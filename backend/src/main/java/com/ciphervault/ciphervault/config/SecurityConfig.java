@@ -1,6 +1,7 @@
 package com.ciphervault.ciphervault.config;
 
 import com.ciphervault.ciphervault.security.JwtAuthenticationFilter;
+import com.ciphervault.ciphervault.util.ConsoleLogger;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,8 +20,8 @@ public class SecurityConfig {
 
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 
-        System.out.println(
-                "[SUCCESS] SecurityConfig initialized successfully."
+        ConsoleLogger.success(
+                "SecurityConfig initialized successfully."
         );
     }
 
@@ -28,8 +29,8 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
 
-        System.out.println(
-                "[INFO] Configuring Spring Security..."
+        ConsoleLogger.info(
+                "Configuring Spring Security..."
         );
 
         http
@@ -80,8 +81,8 @@ public class SecurityConfig {
                         exception.authenticationEntryPoint(
                                 (request, response, authException) -> {
 
-                                    System.out.println(
-                                            "[ERROR] Authentication required for: "
+                                    ConsoleLogger.warn(
+                                            "Authentication required for: "
                                                     + request.getRequestURI()
                                     );
 
@@ -116,8 +117,8 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 );
 
-        System.out.println(
-                "[SUCCESS] Spring Security configured successfully."
+        ConsoleLogger.success(
+                "Spring Security configured successfully."
         );
 
         return http.build();
