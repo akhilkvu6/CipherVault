@@ -1,5 +1,6 @@
 package com.ciphervault.ciphervault.security;
 
+import com.ciphervault.ciphervault.util.ConsoleLogger;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -22,28 +23,60 @@ public class JwtService {
     private final SecretKey secretKey;
 
     public JwtService() {
+
+        ConsoleLogger.info(
+                "Initializing JWT service..."
+        );
+
         this.secretKey = Keys.hmacShaKeyFor(
                 SECRET_KEY.getBytes(StandardCharsets.UTF_8)
+        );
+
+        ConsoleLogger.success(
+                "JWT service initialized successfully."
         );
     }
 
     public String generateToken(String email) {
 
-        return Jwts.builder()
+        ConsoleLogger.info(
+                "Generating JWT token for: " + email
+        );
+
+        String token = Jwts.builder()
                 .subject(email)
                 .issuedAt(new Date())
                 .expiration(
-                        new Date(System.currentTimeMillis() + EXPIRATION_TIME)
+                        new Date(
+                                System.currentTimeMillis()
+                                        + EXPIRATION_TIME
+                        )
                 )
                 .signWith(secretKey)
                 .compact();
+
+        ConsoleLogger.success(
+                "JWT token generated successfully for: " + email
+        );
+
+        return token;
     }
 
     public String extractEmail(String token) {
+
+        ConsoleLogger.info(
+                "Extracting email from JWT token."
+        );
+
         return extractClaim(token, Claims::getSubject);
     }
 
     public Date extractExpiration(String token) {
+
+        ConsoleLogger.info(
+                "Extracting expiration time from JWT token."
+        );
+
         return extractClaim(token, Claims::getExpiration);
     }
 
@@ -65,15 +98,40 @@ public class JwtService {
                 .getPayload();
     }
 
-    public boolean isTokenValid(String token, String email) {
+    public boolean isTokenValid(
+            String token,
+            String email) {
 
         try {
+
             String extractedEmail = extractEmail(token);
 
-            return extractedEmail.equals(email)
+            boolean valid = extractedEmail.equals(email)
                     && !isTokenExpired(token);
 
+            if (valid) {
+
+                ConsoleLogger.success(
+                        "JWT validation successful for: "
+                                + email
+                );
+
+            } else {
+
+                ConsoleLogger.warn(
+                        "JWT validation failed for: "
+                                + email
+                );
+            }
+
+            return valid;
+
         } catch (Exception e) {
+
+            ConsoleLogger.warn(
+                    "JWT validation failed: invalid or malformed token."
+            );
+
             return false;
         }
     }
