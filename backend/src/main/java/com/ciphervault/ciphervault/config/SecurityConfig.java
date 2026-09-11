@@ -61,6 +61,13 @@ public class SecurityConfig {
                         .permitAll()
 
                         /*
+                         * Health endpoint is public so the backend
+                         * can be checked without authentication.
+                         */
+                        .requestMatchers("/api/health")
+                        .permitAll()
+
+                        /*
                          * Spring Boot error endpoint must be accessible
                          * when an internal request is forwarded to /error.
                          */
