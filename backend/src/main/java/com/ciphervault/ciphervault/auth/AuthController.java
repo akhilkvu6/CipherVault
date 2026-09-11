@@ -3,6 +3,7 @@ package com.ciphervault.ciphervault.auth;
 import com.ciphervault.ciphervault.security.JwtService;
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
+import com.ciphervault.ciphervault.util.ConsoleLogger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,10 @@ public class AuthController {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+
+        ConsoleLogger.success(
+                "AuthController initialized successfully."
+        );
     }
 
     // =========================
@@ -33,9 +38,17 @@ public class AuthController {
     public ResponseEntity<?> register(
             @RequestBody RegisterRequest request) {
 
+        ConsoleLogger.info(
+                "Registration request received."
+        );
+
         // Validate username
         if (request.getUsername() == null
                 || request.getUsername().isBlank()) {
+
+            ConsoleLogger.warn(
+                    "Registration failed: username is required."
+            );
 
             return ResponseEntity.badRequest()
                     .body("Username is required");
@@ -45,6 +58,10 @@ public class AuthController {
         if (request.getEmail() == null
                 || request.getEmail().isBlank()) {
 
+            ConsoleLogger.warn(
+                    "Registration failed: email is required."
+            );
+
             return ResponseEntity.badRequest()
                     .body("Email is required");
         }
@@ -52,6 +69,10 @@ public class AuthController {
         // Validate password
         if (request.getPassword() == null
                 || request.getPassword().isBlank()) {
+
+            ConsoleLogger.warn(
+                    "Registration failed: password is required."
+            );
 
             return ResponseEntity.badRequest()
                     .body("Password is required");
@@ -61,6 +82,11 @@ public class AuthController {
         if (userRepository.existsByUsername(
                 request.getUsername())) {
 
+            ConsoleLogger.warn(
+                    "Registration failed: username already exists: "
+                            + request.getUsername()
+            );
+
             return ResponseEntity.badRequest()
                     .body("Username already exists");
         }
@@ -68,6 +94,11 @@ public class AuthController {
         // Check duplicate email
         if (userRepository.existsByEmail(
                 request.getEmail())) {
+
+            ConsoleLogger.warn(
+                    "Registration failed: email already exists: "
+                            + request.getEmail()
+            );
 
             return ResponseEntity.badRequest()
                     .body("Email already exists");
@@ -79,13 +110,26 @@ public class AuthController {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
 
+        ConsoleLogger.info(
+                "Hashing user password with BCrypt."
+        );
+
         // Hash password using BCrypt
         user.setPassword(
                 passwordEncoder.encode(request.getPassword())
         );
 
+        ConsoleLogger.success(
+                "Password hashed successfully."
+        );
+
         // Save user
         userRepository.save(user);
+
+        ConsoleLogger.success(
+                "User registered successfully: "
+                        + user.getEmail()
+        );
 
         return ResponseEntity.ok(
                 "User registered successfully"
@@ -100,9 +144,18 @@ public class AuthController {
     public ResponseEntity<?> login(
             @RequestBody LoginRequest request) {
 
+        ConsoleLogger.info(
+                "Login request received: "
+                        + request.getEmail()
+        );
+
         // Validate email
         if (request.getEmail() == null
                 || request.getEmail().isBlank()) {
+
+            ConsoleLogger.warn(
+                    "Login failed: email is required."
+            );
 
             return ResponseEntity.badRequest()
                     .body("Email is required");
@@ -111,6 +164,10 @@ public class AuthController {
         // Validate password
         if (request.getPassword() == null
                 || request.getPassword().isBlank()) {
+
+            ConsoleLogger.warn(
+                    "Login failed: password is required."
+            );
 
             return ResponseEntity.badRequest()
                     .body("Password is required");
@@ -124,22 +181,50 @@ public class AuthController {
         // Email is not registered
         if (user == null) {
 
+            ConsoleLogger.warn(
+                    "Login failed: email is not registered: "
+                            + request.getEmail()
+            );
+
             return ResponseEntity.status(401)
                     .body("Email is not registered");
         }
+
+        ConsoleLogger.info(
+                "Verifying user password."
+        );
 
         // Verify password
         if (!passwordEncoder.matches(
                 request.getPassword(),
                 user.getPassword())) {
 
+            ConsoleLogger.warn(
+                    "Login failed: incorrect password for: "
+                            + request.getEmail()
+            );
+
             return ResponseEntity.status(401)
                     .body("Wrong password");
         }
 
+        ConsoleLogger.success(
+                "Password verification successful: "
+                        + user.getEmail()
+        );
+
         // Generate JWT
+        ConsoleLogger.info(
+                "Generating JWT authentication token."
+        );
+
         String token = jwtService.generateToken(
                 user.getEmail()
+        );
+
+        ConsoleLogger.success(
+                "JWT generated successfully for: "
+                        + user.getEmail()
         );
 
         // Return successful login response
@@ -147,6 +232,11 @@ public class AuthController {
                 true,
                 "Login successful",
                 token
+        );
+
+        ConsoleLogger.success(
+                "Login successful: "
+                        + user.getEmail()
         );
 
         return ResponseEntity.ok(response);
