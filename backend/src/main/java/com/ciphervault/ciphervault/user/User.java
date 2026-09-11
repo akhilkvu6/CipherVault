@@ -24,13 +24,10 @@ public class User {
     private Long storageLimit = 1073741824L;
 
     @Column(nullable = false)
-    private Long storageUsed = 0L;
+    private Long usedStorage = 0L;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
-
-    public User() {
-    }
 
     @PrePersist
     protected void onCreate() {
@@ -77,19 +74,15 @@ public class User {
         this.storageLimit = storageLimit;
     }
 
-    public Long getStorageUsed() {
-        return storageUsed;
+    public Long getUsedStorage() {
+        return usedStorage;
     }
 
-    public void setStorageUsed(Long storageUsed) {
-        this.storageUsed = storageUsed;
+    public void setUsedStorage(Long usedStorage) {
+        this.usedStorage = usedStorage;
     }
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }
