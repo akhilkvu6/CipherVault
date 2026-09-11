@@ -2,6 +2,7 @@ package com.ciphervault.ciphervault.security;
 
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
+import com.ciphervault.ciphervault.util.ConsoleLogger;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,9 +11,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpRequestResponseHolder;
-import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -35,8 +35,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
 
-        System.out.println(
-                "[SUCCESS] JwtAuthenticationFilter initialized."
+        ConsoleLogger.success(
+                "JwtAuthenticationFilter initialized successfully."
         );
     }
 
@@ -49,8 +49,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestPath = request.getRequestURI();
 
-        System.out.println(
-                "[INFO] JWT filter processing: "
+        ConsoleLogger.info(
+                "JWT authentication request: "
                         + request.getMethod()
                         + " "
                         + requestPath
@@ -61,8 +61,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (authorizationHeader == null) {
 
-            System.out.println(
-                    "[INFO] No Authorization header."
+            ConsoleLogger.info(
+                    "No Authorization header found. "
+                            + "Continuing without JWT authentication."
             );
 
             filterChain.doFilter(request, response);
@@ -71,8 +72,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (!authorizationHeader.startsWith("Bearer ")) {
 
-            System.out.println(
-                    "[WARN] Authorization header is not a Bearer token."
+            ConsoleLogger.warn(
+                    "Authorization header is not a Bearer token."
             );
 
             filterChain.doFilter(request, response);
@@ -83,8 +84,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (token.isBlank()) {
 
-            System.out.println(
-                    "[ERROR] Bearer token is empty."
+            ConsoleLogger.warn(
+                    "Bearer token is empty."
             );
 
             filterChain.doFilter(request, response);
@@ -93,41 +94,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-            System.out.println(
-                    "[INFO] Extracting email from JWT..."
-            );
-
             String email = jwtService.extractEmail(token);
 
             if (email == null || email.isBlank()) {
 
-                System.out.println(
-                        "[ERROR] JWT email is missing."
+                ConsoleLogger.warn(
+                        "JWT authentication failed: email is missing."
                 );
 
                 filterChain.doFilter(request, response);
                 return;
             }
-
-            System.out.println(
-                    "[SUCCESS] JWT email extracted: "
-                            + email
-            );
 
             if (SecurityContextHolder
                     .getContext()
                     .getAuthentication() != null) {
 
-                System.out.println(
-                        "[INFO] Authentication already exists."
+                ConsoleLogger.info(
+                        "Authentication already exists for this request."
                 );
 
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            System.out.println(
-                    "[INFO] Looking up user in database..."
+            ConsoleLogger.info(
+                    "Looking up authenticated user in database: "
+                            + email
             );
 
             User user = userRepository
@@ -136,8 +129,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (user == null) {
 
-                System.out.println(
-                        "[ERROR] User does not exist: "
+                ConsoleLogger.warn(
+                        "JWT authentication failed: user not found: "
                                 + email
                 );
 
@@ -145,28 +138,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            System.out.println(
-                    "[SUCCESS] User found: "
-                            + email
-            );
-
-            System.out.println(
-                    "[INFO] Validating JWT..."
-            );
-
             if (!jwtService.isTokenValid(token, email)) {
 
-                System.out.println(
-                        "[ERROR] JWT validation failed."
+                ConsoleLogger.warn(
+                        "JWT authentication failed: invalid or expired token."
                 );
 
                 filterChain.doFilter(request, response);
                 return;
             }
-
-            System.out.println(
-                    "[SUCCESS] JWT validation successful."
-            );
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -195,40 +175,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response
             );
 
-            System.out.println(
-                    "[SUCCESS] Authentication stored in SecurityContext."
-            );
-
-            System.out.println(
-                    "[SUCCESS] Authenticated user: "
-                            + SecurityContextHolder
-                            .getContext()
-                            .getAuthentication()
-                            .getName()
-            );
-
-            System.out.println(
-                    "[SUCCESS] Authentication status: "
-                            + SecurityContextHolder
-                            .getContext()
-                            .getAuthentication()
-                            .isAuthenticated()
+            ConsoleLogger.success(
+                    "JWT authentication successful: "
+                            + email
             );
 
         } catch (Exception e) {
 
-            System.out.println(
-                    "[ERROR] JWT authentication failed."
+            ConsoleLogger.warn(
+                    "JWT authentication failed: invalid or malformed token."
             );
 
-            System.out.println(
-                    "[ERROR] "
+            ConsoleLogger.error(
+                    "JWT processing error: "
                             + e.getClass().getSimpleName()
-                            + ": "
-                            + e.getMessage()
             );
-
-            e.printStackTrace();
         }
 
         filterChain.doFilter(request, response);
