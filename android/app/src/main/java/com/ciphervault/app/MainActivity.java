@@ -1,7 +1,10 @@
 package com.ciphervault.app;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,102 +12,67 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import java.util.Map;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
 public class MainActivity extends AppCompatActivity {
 
-    private TextView statusText;
+    private TextView tvGreeting;
+    private TextView tvServerInfo;
+    private Button btnLogout;
+    private Button btnUploadFile;
+
+    private SessionManager sessionManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_main);
 
-        ViewCompat.setOnApplyWindowInsetsListener(
-                findViewById(R.id.main),
-                (v, insets) -> {
-                    Insets systemBars = insets.getInsets(
-                            WindowInsetsCompat.Type.systemBars()
-                    );
+        // Apply Edge-to-Edge window insets
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content), (view, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
-                    v.setPadding(
-                            systemBars.left,
-                            systemBars.top,
-                            systemBars.right,
-                            systemBars.bottom
-                    );
+        sessionManager = new SessionManager(this);
 
-                    return insets;
-                }
-        );
+        // Safety check: If for any reason token is absent, boot back to connection
+        if (!sessionManager.isLoggedIn()) {
+            performLogout();
+            return;
+        }
 
-        statusText = findViewById(R.id.statusText);
+        tvGreeting = findViewById(R.id.tvGreeting);
+        tvServerInfo = findViewById(R.id.tvServerInfo);
+        btnLogout = findViewById(R.id.btnLogout);
+        btnUploadFile = findViewById(R.id.btnUploadFile);
 
-        checkBackendHealth();
+        // Populate dynamic user info
+        String username = sessionManager.getUsername();
+        if (username != null && !username.isEmpty()) {
+            tvGreeting.setText("Logged in as @" + username);
+        }
+
+        String currentBaseUrl = ApiClient.getBaseUrl(this);
+        tvServerInfo.setText("Host: " + currentBaseUrl);
+
+        btnLogout.setOnClickListener(v -> performLogout());
+
+        btnUploadFile.setOnClickListener(v -> {
+            Toast.makeText(this, "Encrypted file picker coming next", Toast.LENGTH_SHORT).show();
+        });
     }
 
-    private void checkBackendHealth() {
+    private void performLogout() {
+        // 1. Invalidate session storage
+        sessionManager.logout();
 
-        statusText.setText(
-                "Connecting to CipherVault backend..."
-        );
+        Toast.makeText(this, "Logged out successfully", Toast.LENGTH_SHORT).show();
 
-        ApiClient.getApiService(this)
-                .checkHealth()
-                .enqueue(new Callback<Map<String, Object>>() {
-
-                    @Override
-                    public void onResponse(
-                            Call<Map<String, Object>> call,
-                            Response<Map<String, Object>> response
-                    ) {
-
-                        if (response.isSuccessful()
-                                && response.body() != null) {
-
-                            Map<String, Object> data =
-                                    response.body();
-
-                            String status =
-                                    String.valueOf(data.get("status"));
-
-                            String service =
-                                    String.valueOf(data.get("service"));
-
-                            statusText.setText(
-                                    "✓ Backend Connected\n\n"
-                                            + "Status: " + status
-                                            + "\n"
-                                            + "Service: " + service
-                            );
-
-                        } else {
-
-                            statusText.setText(
-                                    "✗ Backend Error\n\n"
-                                            + "HTTP "
-                                            + response.code()
-                            );
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(
-                            Call<Map<String, Object>> call,
-                            Throwable t
-                    ) {
-
-                        statusText.setText(
-                                "✗ Connection Failed\n\n"
-                                        + t.getMessage()
-                        );
-                    }
-                });
+        // 2. Reset backstack and route to Connection screen
+        Intent intent = new Intent(MainActivity.this, ConnectionActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }
