@@ -8,6 +8,7 @@ public class SessionManager {
     private static final String PREF_NAME = "CipherVaultSession";
     private static final String KEY_TOKEN = "token";
     private static final String KEY_USERNAME = "username";
+    public static final long DEFAULT_LIMIT = 1073741824L; // 1 GB in bytes (1024 * 1024 * 1024)
 
     private final SharedPreferences preferences;
 
@@ -31,6 +32,10 @@ public class SessionManager {
 
     public String getUsername() {
         return preferences.getString(KEY_USERNAME, null);
+    }
+
+    public long getStorageLimit() {
+        return DEFAULT_LIMIT;
     }
 
     public boolean isLoggedIn() {
