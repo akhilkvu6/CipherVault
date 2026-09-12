@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Vault Security Badges -->
+    <color name="vault_encrypted">#EF4444</color>
+    <color name="vault_unencrypted">#F59E0B</color>
+    <color name="vault_plain">#22C55E</color>
+
     <!-- Light Fallback Palette -->
     <color name="md_theme_light_primary">#00629E</color>
     <color name="md_theme_light_onPrimary">#FFFFFF</color>
