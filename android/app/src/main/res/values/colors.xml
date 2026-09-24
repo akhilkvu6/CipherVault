@@ -1,43 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Vault Security Badges -->
-    <color name="vault_encrypted">#EF4444</color>
-    <color name="vault_unencrypted">#F59E0B</color>
-    <color name="vault_plain">#22C55E</color>
+    <!-- Vault Security Badges & Statuses -->
+    <color name="vault_encrypted">#D96C63</color>
+    <color name="vault_unencrypted">#E0A84F</color>
+    <color name="vault_plain">#D6A84F</color>
 
-    <!-- Light Fallback Palette -->
-    <color name="md_theme_light_primary">#00629E</color>
-    <color name="md_theme_light_onPrimary">#FFFFFF</color>
-    <color name="md_theme_light_primaryContainer">#CFE5FF</color>
-    <color name="md_theme_light_onPrimaryContainer">#001D34</color>
+    <!-- Base Surface Roles -->
+    <color name="vault_bg_dark">#0D0D0F</color>
+    <color name="vault_surface_dark">#151518</color>
+    <color name="vault_surface_elevated_dark">#1D1D21</color>
+    <color name="vault_surface_high_dark">#242429</color>
+    <color name="vault_text_primary_dark">#F4F1EA</color>
+    <color name="vault_text_secondary_dark">#A7A5A0</color>
+    <color name="vault_outline_dark">#303035</color>
 
-    <color name="md_theme_light_secondary">#526070</color>
-    <color name="md_theme_light_onSecondary">#FFFFFF</color>
-    <color name="md_theme_light_secondaryContainer">#D5E4F7</color>
-    <color name="md_theme_light_onSecondaryContainer">#0E1D2A</color>
+    <!-- 1. OBSIDIAN PALETTE -->
+    <color name="obsidian_primary">#D6A84F</color>
+    <color name="obsidian_on_primary">#0D0D0F</color>
+    <color name="obsidian_primary_container">#3D2B05</color>
+    <color name="obsidian_on_primary_container">#E8BE68</color>
 
-    <color name="md_theme_light_surface">#FDFCFF</color>
-    <color name="md_theme_light_onSurface">#1A1C1E</color>
-    <color name="md_theme_light_surfaceVariant">#DEE3EB</color>
-    <color name="md_theme_light_onSurfaceVariant">#42474E</color>
-    <color name="md_theme_light_outline">#72777F</color>
-    <color name="md_theme_light_outlineVariant">#C2C7CF</color>
+    <!-- 2. RUBY PALETTE -->
+    <color name="ruby_primary">#D94F4F</color>
+    <color name="ruby_on_primary">#0D0D0F</color>
+    <color name="ruby_primary_container">#3D0505</color>
+    <color name="ruby_on_primary_container">#E86868</color>
 
-    <!-- Dark Fallback Palette -->
-    <color name="md_theme_dark_primary">#99CBFF</color>
-    <color name="md_theme_dark_onPrimary">#003355</color>
-    <color name="md_theme_dark_primaryContainer">#004A79</color>
-    <color name="md_theme_dark_onPrimaryContainer">#CFE5FF</color>
+    <!-- 3. COPPER PALETTE -->
+    <color name="copper_primary">#D67C4F</color>
+    <color name="copper_on_primary">#0D0D0F</color>
+    <color name="copper_primary_container">#3D1E05</color>
+    <color name="copper_on_primary_container">#E89368</color>
 
-    <color name="md_theme_dark_secondary">#B9C8DA</color>
-    <color name="md_theme_dark_onSecondary">#243240</color>
-    <color name="md_theme_dark_secondaryContainer">#3B4857</color>
-    <color name="md_theme_dark_onSecondaryContainer">#D5E4F7</color>
+    <!-- 4. AMETHYST PALETTE -->
+    <color name="amethyst_primary">#A868E8</color>
+    <color name="amethyst_on_primary">#0D0D0F</color>
+    <color name="amethyst_primary_container">#25053D</color>
+    <color name="amethyst_on_primary_container">#C89DFF</color>
 
-    <color name="md_theme_dark_surface">#111416</color>
-    <color name="md_theme_dark_onSurface">#E2E2E6</color>
-    <color name="md_theme_dark_surfaceVariant">#42474E</color>
-    <color name="md_theme_dark_onSurfaceVariant">#C2C7CF</color>
-    <color name="md_theme_dark_outline">#8C9199</color>
-    <color name="md_theme_dark_outlineVariant">#42474E</color>
+    <!-- 5. ROSE PALETTE -->
+    <color name="rose_primary">#E8688A</color>
+    <color name="rose_on_primary">#0D0D0F</color>
+    <color name="rose_primary_container">#3D051A</color>
+    <color name="rose_on_primary_container">#FF9DB3</color>
+
+    <!-- 6. SAPPHIRE PALETTE (BLUE) -->
+    <color name="sapphire_primary">#3B82F6</color>
+    <color name="sapphire_on_primary">#0D0D0F</color>
+    <color name="sapphire_primary_container">#051E3D</color>
+    <color name="sapphire_on_primary_container">#93C5FD</color>
+
+    <!-- 7. MONOCHROME PALETTE -->
+    <color name="mono_primary">#E2E2E6</color>
+    <color name="mono_on_primary">#0D0D0F</color>
+    <color name="mono_primary_container">#28282E</color>
+    <color name="mono_on_primary_container">#FFFFFF</color>
+
+    <!-- Light Fallback Roles -->
+    <color name="md_theme_light_surface">#F9F8F6</color>
+    <color name="md_theme_light_onSurface">#151518</color>
+    <color name="md_theme_light_surfaceVariant">#E6E3DD</color>
+    <color name="md_theme_light_onSurfaceVariant">#605F5A</color>
+    <color name="md_theme_light_outline">#8A8882</color>
+    <color name="md_theme_light_outlineVariant">#D4D0C8</color>
 </resources>

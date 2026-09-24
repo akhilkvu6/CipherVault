@@ -2,11 +2,25 @@
     <string name="app_name">CipherVault</string>
 
     <!-- Bottom Navigation -->
-    <string name="nav_home">Home</string>
-    <string name="nav_files">Files</string>
-    <string name="nav_upload">Upload</string>
-    <string name="nav_search">Search</string>
-    <string name="nav_profile">Profile</string>
+    <string name="nav_home">HOME</string>
+    <string name="nav_files">FILES</string>
+    <string name="nav_upload">UPLOAD</string>
+    <string name="nav_search">SEARCH</string>
+    <string name="nav_profile">PROFILE</string>
+    <string name="nav_settings">SETTINGS</string>
+
+    <!-- Onboarding -->
+    <string name="btn_skip">Skip</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_get_started">Get Started</string>
+    <string name="onboarding_p1_title">Your Private Vault</string>
+    <string name="onboarding_p1_desc">Store your files securely with CipherVault.</string>
+    <string name="onboarding_p2_title">Encrypted Storage</string>
+    <string name="onboarding_p2_desc">Your files are protected using AES-256-GCM encryption.</string>
+    <string name="onboarding_p3_title">Secure File Management</string>
+    <string name="onboarding_p3_desc">Upload, download, search and manage your private files.</string>
+    <string name="onboarding_p4_title">You\'re Ready</string>
+    <string name="onboarding_p4_desc">Connect to your CipherVault server and access your private vault.</string>
 
     <!-- Upload Fragment -->
     <string name="upload_file_title">Upload File</string>
@@ -14,6 +28,7 @@
     <string name="cd_upload_icon">Upload icon</string>
     <string name="upload_file_prompt">Tap to browse and select a file</string>
     <string name="upload_file_supported_formats">Supports PDFs, images, archives, docs</string>
+    <string name="label_supported_formats_badges">PDF &#8226; PNG &#8226; JPG &#8226; MP4 &#8226; ZIP &#8226; DOC</string>
     <string name="duplicate_file_warning">Duplicate File Detected: This exact file already exists in your vault. Please select a different file.</string>
     <string name="encrypt_file_option_title">AES-256-GCM Encryption</string>
     <string name="encrypt_file_option_subtitle">End-to-end cryptographic protection before server storage</string>
@@ -23,6 +38,33 @@
     <string name="duplicate_dialog_positive">OK</string>
     <string name="upload_success">File uploaded successfully!</string>
     <string name="upload_in_progress">Encrypting &amp; Uploading&#8230;</string>
+    <string name="status_encrypting_file">Encrypting file&#8230;</string>
+    <string name="status_uploading_encrypted">Uploading encrypted file&#8230;</string>
+    <string name="status_uploading_file">Uploading file&#8230;</string>
+    <string name="status_please_wait">Please wait</string>
+    <string name="upload_dialog_title">Uploading File</string>
+    <string name="upload_complete_title">Upload Complete</string>
+    <string name="upload_failed_title">Upload Failed</string>
+    <string name="upload_finished_header">&#10003; Upload Finished</string>
+    <string name="btn_upload_again">Upload Again</string>
+    <string name="try_again">Try Again</string>
+
+    <!-- Connection Screen -->
+    <string name="connect_title">Connect to CipherVault</string>
+    <string name="connect_subtitle">Select or enter your server gateway address</string>
+    <string name="server_gateway_address">Server Gateway Address</string>
+    <string name="usb_adb_reverse">USB (127.0.0.1:8080)</string>
+    <string name="emulator_ip">Emulator (10.0.2.2:8080)</string>
+    <string name="check_connection">Check Connection</string>
+    <string name="status_not_connected">Not connected</string>
+    <string name="status_server_none">Server: Not configured</string>
+    <string name="status_method_none">Connection: None</string>
+    <string name="status_prompt_check">Press Check Connection to verify endpoint.</string>
+    <string name="hint_host_address">Host Address &amp; Port</string>
+    <string name="proceed_to_auth">Proceed to Authentication</string>
+    <string name="btn_sign_in">Sign In</string>
+    <string name="btn_create_account">Create Account</string>
+    <string name="caption_aes_gcm">AES-256-GCM Encrypted Storage</string>
 
     <!-- Files Fragment & Download Dialog -->
     <string name="vault_files_title">Vault Files</string>
@@ -33,6 +75,8 @@
     <string name="filter_pdfs">PDFs</string>
     <string name="filter_docs">Docs</string>
     <string name="filter_other">Other</string>
+    <string name="filter_encrypted_only">Encrypted Only</string>
+    <string name="filter_large_files">Large (>1MB)</string>
     <string name="btn_download">Download</string>
     <string name="encrypted_badge_label">Encrypted</string>
     <string name="unencrypted_badge_label">Unencrypted</string>
@@ -46,8 +90,17 @@
     <string name="download_success">Saved to Downloads!</string>
     <string name="dot_separator">" &#8226; "</string>
 
+    <!-- File Details BottomSheet -->
+    <string name="label_full_sha256">Full SHA-256 Checksum</string>
+    <string name="label_upload_timestamp">Upload Timestamp</string>
+    <string name="label_exact_size">Exact Byte Size</string>
+    <string name="label_aes_key_spec">AES Key Specification</string>
+    <string name="label_mime_type">Content MIME Type</string>
+    <string name="btn_close">Close</string>
+
     <!-- Home Dashboard -->
     <string name="welcome_back">Welcome back,</string>
+    <string name="dashboard_subtitle">Your files, always with you.</string>
     <string name="storage_overview">Storage Overview</string>
     <string name="storage_breakdown">Storage Breakdown</string>
     <string name="recent_uploads">Recent Uploads</string>
@@ -55,6 +108,18 @@
     <string name="cat_videos">Videos</string>
     <string name="cat_documents">Documents</string>
     <string name="cat_other">Archives &amp; Other</string>
+    <string name="quick_upload">+ Quick Upload</string>
+    <string name="search_vault">Search Vault</string>
+    <string name="view_all_files">View All Files</string>
+    <string name="empty_recent_title">No recent uploads yet</string>
+    <string name="empty_recent_subtitle">Upload your first file to store it in your encrypted vault.</string>
+    <string name="btn_upload_first_file">Upload First File</string>
+    <string name="vault_secure_title">VAULT SECURE</string>
+    <string name="vault_secure_subtitle">Your private storage is protected</string>
+    <string name="vault_secure_specs">AES-256-GCM &#8226; &#9679; Connected</string>
+    <string name="label_files">Files</string>
+    <string name="label_storage">Storage</string>
+    <string name="label_encrypted">Encrypted</string>
 
     <!-- Search -->
     <string name="search_title">Search Vault</string>
@@ -62,8 +127,9 @@
     <string name="recent_searches">Recent Searches</string>
     <string name="clear_history">Clear History</string>
 
-    <!-- Profile & Diagnostics -->
+    <!-- Profile & Settings -->
     <string name="profile_title">Account &amp; Security</string>
+    <string name="settings_title">Settings</string>
     <string name="network_diagnostics">Connection &amp; Network</string>
     <string name="security_specs">Build &amp; Security Specs</string>
     <string name="test_connection">Test Connection</string>
@@ -80,4 +146,24 @@
     <string name="label_quota_limit">Quota Limit</string>
     <string name="val_1gb">1.0 GB</string>
     <string name="label_usage_percent">Usage Percentage</string>
+    <string name="appearance_title">Appearance &amp; Theme</string>
+    <string name="label_appearance_mode">Appearance Mode</string>
+    <string name="label_theme_palette">Theme Palette</string>
+    <string name="palette_obsidian">Obsidian (Gold)</string>
+    <string name="palette_ruby">Ruby</string>
+    <string name="palette_copper">Copper</string>
+    <string name="palette_amethyst">Amethyst</string>
+    <string name="palette_rose">Rose</string>
+    <string name="palette_sapphire">Sapphire (Blue)</string>
+    <string name="palette_monochrome">Monochrome</string>
+    <string name="theme_system">System Default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="sign_out_dialog_title">Sign Out</string>
+    <string name="sign_out_dialog_msg">Are you sure you want to sign out of your CipherVault account?</string>
+    <string name="about_title">About CipherVault</string>
+    <string name="about_version">CipherVault v1.0.0 (Build 1)</string>
+    <string name="about_desc">Private cloud storage with AES-256-GCM encrypted storage.</string>
+    <string name="about_tech">Technologies: Android &#8226; Spring Boot &#8226; MySQL</string>
+    <string name="spec_sha256_integrity">Integrity: SHA-256 Checksum</string>
 </resources>
