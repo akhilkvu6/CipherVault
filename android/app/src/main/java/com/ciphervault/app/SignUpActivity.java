@@ -6,20 +6,17 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class SignUpActivity extends AppCompatActivity {
+public class SignUpActivity extends BaseActivity {
 
     private EditText usernameInput;
     private EditText emailInput;
     private EditText passwordInput;
     private EditText confirmPasswordInput;
     private Button registerButton;
-    private TextView loginLink;
     private ApiService apiService;
 
     @Override
@@ -34,7 +31,7 @@ public class SignUpActivity extends AppCompatActivity {
         passwordInput = findViewById(R.id.passwordInput);
         confirmPasswordInput = findViewById(R.id.confirmPasswordInput);
         registerButton = findViewById(R.id.registerButton);
-        loginLink = findViewById(R.id.loginLink);
+        TextView loginLink = findViewById(R.id.loginLink);
 
         registerButton.setOnClickListener(v -> handleRegister());
         if (loginLink != null) {

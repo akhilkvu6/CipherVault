@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
@@ -29,7 +30,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_gravity="center"
-                android:contentDescription="Security Vault"
+                android:contentDescription="@string/app_name"
                 android:src="@android:drawable/ic_lock_lock"
                 app:tint="?attr/colorOnPrimaryContainer" />
         </com.google.android.material.card.MaterialCardView>
@@ -39,9 +40,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="CipherVault"
+            android:text="@string/connect_title"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="28sp"
+            android:textSize="26sp"
             android:textStyle="bold"
             android:letterSpacing="0.02" />
 
@@ -49,15 +50,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Private Encrypted Cloud"
+            android:text="@string/connect_subtitle"
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="14sp" />
+            android:textSize="13sp" />
 
         <!-- Server Configuration Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="28dp"
             app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
             app:strokeWidth="1dp"
@@ -73,33 +74,53 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Server Gateway"
+                    android:text="@string/server_gateway_address"
                     android:textColor="?attr/colorOnSurface"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <TextView
+                <!-- Preset Choice Chips -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Enter your backend instance endpoint to synchronize your vault."
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="13sp"
-                    android:lineSpacingExtra="2dp" />
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipAdbReverse"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="4dp"
+                        android:text="@string/usb_adb_reverse"
+                        android:textSize="11sp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEmulator"
+                        style="@style/Widget.Material3.Chip.Suggestion"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/emulator_ip"
+                        android:textSize="11sp" />
+                </LinearLayout>
 
                 <!-- Host Address Input -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    android:hint="Host Address &amp; Port"
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/hint_host_address"
                     style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
                     app:boxCornerRadiusBottomEnd="16dp"
                     app:startIconDrawable="@android:drawable/ic_menu_compass"
-                    app:startIconTint="?attr/colorOnSurfaceVariant">
+                    app:startIconTint="?attr/colorOnSurfaceVariant"
+                    app:endIconMode="clear_text">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etServerAddress"
@@ -107,7 +128,6 @@
                         android:layout_height="wrap_content"
                         android:inputType="textUri"
                         android:singleLine="true"
-                        android:text="127.0.0.1:8080"
                         android:fontFamily="monospace"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp" />
@@ -119,7 +139,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:layout_marginTop="16dp"
-                    android:text="Test Connection"
+                    android:text="@string/check_connection"
                     android:textAllCaps="false"
                     android:textColor="?attr/colorOnPrimary"
                     android:textSize="15sp"
@@ -127,42 +147,74 @@
                     app:backgroundTint="?attr/colorPrimary"
                     app:cornerRadius="16dp" />
 
-                <!-- Connection Status Chip Capsule -->
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_gravity="center_horizontal"
+                <!-- Connection Progress Indicator -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressConnection"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
-                    app:cardCornerRadius="18dp"
+                    android:indeterminate="true"
+                    android:visibility="gone"
+                    app:trackCornerRadius="4dp"
+                    app:trackThickness="6dp"
+                    app:indicatorColor="?attr/colorPrimary" />
+
+                <!-- Detailed Status Card -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardStatusDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    app:cardCornerRadius="16dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="1dp"
                     app:strokeColor="?attr/colorOutlineVariant"
                     app:cardBackgroundColor="?attr/colorSurfaceContainerHighest">
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:gravity="center"
-                        android:orientation="horizontal"
-                        android:paddingHorizontal="14dp">
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="16dp">
 
                         <TextView
-                            android:id="@+id/statusDot"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvStatusTitle"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="●"
-                            android:textColor="?attr/colorOutline"
-                            android:textSize="13sp" />
+                            android:text="@string/status_not_connected"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="?attr/colorOnSurface" />
 
                         <TextView
-                            android:id="@+id/tvStatus"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvStatusServer"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:text="Not connected"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/status_server_none"
+                            android:fontFamily="monospace"
+                            android:textSize="12sp"
                             android:textColor="?attr/colorOnSurfaceVariant"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvStatusMethod"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/status_method_none"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvStatusMessage"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/status_prompt_check"
+                            android:textSize="12sp"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 
@@ -173,15 +225,15 @@
         <com.google.android.material.divider.MaterialDivider
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="24dp"
             app:dividerColor="?attr/colorOutlineVariant" />
 
         <!-- Actions Section -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Proceed to Authentication"
+            android:layout_marginTop="20dp"
+            android:text="@string/proceed_to_auth"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp"
             android:textStyle="bold"
@@ -201,7 +253,7 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp"
                 android:enabled="false"
-                android:text="Sign In"
+                android:text="@string/btn_sign_in"
                 android:textAllCaps="false"
                 android:textSize="14sp"
                 android:textStyle="bold"
@@ -214,7 +266,7 @@
                 android:layout_weight="1"
                 android:layout_marginStart="6dp"
                 android:enabled="false"
-                android:text="Create Account"
+                android:text="@string/btn_create_account"
                 android:textAllCaps="false"
                 android:textColor="?attr/colorOnPrimary"
                 android:textSize="14sp"
@@ -227,9 +279,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="32dp"
+            android:layout_marginTop="28dp"
             android:gravity="center"
-            android:text="AES-256-GCM Encrypted Storage"
+            android:text="@string/caption_aes_gcm"
             android:textColor="?attr/colorOutline"
             android:textSize="11sp"
             android:letterSpacing="0.03" />
