@@ -6,12 +6,11 @@ import android.view.View;
 import android.view.animation.DecelerateInterpolator;
 
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-public class SplashActivity extends AppCompatActivity {
+public class SplashActivity extends BaseActivity {
 
     private static final long SPLASH_DURATION = 1500L;
 
@@ -28,14 +27,18 @@ public class SplashActivity extends AppCompatActivity {
         });
 
         View loadingLine = findViewById(R.id.loadingLine);
-        loadingLine.setScaleX(0f);
-        loadingLine.animate()
-                .scaleX(1f)
-                .setDuration(1100L)
-                .setInterpolator(new DecelerateInterpolator())
-                .start();
+        if (loadingLine != null) {
+            loadingLine.setScaleX(0f);
+            loadingLine.animate()
+                    .scaleX(1f)
+                    .setDuration(1100L)
+                    .setInterpolator(new DecelerateInterpolator())
+                    .start();
 
-        loadingLine.postDelayed(this::routeNextScreen, SPLASH_DURATION);
+            loadingLine.postDelayed(this::routeNextScreen, SPLASH_DURATION);
+        } else {
+            routeNextScreen();
+        }
     }
 
     private void routeNextScreen() {
@@ -44,8 +47,10 @@ public class SplashActivity extends AppCompatActivity {
         Intent intent;
         if (sessionManager.isLoggedIn()) {
             intent = new Intent(SplashActivity.this, MainActivity.class);
-        } else {
+        } else if (sessionManager.isOnboardingCompleted()) {
             intent = new Intent(SplashActivity.this, ConnectionActivity.class);
+        } else {
+            intent = new Intent(SplashActivity.this, OnboardingActivity.class);
         }
 
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

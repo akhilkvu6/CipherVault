@@ -12,7 +12,6 @@ import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -21,14 +20,13 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class LoginActivity extends AppCompatActivity {
+public class LoginActivity extends BaseActivity {
 
     private static final String TAG = "CipherVaultLogin";
 
     private EditText emailInput;
     private EditText passwordInput;
     private Button loginButton;
-    private TextView registerLink;
 
     private SessionManager sessionManager;
 
@@ -47,16 +45,18 @@ public class LoginActivity extends AppCompatActivity {
         emailInput = findViewById(R.id.emailInput);
         passwordInput = findViewById(R.id.passwordInput);
         loginButton = findViewById(R.id.loginButton);
-        registerLink = findViewById(R.id.registerLink);
+        TextView registerLink = findViewById(R.id.registerLink);
 
         sessionManager = new SessionManager(this);
 
         loginButton.setOnClickListener(v -> login());
 
-        registerLink.setOnClickListener(v -> {
-            startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
-            finish();
-        });
+        if (registerLink != null) {
+            registerLink.setOnClickListener(v -> {
+                startActivity(new Intent(LoginActivity.this, SignUpActivity.class));
+                finish();
+            });
+        }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
