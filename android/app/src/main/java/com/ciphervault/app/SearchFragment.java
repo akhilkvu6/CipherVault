@@ -51,6 +51,8 @@ public class SearchFragment extends Fragment implements FilesAdapter.OnDownloadC
     private EditText etSearchQuery;
     private View layoutRecentHeader;
     private ChipGroup chipGroupRecentSearches;
+    private Chip chipFilterEncrypted;
+    private Chip chipFilterLarge;
     private RecyclerView rvSearchResults;
     private TextView tvSearchEmpty;
 
@@ -70,12 +72,15 @@ public class SearchFragment extends Fragment implements FilesAdapter.OnDownloadC
         etSearchQuery = view.findViewById(R.id.etSearchQuery);
         layoutRecentHeader = view.findViewById(R.id.layoutRecentHeader);
         chipGroupRecentSearches = view.findViewById(R.id.chipGroupRecentSearches);
+        chipFilterEncrypted = view.findViewById(R.id.chipFilterEncrypted);
+        chipFilterLarge = view.findViewById(R.id.chipFilterLarge);
         Button btnClearSearchHistory = view.findViewById(R.id.btnClearSearchHistory);
         rvSearchResults = view.findViewById(R.id.rvSearchResults);
         tvSearchEmpty = view.findViewById(R.id.tvSearchEmpty);
 
         setupRecyclerView();
         setupSearchInput(btnClearSearchHistory);
+        setupFilterChips();
         setupRecentHistory();
         loadFiles();
 
@@ -86,6 +91,21 @@ public class SearchFragment extends Fragment implements FilesAdapter.OnDownloadC
         adapter = new FilesAdapter(this);
         rvSearchResults.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvSearchResults.setAdapter(adapter);
+    }
+
+    private void setupFilterChips() {
+        CompoundButton.OnCheckedChangeListener filterListener = (buttonView, isChecked) -> {
+            if (etSearchQuery != null) {
+                filterFiles(etSearchQuery.getText().toString());
+            }
+        };
+
+        if (chipFilterEncrypted != null) {
+            chipFilterEncrypted.setOnCheckedChangeListener(filterListener);
+        }
+        if (chipFilterLarge != null) {
+            chipFilterLarge.setOnCheckedChangeListener(filterListener);
+        }
     }
 
     private void setupSearchInput(Button btnClearSearchHistory) {
@@ -139,12 +159,22 @@ public class SearchFragment extends Fragment implements FilesAdapter.OnDownloadC
 
     private void filterFiles(String query) {
         String trimmed = query != null ? query.trim().toLowerCase() : "";
+        boolean onlyEncrypted = chipFilterEncrypted != null && chipFilterEncrypted.isChecked();
+        boolean onlyLarge = chipFilterLarge != null && chipFilterLarge.isChecked();
+
         List<StoredFile> matched = new ArrayList<>();
 
-        if (trimmed.isEmpty()) {
-            matched.addAll(allFiles);
-        } else {
-            for (StoredFile file : allFiles) {
+        for (StoredFile file : allFiles) {
+            if (onlyEncrypted && !file.isEncrypted()) {
+                continue;
+            }
+            if (onlyLarge && file.getFileSize() < (1024 * 1024)) { // < 1MB
+                continue;
+            }
+
+            if (trimmed.isEmpty()) {
+                matched.add(file);
+            } else {
                 String name = file.getFilename().toLowerCase();
                 String mime = file.getContentType().toLowerCase();
                 String hash = file.getSha256Hash() != null ? file.getSha256Hash().toLowerCase() : "";

@@ -11,6 +11,7 @@ import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -23,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
@@ -45,12 +47,16 @@ public class HomeFragment extends Fragment {
     private TextView tvHomeUsername;
     private TextView tvStorageUsage;
     private LinearProgressIndicator progressStorage;
+    private TextView tvSummaryFileCount;
+    private TextView tvSummaryStorage;
+    private TextView tvSummaryEncryptedCount;
+
     private TextView tvImagesUsage;
     private TextView tvVideosUsage;
     private TextView tvDocsUsage;
     private TextView tvOtherUsage;
     private RecyclerView rvRecentUploads;
-    private TextView tvRecentEmpty;
+    private View layoutHomeEmpty;
 
     private RecentFilesAdapter recentAdapter;
     private ApiService apiService;
@@ -67,12 +73,35 @@ public class HomeFragment extends Fragment {
         tvHomeUsername = view.findViewById(R.id.tvHomeUsername);
         tvStorageUsage = view.findViewById(R.id.tvStorageUsage);
         progressStorage = view.findViewById(R.id.progressStorage);
+
+        tvSummaryFileCount = view.findViewById(R.id.tvSummaryFileCount);
+        tvSummaryStorage = view.findViewById(R.id.tvSummaryStorage);
+        tvSummaryEncryptedCount = view.findViewById(R.id.tvSummaryEncryptedCount);
+
         tvImagesUsage = view.findViewById(R.id.tvImagesUsage);
         tvVideosUsage = view.findViewById(R.id.tvVideosUsage);
         tvDocsUsage = view.findViewById(R.id.tvDocsUsage);
         tvOtherUsage = view.findViewById(R.id.tvOtherUsage);
         rvRecentUploads = view.findViewById(R.id.rvRecentUploads);
-        tvRecentEmpty = view.findViewById(R.id.tvRecentEmpty);
+        layoutHomeEmpty = view.findViewById(R.id.layoutHomeEmpty);
+
+        MaterialCardView cardQuickUpload = view.findViewById(R.id.cardQuickUpload);
+        MaterialCardView cardSearchVault = view.findViewById(R.id.cardSearchVault);
+        MaterialCardView cardViewFiles = view.findViewById(R.id.cardViewFiles);
+        Button btnUploadFirstFile = view.findViewById(R.id.btnUploadFirstFile);
+
+        if (cardQuickUpload != null) {
+            cardQuickUpload.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 2));
+        }
+        if (cardSearchVault != null) {
+            cardSearchVault.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 1));
+        }
+        if (cardViewFiles != null) {
+            cardViewFiles.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 1));
+        }
+        if (btnUploadFirstFile != null) {
+            btnUploadFirstFile.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 2));
+        }
 
         setupGreeting();
         setupRecentRecyclerView();
@@ -92,7 +121,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupRecentRecyclerView() {
-        recentAdapter = new RecentFilesAdapter(file -> handleFileClick(file));
+        recentAdapter = new RecentFilesAdapter(this::handleFileClick);
         rvRecentUploads.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvRecentUploads.setAdapter(recentAdapter);
     }
@@ -124,10 +153,15 @@ public class HomeFragment extends Fragment {
         long videosUsed = 0L;
         long docsUsed = 0L;
         long otherUsed = 0L;
+        int encryptedCount = 0;
 
         for (StoredFile file : files) {
             long size = file.getFileSize();
             totalUsed += size;
+
+            if (file.isEncrypted()) {
+                encryptedCount++;
+            }
 
             switch (file.getCategory()) {
                 case IMAGES:
@@ -143,6 +177,16 @@ public class HomeFragment extends Fragment {
                     otherUsed += size;
                     break;
             }
+        }
+
+        if (tvSummaryFileCount != null) {
+            tvSummaryFileCount.setText(String.valueOf(files.size()));
+        }
+        if (tvSummaryStorage != null) {
+            tvSummaryStorage.setText(Formatter.formatFileSize(requireContext(), totalUsed));
+        }
+        if (tvSummaryEncryptedCount != null) {
+            tvSummaryEncryptedCount.setText(String.valueOf(encryptedCount));
         }
 
         if (tvStorageUsage != null) {
@@ -172,15 +216,15 @@ public class HomeFragment extends Fragment {
 
     private void updateRecentUploads(List<StoredFile> files) {
         List<StoredFile> recent = new ArrayList<>();
-        int count = Math.min(5, files.size());
+        int count = Math.min(3, files.size());
         for (int i = 0; i < count; i++) {
             recent.add(files.get(files.size() - 1 - i));
         }
 
         recentAdapter.setFiles(recent);
 
-        if (tvRecentEmpty != null) {
-            tvRecentEmpty.setVisibility(recent.isEmpty() ? View.VISIBLE : View.GONE);
+        if (layoutHomeEmpty != null) {
+            layoutHomeEmpty.setVisibility(recent.isEmpty() ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -349,7 +393,9 @@ public class HomeFragment extends Fragment {
             }
 
             holder.itemView.setOnClickListener(v -> {
-                if (listener != null) listener.onItemClick(file);
+                FileDetailsBottomSheet.show(context, file, f -> {
+                    if (listener != null) listener.onItemClick(f);
+                });
             });
         }
 

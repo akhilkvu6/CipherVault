@@ -78,6 +78,14 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
                 break;
         }
 
+        holder.itemView.setOnClickListener(v -> {
+            FileDetailsBottomSheet.show(context, file, f -> {
+                if (downloadListener != null) {
+                    downloadListener.onDownloadClick(f);
+                }
+            });
+        });
+
         holder.btnDownload.setOnClickListener(v -> {
             if (downloadListener != null) {
                 downloadListener.onDownloadClick(file);
