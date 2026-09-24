@@ -3,6 +3,8 @@ package com.ciphervault.app;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.OpenableColumns;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -11,12 +13,12 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 
 import com.google.android.material.card.MaterialCardView;
@@ -37,9 +39,10 @@ import retrofit2.Response;
 
 public class UploadFragment extends Fragment {
 
+    private static final long MIN_LOADING_MS = 2000L; // 2 seconds minimum loading floor
+
     private TextView tvSelectedFile;
     private TextView tvUploadSubtitle;
-    private MaterialCardView btnChooseFile;
     private MaterialCardView cardDuplicateWarning;
     private CompoundButton cbEncrypt;
     private Button btnUpload;
@@ -49,6 +52,8 @@ public class UploadFragment extends Fragment {
     private long selectedFileSize;
     private ApiService apiService;
     private final List<StoredFile> existingVaultFiles = new ArrayList<>();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private AlertDialog progressDialog;
 
     private final ActivityResultLauncher<String> filePickerLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -77,7 +82,7 @@ public class UploadFragment extends Fragment {
 
         tvSelectedFile = view.findViewById(R.id.tvSelectedFile);
         tvUploadSubtitle = view.findViewById(R.id.tvUploadSubtitle);
-        btnChooseFile = view.findViewById(R.id.btnChooseFile);
+        MaterialCardView btnChooseFile = view.findViewById(R.id.btnChooseFile);
         cardDuplicateWarning = view.findViewById(R.id.cardDuplicateWarning);
         cbEncrypt = view.findViewById(R.id.cbEncrypt);
         btnUpload = view.findViewById(R.id.btnUpload);
@@ -175,12 +180,9 @@ public class UploadFragment extends Fragment {
     private void performUpload() {
         if (selectedUri == null) return;
 
-        if (cardDuplicateWarning != null) {
-            cardDuplicateWarning.setVisibility(View.GONE);
-        }
+        showUploadProgressDialog();
 
-        btnUpload.setEnabled(false);
-        btnUpload.setText(R.string.upload_in_progress);
+        final long startTime = System.currentTimeMillis();
 
         try {
             String filename = selectedFileName != null ? selectedFileName : resolveFileName(selectedUri);
@@ -209,53 +211,115 @@ public class UploadFragment extends Fragment {
                 public void onResponse(@NonNull Call<UploadResponse> call, @NonNull Response<UploadResponse> response) {
                     if (!isAdded()) return;
 
-                    if (response.isSuccessful()) {
-                        Toast.makeText(requireContext(), R.string.upload_success, Toast.LENGTH_LONG).show();
-                        resetSelection();
-                        fetchExistingVaultFiles();
-                    } else if (response.code() == 409) {
-                        handleDuplicateError();
-                    } else {
-                        Toast.makeText(requireContext(), "Upload failed (HTTP " + response.code() + ")", Toast.LENGTH_SHORT).show();
-                        btnUpload.setEnabled(true);
-                        btnUpload.setText(R.string.btn_upload_to_vault);
-                    }
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    long remainingDelay = Math.max(0, MIN_LOADING_MS - elapsedTime);
+
+                    mainHandler.postDelayed(() -> {
+                        if (!isAdded()) return;
+
+                        dismissProgressDialog();
+
+                        if (response.isSuccessful()) {
+                            showUploadSuccessDialog();
+                            fetchExistingVaultFiles();
+                        } else if (response.code() == 409) {
+                            showUploadFailedDialog("Duplicate File Detected: This exact file already exists in your vault.");
+                        } else {
+                            showUploadFailedDialog("Upload failed (HTTP " + response.code() + ")");
+                        }
+                    }, remainingDelay);
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<UploadResponse> call, @NonNull Throwable t) {
                     if (!isAdded()) return;
-                    btnUpload.setEnabled(true);
-                    btnUpload.setText(R.string.btn_upload_to_vault);
-                    Toast.makeText(requireContext(), "Upload error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+
+                    long elapsedTime = System.currentTimeMillis() - startTime;
+                    long remainingDelay = Math.max(0, MIN_LOADING_MS - elapsedTime);
+
+                    mainHandler.postDelayed(() -> {
+                        if (!isAdded()) return;
+                        dismissProgressDialog();
+                        showUploadFailedDialog("Upload error: " + t.getLocalizedMessage());
+                    }, remainingDelay);
                 }
             });
 
         } catch (Exception e) {
-            btnUpload.setEnabled(true);
-            btnUpload.setText(R.string.btn_upload_to_vault);
-            Toast.makeText(requireContext(), "Failed reading file: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            dismissProgressDialog();
+            showUploadFailedDialog("Failed reading file: " + e.getMessage());
         }
     }
 
-    private void handleDuplicateError() {
-        if (cardDuplicateWarning != null) {
+    private void showUploadProgressDialog() {
+        if (!isAdded()) return;
+
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_upload_progress, null);
+        TextView tvDialogFileName = dialogView.findViewById(R.id.tvDialogFileName);
+        TextView tvDialogOperation = dialogView.findViewById(R.id.tvDialogOperation);
+
+        if (tvDialogFileName != null) {
+            tvDialogFileName.setText(selectedFileName != null ? selectedFileName : "File");
+        }
+
+        if (tvDialogOperation != null) {
+            boolean isEncrypted = cbEncrypt == null || cbEncrypt.isChecked();
+            tvDialogOperation.setText(isEncrypted ? R.string.status_uploading_encrypted : R.string.status_uploading_file);
+        }
+
+        dismissProgressDialog();
+
+        progressDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setView(dialogView)
+                .setCancelable(false)
+                .create();
+
+        progressDialog.show();
+    }
+
+    private void dismissProgressDialog() {
+        if (progressDialog != null && progressDialog.isShowing()) {
+            try {
+                progressDialog.dismiss();
+            } catch (Exception ignored) {}
+            progressDialog = null;
+        }
+    }
+
+    private void showUploadSuccessDialog() {
+        if (!isAdded()) return;
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.upload_complete_title)
+                .setMessage("Successfully uploaded " + (selectedFileName != null ? selectedFileName : "file") + " to your vault.")
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                    dialog.dismiss();
+                    resetToSelectionState();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    private void showUploadFailedDialog(String errorMessage) {
+        if (!isAdded()) return;
+
+        if (cardDuplicateWarning != null && errorMessage != null && errorMessage.contains("Duplicate")) {
             cardDuplicateWarning.setVisibility(View.VISIBLE);
         }
 
         new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.duplicate_dialog_title)
-                .setMessage(R.string.duplicate_dialog_message)
+                .setTitle(R.string.upload_failed_title)
+                .setMessage(errorMessage)
                 .setPositiveButton(R.string.duplicate_dialog_positive, (dialog, which) -> dialog.dismiss())
                 .show();
 
         if (btnUpload != null) {
-            btnUpload.setEnabled(false);
+            btnUpload.setEnabled(selectedUri != null);
             btnUpload.setText(R.string.btn_upload_to_vault);
         }
     }
 
-    private void resetSelection() {
+    private void resetToSelectionState() {
         selectedUri = null;
         selectedFileName = null;
         selectedFileSize = 0;
@@ -302,5 +366,11 @@ public class UploadFragment extends Fragment {
             } catch (Exception ignored) {}
         }
         return size;
+    }
+
+    @Override
+    public void onDestroyView() {
+        dismissProgressDialog();
+        super.onDestroyView();
     }
 }

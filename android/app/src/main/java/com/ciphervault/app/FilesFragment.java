@@ -6,10 +6,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -19,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -38,13 +42,20 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
 
     private TextView tvFileCount;
     private TextView tvEmptyMessage;
+    private EditText etFileSearch;
     private ChipGroup chipGroupCategory;
+    private Chip chipAll;
+    private Chip chipImages;
+    private Chip chipVideos;
+    private Chip chipPdfs;
+    private Chip chipOther;
     private RecyclerView rvFiles;
     private FilesAdapter adapter;
 
     private ApiService apiService;
     private final List<StoredFile> allFiles = new ArrayList<>();
     private StoredFile.FileCategory currentCategory = StoredFile.FileCategory.ALL;
+    private String currentSearchQuery = "";
 
     @Nullable
     @Override
@@ -53,12 +64,19 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
 
         tvFileCount = view.findViewById(R.id.tvFileCount);
         tvEmptyMessage = view.findViewById(R.id.tvEmptyMessage);
+        etFileSearch = view.findViewById(R.id.etFileSearch);
         chipGroupCategory = view.findViewById(R.id.chipGroupCategory);
+        chipAll = view.findViewById(R.id.chipAll);
+        chipImages = view.findViewById(R.id.chipImages);
+        chipVideos = view.findViewById(R.id.chipVideos);
+        chipPdfs = view.findViewById(R.id.chipPdfs);
+        chipOther = view.findViewById(R.id.chipOther);
         rvFiles = view.findViewById(R.id.rvFiles);
 
         apiService = ApiClient.getApiService(requireContext());
 
         setupRecyclerView();
+        setupSearchInput();
         setupFilterChips();
 
         loadFiles();
@@ -69,6 +87,24 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         adapter = new FilesAdapter(this);
         rvFiles.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvFiles.setAdapter(adapter);
+    }
+
+    private void setupSearchInput() {
+        if (etFileSearch != null) {
+            etFileSearch.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    currentSearchQuery = s != null ? s.toString().trim().toLowerCase() : "";
+                    filterAndDisplayFiles();
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {}
+            });
+        }
     }
 
     private void setupFilterChips() {
@@ -109,6 +145,7 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
                 if (response.isSuccessful() && response.body() != null) {
                     allFiles.clear();
                     allFiles.addAll(response.body());
+                    updateCategoryChipCounts();
                     filterAndDisplayFiles();
                 } else {
                     if (tvFileCount != null) {
@@ -128,11 +165,49 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         });
     }
 
+    private void updateCategoryChipCounts() {
+        int all = allFiles.size();
+        int images = 0, videos = 0, pdfs = 0, other = 0;
+
+        for (StoredFile file : allFiles) {
+            switch (file.getCategory()) {
+                case IMAGES:
+                    images++;
+                    break;
+                case VIDEOS:
+                    videos++;
+                    break;
+                case PDFS:
+                    pdfs++;
+                    break;
+                default:
+                    other++;
+                    break;
+            }
+        }
+
+        if (chipAll != null) chipAll.setText("All (" + all + ")");
+        if (chipImages != null) chipImages.setText("Images (" + images + ")");
+        if (chipVideos != null) chipVideos.setText("Videos (" + videos + ")");
+        if (chipPdfs != null) chipPdfs.setText("PDFs (" + pdfs + ")");
+        if (chipOther != null) chipOther.setText("Other (" + other + ")");
+    }
+
     private void filterAndDisplayFiles() {
         List<StoredFile> filteredList = new ArrayList<>();
 
         for (StoredFile file : allFiles) {
-            if (currentCategory == StoredFile.FileCategory.ALL || file.getCategory() == currentCategory) {
+            boolean matchesCategory = (currentCategory == StoredFile.FileCategory.ALL || file.getCategory() == currentCategory);
+
+            boolean matchesSearch = true;
+            if (!currentSearchQuery.isEmpty()) {
+                String name = file.getFilename().toLowerCase();
+                String mime = file.getContentType().toLowerCase();
+                String hash = file.getSha256Hash() != null ? file.getSha256Hash().toLowerCase() : "";
+                matchesSearch = name.contains(currentSearchQuery) || mime.contains(currentSearchQuery) || hash.contains(currentSearchQuery);
+            }
+
+            if (matchesCategory && matchesSearch) {
                 filteredList.add(file);
             }
         }

@@ -14,7 +14,7 @@
         android:orientation="vertical"
         android:paddingHorizontal="20dp"
         android:paddingTop="20dp"
-        android:paddingBottom="12dp">
+        android:paddingBottom="8dp">
 
         <TextView
             android:layout_width="match_parent"
@@ -33,6 +33,32 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="14sp" />
     </LinearLayout>
+
+    <!-- Search Bar Field in Files Screen -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginBottom="12dp"
+        android:hint="@string/search_hint"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        app:boxCornerRadiusTopStart="16dp"
+        app:boxCornerRadiusTopEnd="16dp"
+        app:boxCornerRadiusBottomStart="16dp"
+        app:boxCornerRadiusBottomEnd="16dp"
+        app:startIconDrawable="@drawable/ic_nav_search"
+        app:startIconTint="?attr/colorOnSurfaceVariant"
+        app:endIconMode="clear_text">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etFileSearch"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:singleLine="true"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="14sp" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Horizontal Category Filter Bar -->
     <HorizontalScrollView

@@ -4,18 +4,14 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     private SessionManager sessionManager;
-    private BottomNavigationView bottomNavigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,36 +35,25 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
-        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        PillNavHelper.setup(this, index -> {
+            switch (index) {
+                case 0:
+                    loadFragment(new HomeFragment());
+                    break;
+                case 1:
+                    loadFragment(new FilesFragment());
+                    break;
+                case 2:
+                    loadFragment(new UploadFragment());
+                    break;
+                case 3:
+                    loadFragment(new SettingsFragment());
+                    break;
+            }
+        });
 
         if (savedInstanceState == null) {
             loadFragment(new HomeFragment());
-            if (bottomNavigationView != null) {
-                bottomNavigationView.setSelectedItemId(R.id.navigation_home);
-            }
-        }
-
-        if (bottomNavigationView != null) {
-            bottomNavigationView.setOnItemSelectedListener(item -> {
-                int itemId = item.getItemId();
-                if (itemId == R.id.navigation_home) {
-                    loadFragment(new HomeFragment());
-                    return true;
-                } else if (itemId == R.id.navigation_files) {
-                    loadFragment(new FilesFragment());
-                    return true;
-                } else if (itemId == R.id.navigation_upload) {
-                    loadFragment(new UploadFragment());
-                    return true;
-                } else if (itemId == R.id.navigation_search) {
-                    loadFragment(new SearchFragment());
-                    return true;
-                } else if (itemId == R.id.navigation_profile) {
-                    loadFragment(new ProfileFragment());
-                    return true;
-                }
-                return false;
-            });
         }
     }
 
