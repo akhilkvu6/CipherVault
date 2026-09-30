@@ -34,6 +34,15 @@ public class StoredFile {
     @Column(nullable = false)
     private boolean encrypted;
 
+    @Column(name = "has_preview", nullable = false)
+    private boolean hasPreview = false;
+
+    @Column(name = "preview_path")
+    private String previewPath;
+
+    @Column(name = "preview_mime_type")
+    private String previewMimeType;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -116,5 +125,29 @@ public class StoredFile {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isHasPreview() {
+        return hasPreview;
+    }
+
+    public void setHasPreview(boolean hasPreview) {
+        this.hasPreview = hasPreview;
+    }
+
+    public String getPreviewPath() {
+        return previewPath;
+    }
+
+    public void setPreviewPath(String previewPath) {
+        this.previewPath = previewPath;
+    }
+
+    public String getPreviewMimeType() {
+        return previewMimeType;
+    }
+
+    public void setPreviewMimeType(String previewMimeType) {
+        this.previewMimeType = previewMimeType;
     }
 }   

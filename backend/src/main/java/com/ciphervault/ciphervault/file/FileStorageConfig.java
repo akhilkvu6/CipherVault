@@ -19,6 +19,9 @@ public class FileStorageConfig {
     public static final Path NORMAL_STORAGE =
             STORAGE_ROOT.resolve("uploads");
 
+    public static final Path PREVIEW_STORAGE =
+            STORAGE_ROOT.resolve("previews");
+
     public FileStorageConfig() {
 
         ConsoleLogger.info("Initializing file storage configuration...");
@@ -26,6 +29,7 @@ public class FileStorageConfig {
         try {
             Files.createDirectories(ENCRYPTED_STORAGE);
             Files.createDirectories(NORMAL_STORAGE);
+            Files.createDirectories(PREVIEW_STORAGE);
 
             ConsoleLogger.success(
                     "File storage directories initialized successfully."
