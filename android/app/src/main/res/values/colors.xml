@@ -1,66 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Vault Security Badges & Statuses -->
-    <color name="vault_encrypted">#D96C63</color>
-    <color name="vault_unencrypted">#E0A84F</color>
-    <color name="vault_plain">#D6A84F</color>
+    <!-- ================================================================= -->
+    <!-- CIPHERVAULT UNIFIED DESIGN SYSTEM TOKENS                           -->
+    <!-- Warm Brown / Taupe / Caramel / Cream Security Identity            -->
+    <!-- ================================================================= -->
 
-    <!-- Base Surface Roles -->
-    <color name="vault_bg_dark">#0D0D0F</color>
-    <color name="vault_surface_dark">#151518</color>
-    <color name="vault_surface_elevated_dark">#1D1D21</color>
-    <color name="vault_surface_high_dark">#242429</color>
-    <color name="vault_text_primary_dark">#F4F1EA</color>
-    <color name="vault_text_secondary_dark">#A7A5A0</color>
-    <color name="vault_outline_dark">#303035</color>
+    <!-- Semantic Status Colors -->
+    <!-- Encrypted is a positive security state: warm caramel / taupe accent -->
+    <color name="vault_encrypted">#B79A6A</color>
+    <color name="vault_unencrypted">#968B7E</color>
+    <color name="vault_plain">#968B7E</color>
+    <color name="status_connected">#10B981</color>
+    <color name="status_connected_dark">#10B981</color>
+    <color name="status_connected_light">#059669</color>
+    <color name="status_warning">#F59E0B</color>
+    <color name="status_warning_container">#3D2B05</color>
+    <color name="status_warning_light">#D97706</color>
+    <color name="status_error">#EF4444</color>
+    <color name="status_error_container">#3D1515</color>
+    <color name="status_error_light">#DC2626</color>
 
-    <!-- 1. OBSIDIAN PALETTE -->
-    <color name="obsidian_primary">#D6A84F</color>
-    <color name="obsidian_on_primary">#0D0D0F</color>
-    <color name="obsidian_primary_container">#3D2B05</color>
-    <color name="obsidian_on_primary_container">#E8BE68</color>
+    <!-- Dark Theme Palette Tokens -->
+    <color name="cv_dark_bg">#17130F</color>
+    <color name="cv_dark_surface">#211B15</color>
+    <color name="cv_dark_surface_container">#2B241C</color>
+    <color name="cv_dark_surface_elevated">#382F24</color>
+    <color name="cv_dark_deep_brown">#4A3A2A</color>
+    <color name="cv_dark_primary_brown">#765E43</color>
+    <color name="cv_dark_caramel">#B79A6A</color>
+    <color name="cv_dark_cream">#F3EBDD</color>
+    <color name="cv_dark_text_primary">#F7F1E8</color>
+    <color name="cv_dark_text_secondary">#C0B5A7</color>
+    <color name="cv_dark_text_muted">#968B7E</color>
+    <color name="cv_dark_outline">#5A4C3D</color>
+    <color name="cv_dark_outline_variant">#3D3328</color>
 
-    <!-- 2. RUBY PALETTE -->
-    <color name="ruby_primary">#D94F4F</color>
-    <color name="ruby_on_primary">#0D0D0F</color>
-    <color name="ruby_primary_container">#3D0505</color>
-    <color name="ruby_on_primary_container">#E86868</color>
+    <!-- Light Theme Palette Tokens -->
+    <color name="cv_light_bg">#F3EEE6</color>
+    <color name="cv_light_surface">#FFFDF9</color>
+    <color name="cv_light_surface_container">#EAE1D5</color>
+    <color name="cv_light_surface_elevated">#F7F1E8</color>
+    <color name="cv_light_primary_brown">#6B5239</color>
+    <color name="cv_light_deep_brown">#493828</color>
+    <color name="cv_light_caramel">#A68157</color>
+    <color name="cv_light_text_primary">#29231D</color>
+    <color name="cv_light_text_secondary">#6F665D</color>
+    <color name="cv_light_text_muted">#8D8378</color>
+    <color name="cv_light_outline">#C9BDAF</color>
+    <color name="cv_light_outline_variant">#DDD3C5</color>
 
-    <!-- 3. COPPER PALETTE -->
-    <color name="copper_primary">#D67C4F</color>
-    <color name="copper_on_primary">#0D0D0F</color>
-    <color name="copper_primary_container">#3D1E05</color>
-    <color name="copper_on_primary_container">#E89368</color>
-
-    <!-- 4. AMETHYST PALETTE -->
-    <color name="amethyst_primary">#A868E8</color>
-    <color name="amethyst_on_primary">#0D0D0F</color>
-    <color name="amethyst_primary_container">#25053D</color>
-    <color name="amethyst_on_primary_container">#C89DFF</color>
-
-    <!-- 5. ROSE PALETTE -->
-    <color name="rose_primary">#E8688A</color>
-    <color name="rose_on_primary">#0D0D0F</color>
-    <color name="rose_primary_container">#3D051A</color>
-    <color name="rose_on_primary_container">#FF9DB3</color>
-
-    <!-- 6. SAPPHIRE PALETTE (BLUE) -->
-    <color name="sapphire_primary">#3B82F6</color>
-    <color name="sapphire_on_primary">#0D0D0F</color>
-    <color name="sapphire_primary_container">#051E3D</color>
-    <color name="sapphire_on_primary_container">#93C5FD</color>
-
-    <!-- 7. MONOCHROME PALETTE -->
-    <color name="mono_primary">#E2E2E6</color>
-    <color name="mono_on_primary">#0D0D0F</color>
-    <color name="mono_primary_container">#28282E</color>
-    <color name="mono_on_primary_container">#FFFFFF</color>
-
-    <!-- Light Fallback Roles -->
-    <color name="md_theme_light_surface">#F9F8F6</color>
-    <color name="md_theme_light_onSurface">#151518</color>
-    <color name="md_theme_light_surfaceVariant">#E6E3DD</color>
-    <color name="md_theme_light_onSurfaceVariant">#605F5A</color>
-    <color name="md_theme_light_outline">#8A8882</color>
-    <color name="md_theme_light_outlineVariant">#D4D0C8</color>
+    <!-- Navigation Dock Colors -->
+    <color name="cv_nav_dock_dark">#211B15</color>
+    <color name="cv_nav_dock_light">#EAE1D5</color>
+    <color name="cv_nav_active_dark">#382F24</color>
+    <color name="cv_nav_active_light">#FFFDF9</color>
 </resources>

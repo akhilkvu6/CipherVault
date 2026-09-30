@@ -23,11 +23,26 @@ public class SessionManager {
         );
     }
 
+    private static final String KEY_EMAIL = "email";
+
     public void saveLogin(String token, String username) {
-        preferences.edit()
+        saveLogin(token, username, null);
+    }
+
+    public void saveLogin(String token, String username, String email) {
+        SharedPreferences.Editor editor = preferences.edit()
                 .putString(KEY_TOKEN, token)
-                .putString(KEY_USERNAME, username)
-                .apply();
+                .putString(KEY_USERNAME, username);
+        if (email != null && !email.trim().isEmpty()) {
+            editor.putString(KEY_EMAIL, email.trim());
+        }
+        editor.apply();
+    }
+
+    public void saveEmail(String email) {
+        if (email != null && !email.trim().isEmpty()) {
+            preferences.edit().putString(KEY_EMAIL, email.trim()).apply();
+        }
     }
 
     public String getToken() {
@@ -36,6 +51,28 @@ public class SessionManager {
 
     public String getUsername() {
         return preferences.getString(KEY_USERNAME, null);
+    }
+
+    public String getEmail() {
+        String saved = preferences.getString(KEY_EMAIL, null);
+        if (saved != null && !saved.trim().isEmpty()) {
+            return saved;
+        }
+        String token = getToken();
+        if (token != null && token.contains(".")) {
+            try {
+                String[] parts = token.split("\\.");
+                if (parts.length >= 2) {
+                    byte[] decodedBytes = android.util.Base64.decode(parts[1], android.util.Base64.URL_SAFE);
+                    String payloadJson = new String(decodedBytes, java.nio.charset.StandardCharsets.UTF_8);
+                    org.json.JSONObject obj = new org.json.JSONObject(payloadJson);
+                    if (obj.has("sub")) {
+                        return obj.getString("sub");
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+        return "user@ciphervault.local";
     }
 
     public long getStorageLimit() {

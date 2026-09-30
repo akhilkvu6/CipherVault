@@ -1,4 +1,4 @@
-package com.ciphervault.app.utils;
+package com.ciphervault.app;
 
 import android.content.Context;
 import android.database.Cursor;

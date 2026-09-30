@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="?attr/colorSurface">
@@ -12,22 +13,22 @@
         android:id="@+id/nav_host_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginBottom="92dp" />
+        android:layout_marginBottom="80dp" />
 
-    <!-- Ultra-Modern Floating Pill Dock Container (Matching Reference Image) -->
+    <!-- Compact Adaptive Rounded Navigation Dock -->
     <LinearLayout
         android:id="@+id/layoutPillNav"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="56dp"
         android:layout_gravity="bottom"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
         android:background="@drawable/bg_pill_nav_container"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="5dp"
-        android:elevation="16dp">
+        android:padding="4dp"
+        android:elevation="4dp">
 
         <!-- 1. Home Tab -->
         <LinearLayout

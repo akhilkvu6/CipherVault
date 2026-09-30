@@ -17,20 +17,20 @@
 
         <!-- Vault Icon Badge Container -->
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="88dp"
-            android:layout_height="88dp"
-            app:cardCornerRadius="44dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
             app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorPrimaryContainer">
+            app:cardBackgroundColor="?attr/colorSecondaryContainer">
 
             <ImageView
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:layout_gravity="center"
                 android:contentDescription="CipherVault Secure Storage"
-                android:src="@android:drawable/ic_lock_lock"
-                app:tint="?attr/colorOnPrimaryContainer" />
+                android:src="@drawable/ic_nav_files"
+                app:tint="?attr/colorOnSecondaryContainer" />
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
@@ -39,31 +39,35 @@
             android:layout_marginTop="20dp"
             android:text="CipherVault"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="32sp"
+            android:textSize="30sp"
+            android:fontFamily="sans-serif-medium"
             android:textStyle="bold"
             android:letterSpacing="0.02" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="4dp"
             android:text="Private Encrypted Cloud"
             android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="15sp" />
+            android:textSize="14sp" />
 
-        <!-- Animated Progress Line Indicator Track -->
-        <FrameLayout
-            android:layout_width="160dp"
+        <!-- Animated Progress Line Track -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="140dp"
             android:layout_height="4dp"
             android:layout_marginTop="32dp"
-            android:background="?attr/colorSurfaceVariant">
+            app:cardCornerRadius="2dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerHigh">
 
             <View
                 android:id="@+id/loadingLine"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:background="?attr/colorPrimary" />
-        </FrameLayout>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
     <!-- Bottom Security Footprint -->
@@ -72,7 +76,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="32dp"
-        android:text="AES-256-GCM Encrypted Storage"
+        android:text="@string/caption_aes_gcm"
         android:textColor="?attr/colorOutline"
         android:textSize="11sp"
         android:letterSpacing="0.04" />

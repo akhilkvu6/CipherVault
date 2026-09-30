@@ -1,6 +1,8 @@
 package com.ciphervault.app;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -31,40 +34,77 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadClickListener {
+public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadClickListener, FilesAdapter.OnDeleteClickListener {
+
+    private static final String PREF_SEARCH_HISTORY = "CipherVaultSearchHistory";
+    private static final String KEY_HISTORY = "queries";
 
     private TextView tvFileCount;
+    private View layoutEmptyState;
     private TextView tvEmptyMessage;
     private EditText etFileSearch;
+    private Chip chipFilterEncrypted;
+    private Chip chipFilterLarge;
+    private View layoutRecentHeader;
+    private ChipGroup chipGroupRecentSearches;
+    private MaterialButton btnClearSearchHistory;
+
     private ChipGroup chipGroupCategory;
     private Chip chipAll;
     private Chip chipImages;
     private Chip chipVideos;
     private Chip chipPdfs;
     private Chip chipOther;
+
     private RecyclerView rvFiles;
     private FilesAdapter adapter;
 
     private ApiService apiService;
+    private SharedPreferences historyPrefs;
     private final List<StoredFile> allFiles = new ArrayList<>();
     private StoredFile.FileCategory currentCategory = StoredFile.FileCategory.ALL;
     private String currentSearchQuery = "";
+    private FileSortOption currentSortOption = FileSortOption.NAME_ASC;
+
+    public static FilesFragment newInstance(String initialCategory) {
+        FilesFragment fragment = new FilesFragment();
+        if (initialCategory != null) {
+            Bundle args = new Bundle();
+            args.putString("EXTRA_INITIAL_CATEGORY", initialCategory);
+            fragment.setArguments(args);
+        }
+        return fragment;
+    }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_files, container, false);
 
+        apiService = ApiClient.getApiService(requireContext());
+        historyPrefs = requireContext().getSharedPreferences(PREF_SEARCH_HISTORY, Context.MODE_PRIVATE);
+        currentSortOption = CipherVaultPreferences.getFileSortOption(requireContext());
+
         tvFileCount = view.findViewById(R.id.tvFileCount);
+        layoutEmptyState = view.findViewById(R.id.layoutEmptyState);
         tvEmptyMessage = view.findViewById(R.id.tvEmptyMessage);
         etFileSearch = view.findViewById(R.id.etFileSearch);
+        chipFilterEncrypted = view.findViewById(R.id.chipFilterEncrypted);
+        chipFilterLarge = view.findViewById(R.id.chipFilterLarge);
+        layoutRecentHeader = view.findViewById(R.id.layoutRecentHeader);
+        chipGroupRecentSearches = view.findViewById(R.id.chipGroupRecentSearches);
+        btnClearSearchHistory = view.findViewById(R.id.btnClearSearchHistory);
+
         chipGroupCategory = view.findViewById(R.id.chipGroupCategory);
         chipAll = view.findViewById(R.id.chipAll);
         chipImages = view.findViewById(R.id.chipImages);
@@ -73,23 +113,46 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         chipOther = view.findViewById(R.id.chipOther);
         rvFiles = view.findViewById(R.id.rvFiles);
 
-        apiService = ApiClient.getApiService(requireContext());
+        MaterialButton btnSortFiles = view.findViewById(R.id.btnSortFiles);
+        if (btnSortFiles != null) {
+            btnSortFiles.setOnClickListener(v -> showSortDialog());
+        }
 
         setupRecyclerView();
-        setupSearchInput();
-        setupFilterChips();
+        setupSearchAndFilters();
+        setupCategoryChips();
+        applyInitialCategoryFromArgs();
+        setupRecentHistory();
 
         loadFiles();
         return view;
     }
 
+    private void applyInitialCategoryFromArgs() {
+        Bundle args = getArguments();
+        if (args != null && args.containsKey("EXTRA_INITIAL_CATEGORY")) {
+            String cat = args.getString("EXTRA_INITIAL_CATEGORY");
+            if (cat != null) {
+                if ("IMAGES".equalsIgnoreCase(cat) && chipImages != null) {
+                    chipImages.setChecked(true);
+                } else if ("VIDEOS".equalsIgnoreCase(cat) && chipVideos != null) {
+                    chipVideos.setChecked(true);
+                } else if ("PDFS".equalsIgnoreCase(cat) && chipPdfs != null) {
+                    chipPdfs.setChecked(true);
+                } else if ("OTHER".equalsIgnoreCase(cat) && chipOther != null) {
+                    chipOther.setChecked(true);
+                }
+            }
+        }
+    }
+
     private void setupRecyclerView() {
-        adapter = new FilesAdapter(this);
+        adapter = new FilesAdapter(this, this);
         rvFiles.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvFiles.setAdapter(adapter);
     }
 
-    private void setupSearchInput() {
+    private void setupSearchAndFilters() {
         if (etFileSearch != null) {
             etFileSearch.addTextChangedListener(new TextWatcher() {
                 @Override
@@ -102,12 +165,30 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
                 }
 
                 @Override
-                public void afterTextChanged(Editable s) {}
+                public void afterTextChanged(Editable s) {
+                    String query = s != null ? s.toString().trim() : "";
+                    if (!query.isEmpty() && query.length() >= 3) {
+                        saveSearchQuery(query);
+                    }
+                }
             });
+        }
+
+        CompoundButton.OnCheckedChangeListener filterListener = (buttonView, isChecked) -> filterAndDisplayFiles();
+
+        if (chipFilterEncrypted != null) {
+            chipFilterEncrypted.setOnCheckedChangeListener(filterListener);
+        }
+        if (chipFilterLarge != null) {
+            chipFilterLarge.setOnCheckedChangeListener(filterListener);
+        }
+
+        if (btnClearSearchHistory != null) {
+            btnClearSearchHistory.setOnClickListener(v -> clearSearchHistory());
         }
     }
 
-    private void setupFilterChips() {
+    private void setupCategoryChips() {
         if (chipGroupCategory == null) return;
 
         chipGroupCategory.setOnCheckedStateChangeListener((group, checkedIds) -> {
@@ -130,6 +211,60 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
 
             filterAndDisplayFiles();
         });
+    }
+
+    private void setupRecentHistory() {
+        if (chipGroupRecentSearches == null) return;
+        chipGroupRecentSearches.removeAllViews();
+
+        Set<String> queries = historyPrefs.getStringSet(KEY_HISTORY, new HashSet<>());
+        if (queries.isEmpty()) {
+            if (layoutRecentHeader != null) layoutRecentHeader.setVisibility(View.GONE);
+            chipGroupRecentSearches.setVisibility(View.GONE);
+            return;
+        }
+
+        if (layoutRecentHeader != null) layoutRecentHeader.setVisibility(View.VISIBLE);
+        chipGroupRecentSearches.setVisibility(View.VISIBLE);
+
+        for (String q : queries) {
+            Chip chip = new Chip(requireContext());
+            chip.setText(q);
+            chip.setCloseIconVisible(true);
+            chip.setClickable(true);
+
+            chip.setOnClickListener(v -> {
+                if (etFileSearch != null) {
+                    etFileSearch.setText(q);
+                    etFileSearch.setSelection(q.length());
+                }
+            });
+
+            chip.setOnCloseIconClickListener(v -> {
+                removeSearchQuery(q);
+                setupRecentHistory();
+            });
+
+            chipGroupRecentSearches.addView(chip);
+        }
+    }
+
+    private void saveSearchQuery(String query) {
+        Set<String> queries = new HashSet<>(historyPrefs.getStringSet(KEY_HISTORY, new HashSet<>()));
+        queries.add(query);
+        historyPrefs.edit().putStringSet(KEY_HISTORY, queries).apply();
+        setupRecentHistory();
+    }
+
+    private void removeSearchQuery(String query) {
+        Set<String> queries = new HashSet<>(historyPrefs.getStringSet(KEY_HISTORY, new HashSet<>()));
+        queries.remove(query);
+        historyPrefs.edit().putStringSet(KEY_HISTORY, queries).apply();
+    }
+
+    private void clearSearchHistory() {
+        historyPrefs.edit().remove(KEY_HISTORY).apply();
+        setupRecentHistory();
     }
 
     private void loadFiles() {
@@ -193,24 +328,60 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         if (chipOther != null) chipOther.setText("Other (" + other + ")");
     }
 
+    private void showSortDialog() {
+        String[] sortLabels = new String[] {
+                getString(R.string.sort_name_asc),
+                getString(R.string.sort_name_desc),
+                getString(R.string.sort_date_oldest),
+                getString(R.string.sort_date_newest),
+                getString(R.string.sort_size_smallest),
+                getString(R.string.sort_size_largest)
+        };
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.sort_dialog_title)
+                .setSingleChoiceItems(sortLabels, currentSortOption.ordinal(), (dialog, which) -> {
+                    FileSortOption[] options = FileSortOption.values();
+                    if (which >= 0 && which < options.length) {
+                        FileSortOption selected = options[which];
+                        if (selected != currentSortOption) {
+                            currentSortOption = selected;
+                            CipherVaultPreferences.saveFileSortOption(requireContext(), currentSortOption);
+                            filterAndDisplayFiles();
+                        }
+                    }
+                    dialog.dismiss();
+                })
+                .setNegativeButton(R.string.btn_close, null)
+                .show();
+    }
+
     private void filterAndDisplayFiles() {
+        boolean onlyEncrypted = chipFilterEncrypted != null && chipFilterEncrypted.isChecked();
+        boolean onlyLarge = chipFilterLarge != null && chipFilterLarge.isChecked();
+
         List<StoredFile> filteredList = new ArrayList<>();
 
         for (StoredFile file : allFiles) {
             boolean matchesCategory = (currentCategory == StoredFile.FileCategory.ALL || file.getCategory() == currentCategory);
+            if (!matchesCategory) continue;
 
-            boolean matchesSearch = true;
+            if (onlyEncrypted && !file.isEncrypted()) continue;
+            if (onlyLarge && file.getFileSize() < (1024 * 1024)) continue;
+
             if (!currentSearchQuery.isEmpty()) {
                 String name = file.getFilename().toLowerCase();
                 String mime = file.getContentType().toLowerCase();
                 String hash = file.getSha256Hash() != null ? file.getSha256Hash().toLowerCase() : "";
-                matchesSearch = name.contains(currentSearchQuery) || mime.contains(currentSearchQuery) || hash.contains(currentSearchQuery);
+                if (!name.contains(currentSearchQuery) && !mime.contains(currentSearchQuery) && !hash.contains(currentSearchQuery)) {
+                    continue;
+                }
             }
 
-            if (matchesCategory && matchesSearch) {
-                filteredList.add(file);
-            }
+            filteredList.add(file);
         }
+
+        Collections.sort(filteredList, FileComparator.getComparator(currentSortOption));
 
         adapter.setFiles(filteredList);
 
@@ -220,8 +391,11 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
             tvFileCount.setText(countText);
         }
 
-        if (tvEmptyMessage != null) {
-            tvEmptyMessage.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
+        boolean isEmpty = filteredList.isEmpty();
+        if (layoutEmptyState != null) {
+            layoutEmptyState.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+        } else if (tvEmptyMessage != null) {
+            tvEmptyMessage.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
         }
     }
 
@@ -234,13 +408,13 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
             CompoundButton cbDecrypt = dialogView.findViewById(R.id.cbDecrypt);
 
             new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Download File")
+                    .setTitle(R.string.download_dialog_title)
                     .setView(dialogView)
-                    .setPositiveButton("Download", (dialog, which) -> {
+                    .setPositiveButton(R.string.btn_download, (dialog, which) -> {
                         boolean decrypt = cbDecrypt == null || cbDecrypt.isChecked();
                         executeDownload(file, decrypt);
                     })
-                    .setNegativeButton("Cancel", null)
+                    .setNegativeButton(R.string.btn_close, null)
                     .show();
         } else {
             executeDownload(file, false);
@@ -272,6 +446,46 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
             public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
                 Toast.makeText(requireContext(), "Download error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onDeleteClick(StoredFile file) {
+        if (file == null || file.getId() == null || !isAdded()) return;
+
+        String filename = file.getOriginalFilename();
+        String message = String.format(getString(R.string.delete_file_dialog_msg), filename);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_file_dialog_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.btn_delete, (dialog, which) -> executeDelete(file))
+                .setNegativeButton(R.string.btn_close, null)
+                .show();
+    }
+
+    private void executeDelete(StoredFile file) {
+        if (!isAdded()) return;
+
+        apiService.deleteFile(file.getId()).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                if (!isAdded()) return;
+
+                if (response.isSuccessful()) {
+                    ThumbnailLoader.remove(file.getId());
+                    Toast.makeText(requireContext(), R.string.delete_file_success, Toast.LENGTH_SHORT).show();
+                    loadFiles();
+                } else {
+                    Toast.makeText(requireContext(), getString(R.string.delete_file_failed) + " (HTTP " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                if (!isAdded()) return;
+                Toast.makeText(requireContext(), getString(R.string.delete_file_failed) + ": " + t.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

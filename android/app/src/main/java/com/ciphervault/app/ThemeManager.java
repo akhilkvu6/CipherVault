@@ -1,8 +1,11 @@
 package com.ciphervault.app;
 
 import android.app.Activity;
+import android.content.Context;
+import android.graphics.Color;
 
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
 
 public class ThemeManager {
 
@@ -11,10 +14,11 @@ public class ThemeManager {
 
         CipherVaultPreferences.AppearanceMode appearance = CipherVaultPreferences.getAppearance(activity);
         applyAppearanceMode(appearance);
-
-        CipherVaultPreferences.ThemeOption theme = CipherVaultPreferences.getTheme(activity);
-        int styleRes = getStyleForTheme(theme);
-        activity.setTheme(styleRes);
+        if (appearance == CipherVaultPreferences.AppearanceMode.AMOLED) {
+            activity.setTheme(R.style.Theme_CipherVault_Amoled);
+        } else {
+            activity.setTheme(R.style.Theme_CipherVault);
+        }
     }
 
     public static void applyAppearanceMode(CipherVaultPreferences.AppearanceMode mode) {
@@ -24,6 +28,7 @@ public class ThemeManager {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
                 break;
             case DARK:
+            case AMOLED:
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
                 break;
             case SYSTEM:
@@ -33,24 +38,16 @@ public class ThemeManager {
         }
     }
 
-    public static int getStyleForTheme(CipherVaultPreferences.ThemeOption theme) {
-        if (theme == null) return R.style.Theme_CipherVault_Obsidian;
-        switch (theme) {
-            case RUBY:
-                return R.style.Theme_CipherVault_Ruby;
-            case COPPER:
-                return R.style.Theme_CipherVault_Copper;
-            case AMETHYST:
-                return R.style.Theme_CipherVault_Amethyst;
-            case ROSE:
-                return R.style.Theme_CipherVault_Rose;
-            case SAPPHIRE:
-                return R.style.Theme_CipherVault_Sapphire;
-            case MONOCHROME:
-                return R.style.Theme_CipherVault_Monochrome;
-            case OBSIDIAN:
-            default:
-                return R.style.Theme_CipherVault_Obsidian;
+    public static boolean isAmoled(Context context) {
+        if (context == null) return false;
+        return CipherVaultPreferences.getAppearance(context) == CipherVaultPreferences.AppearanceMode.AMOLED;
+    }
+
+    public static int getEncryptedColor(Context context) {
+        if (context == null) return Color.parseColor("#B79A6A");
+        if (isAmoled(context)) {
+            return Color.parseColor("#FFFFFF");
         }
+        return ContextCompat.getColor(context, R.color.vault_encrypted);
     }
 }

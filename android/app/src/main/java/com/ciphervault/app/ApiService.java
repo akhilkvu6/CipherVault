@@ -8,6 +8,7 @@ import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
@@ -47,4 +48,11 @@ public interface ApiService {
     @Streaming
     @GET("api/files/{id}/download")
     Call<ResponseBody> downloadFile(@Path("id") Long id);
+
+    @Streaming
+    @GET("api/files/{id}/preview")
+    Call<ResponseBody> getFilePreview(@Path("id") Long id);
+
+    @DELETE("api/files/{id}")
+    Call<ResponseBody> deleteFile(@Path("id") Long id);
 }

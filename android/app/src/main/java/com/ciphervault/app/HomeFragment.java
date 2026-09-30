@@ -2,6 +2,7 @@ package com.ciphervault.app;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -86,15 +87,18 @@ public class HomeFragment extends Fragment {
         layoutHomeEmpty = view.findViewById(R.id.layoutHomeEmpty);
 
         MaterialCardView cardQuickUpload = view.findViewById(R.id.cardQuickUpload);
-        MaterialCardView cardSearchVault = view.findViewById(R.id.cardSearchVault);
         MaterialCardView cardViewFiles = view.findViewById(R.id.cardViewFiles);
         Button btnUploadFirstFile = view.findViewById(R.id.btnUploadFirstFile);
+        MaterialCardView cardVaultStorage = view.findViewById(R.id.cardVaultStorage);
 
+        if (cardVaultStorage != null) {
+            cardVaultStorage.setOnClickListener(v -> {
+                Intent intent = new Intent(requireActivity(), StorageDetailsActivity.class);
+                startActivity(intent);
+            });
+        }
         if (cardQuickUpload != null) {
             cardQuickUpload.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 2));
-        }
-        if (cardSearchVault != null) {
-            cardSearchVault.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 1));
         }
         if (cardViewFiles != null) {
             cardViewFiles.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 1));
@@ -121,7 +125,7 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupRecentRecyclerView() {
-        recentAdapter = new RecentFilesAdapter(this::handleFileClick);
+        recentAdapter = new RecentFilesAdapter(this::handleFileClick, this::handleDeleteClick);
         rvRecentUploads.setLayoutManager(new LinearLayoutManager(requireContext()));
         rvRecentUploads.setAdapter(recentAdapter);
     }
@@ -197,7 +201,7 @@ public class HomeFragment extends Fragment {
 
         if (progressStorage != null) {
             int percentage = (int) Math.min(100, (totalUsed * 100) / TOTAL_QUOTA_BYTES);
-            progressStorage.setProgress(percentage);
+            progressStorage.setProgressCompat(percentage, true);
         }
 
         if (tvImagesUsage != null) {
@@ -332,6 +336,39 @@ public class HomeFragment extends Fragment {
         }).start();
     }
 
+    private void handleDeleteClick(StoredFile file) {
+        if (file == null || file.getId() == null || !isAdded()) return;
+
+        String filename = file.getOriginalFilename();
+        String message = String.format(getString(R.string.delete_file_dialog_msg), filename);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_file_dialog_title)
+                .setMessage(message)
+                .setPositiveButton(R.string.btn_delete, (dialog, which) -> {
+                    apiService.deleteFile(file.getId()).enqueue(new Callback<ResponseBody>() {
+                        @Override
+                        public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                            if (!isAdded()) return;
+                            if (response.isSuccessful()) {
+                                Toast.makeText(requireContext(), R.string.delete_file_success, Toast.LENGTH_SHORT).show();
+                                loadDashboardData();
+                            } else {
+                                Toast.makeText(requireContext(), getString(R.string.delete_file_failed) + " (HTTP " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                            if (!isAdded()) return;
+                            Toast.makeText(requireContext(), getString(R.string.delete_file_failed) + ": " + t.getLocalizedMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton(R.string.btn_close, null)
+                .show();
+    }
+
     // Dedicated Adapter for Recent Uploads (NO Download button)
     private static class RecentFilesAdapter extends RecyclerView.Adapter<RecentFilesAdapter.ViewHolder> {
 
@@ -339,11 +376,17 @@ public class HomeFragment extends Fragment {
             void onItemClick(StoredFile file);
         }
 
+        interface OnItemDeleteListener {
+            void onItemDelete(StoredFile file);
+        }
+
         private final List<StoredFile> list = new ArrayList<>();
         private final OnItemClickListener listener;
+        private final OnItemDeleteListener deleteListener;
 
-        RecentFilesAdapter(OnItemClickListener listener) {
+        RecentFilesAdapter(OnItemClickListener listener, OnItemDeleteListener deleteListener) {
             this.listener = listener;
+            this.deleteListener = deleteListener;
         }
 
         void setFiles(List<StoredFile> files) {
@@ -367,14 +410,28 @@ public class HomeFragment extends Fragment {
             Context context = holder.itemView.getContext();
 
             holder.tvFileName.setText(file.getOriginalFilename());
-            holder.tvFileSize.setText(Formatter.formatFileSize(context, file.getFileSize()));
+            String typeLabel;
+            switch (file.getCategory()) {
+                case IMAGES: typeLabel = "Image"; break;
+                case VIDEOS: typeLabel = "Video"; break;
+                case PDFS: typeLabel = "PDF"; break;
+                default: typeLabel = "File"; break;
+            }
+            holder.tvFileSize.setText(typeLabel + " • " + Formatter.formatFileSize(context, file.getFileSize()));
 
             if (file.isEncrypted()) {
-                holder.tvEncryptionBadge.setText(R.string.encrypted_badge_label);
-                holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_encrypted));
+                int encColor = ThemeManager.getEncryptedColor(context);
+                holder.tvEncryptionBadge.setText("AES-256-GCM");
+                holder.tvEncryptionBadge.setTextColor(encColor);
+                holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
+                holder.tvEncryptionBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
+                holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
+                holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             } else {
-                holder.tvEncryptionBadge.setText(R.string.unencrypted_badge_label);
+                holder.tvEncryptionBadge.setText("Unencrypted");
                 holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
+                holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+                holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             }
 
             switch (file.getCategory()) {
@@ -392,9 +449,20 @@ public class HomeFragment extends Fragment {
                     break;
             }
 
+            if (file.hasPreview() && file.getId() != null && holder.ivThumbnail != null) {
+                ThumbnailLoader.loadThumbnail(context, file.getId(), holder.ivThumbnail, holder.ivFileIcon,
+                        file.getCategory() == StoredFile.FileCategory.VIDEOS ? holder.ivVideoBadge : null);
+            } else {
+                if (holder.ivThumbnail != null) holder.ivThumbnail.setVisibility(View.GONE);
+                if (holder.ivVideoBadge != null) holder.ivVideoBadge.setVisibility(View.GONE);
+                holder.ivFileIcon.setVisibility(View.VISIBLE);
+            }
+
             holder.itemView.setOnClickListener(v -> {
                 FileDetailsBottomSheet.show(context, file, f -> {
                     if (listener != null) listener.onItemClick(f);
+                }, f -> {
+                    if (deleteListener != null) deleteListener.onItemDelete(f);
                 });
             });
         }
@@ -406,6 +474,8 @@ public class HomeFragment extends Fragment {
 
         static class ViewHolder extends RecyclerView.ViewHolder {
             final ImageView ivFileIcon;
+            final ImageView ivThumbnail;
+            final ImageView ivVideoBadge;
             final TextView tvFileName;
             final TextView tvFileSize;
             final TextView tvEncryptionBadge;
@@ -413,6 +483,8 @@ public class HomeFragment extends Fragment {
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
                 ivFileIcon = itemView.findViewById(R.id.ivFileIcon);
+                ivThumbnail = itemView.findViewById(R.id.ivThumbnail);
+                ivVideoBadge = itemView.findViewById(R.id.ivVideoBadge);
                 tvFileName = itemView.findViewById(R.id.tvFileName);
                 tvFileSize = itemView.findViewById(R.id.tvFileSize);
                 tvEncryptionBadge = itemView.findViewById(R.id.tvEncryptionBadge);

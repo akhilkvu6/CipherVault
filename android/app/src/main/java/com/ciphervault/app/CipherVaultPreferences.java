@@ -6,41 +6,18 @@ import android.content.SharedPreferences;
 public class CipherVaultPreferences {
 
     private static final String PREF_NAME = "ciphervault_prefs";
-    private static final String KEY_THEME = "theme";
     private static final String KEY_APPEARANCE = "appearance";
-
-    public enum ThemeOption {
-        OBSIDIAN,
-        RUBY,
-        COPPER,
-        AMETHYST,
-        ROSE,
-        SAPPHIRE,
-        MONOCHROME
-    }
+    private static final String KEY_SORT_ORDER = "files_sort_order";
 
     public enum AppearanceMode {
+        SYSTEM,
         LIGHT,
         DARK,
-        SYSTEM
+        AMOLED
     }
 
     private static SharedPreferences getPrefs(Context context) {
         return context.getApplicationContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-    }
-
-    public static void saveTheme(Context context, ThemeOption theme) {
-        if (theme == null) return;
-        getPrefs(context).edit().putString(KEY_THEME, theme.name()).apply();
-    }
-
-    public static ThemeOption getTheme(Context context) {
-        String name = getPrefs(context).getString(KEY_THEME, ThemeOption.OBSIDIAN.name());
-        try {
-            return ThemeOption.valueOf(name);
-        } catch (Exception e) {
-            return ThemeOption.OBSIDIAN;
-        }
     }
 
     public static void saveAppearance(Context context, AppearanceMode mode) {
@@ -54,6 +31,20 @@ public class CipherVaultPreferences {
             return AppearanceMode.valueOf(name);
         } catch (Exception e) {
             return AppearanceMode.DARK;
+        }
+    }
+
+    public static void saveFileSortOption(Context context, FileSortOption sortOption) {
+        if (sortOption == null) return;
+        getPrefs(context).edit().putString(KEY_SORT_ORDER, sortOption.name()).apply();
+    }
+
+    public static FileSortOption getFileSortOption(Context context) {
+        String name = getPrefs(context).getString(KEY_SORT_ORDER, FileSortOption.NAME_ASC.name());
+        try {
+            return FileSortOption.valueOf(name);
+        } catch (Exception e) {
+            return FileSortOption.NAME_ASC;
         }
     }
 }

@@ -61,11 +61,22 @@ public class PillNavHelper {
 
         LinearLayout[] tabs = {tabHome, tabFiles, tabUpload, tabSettings};
         if (index >= 0 && index < tabs.length) {
-            ViewGroup root = (ViewGroup) tabs[index].getRootView();
-            AutoTransition transition = new AutoTransition();
-            transition.setDuration(220L);
-            TransitionManager.beginDelayedTransition(root, transition);
+            tabs[index].performClick();
+        }
+    }
 
+    public static void setTabVisualOnly(Activity activity, int index) {
+        LinearLayout tabHome = activity.findViewById(R.id.tabHome);
+        LinearLayout tabFiles = activity.findViewById(R.id.tabFiles);
+        LinearLayout tabUpload = activity.findViewById(R.id.tabUpload);
+        LinearLayout tabSettings = activity.findViewById(R.id.tabSettings);
+
+        if (tabHome == null || tabFiles == null || tabUpload == null || tabSettings == null) {
+            return;
+        }
+
+        LinearLayout[] tabs = {tabHome, tabFiles, tabUpload, tabSettings};
+        if (index >= 0 && index < tabs.length) {
             updateActiveTab(activity, tabs, index);
         }
     }
@@ -88,6 +99,7 @@ public class PillNavHelper {
                     icon.setImageTintList(ColorStateList.valueOf(activeIconColor));
                 }
                 if (text != null) {
+                    text.setTextColor(activeIconColor);
                     text.setVisibility(View.VISIBLE);
                 }
             } else {
