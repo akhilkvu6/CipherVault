@@ -215,7 +215,7 @@ public class ConnectionActivity extends BaseActivity {
         signUpButton.setEnabled(true);
 
         tvStatusTitle.setText("✓ Backend Connected");
-        tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.vault_plain));
+        tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.status_connected));
 
         tvStatusServer.setText("Server: " + successfulUrl);
         tvStatusServer.setVisibility(View.VISIBLE);
@@ -233,7 +233,7 @@ public class ConnectionActivity extends BaseActivity {
         signUpButton.setEnabled(false);
 
         tvStatusTitle.setText("✕ Backend Not Connected");
-        tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.vault_encrypted));
+        tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.status_error));
 
         tvStatusServer.setText("Server: " + failedUrl);
         tvStatusServer.setVisibility(View.VISIBLE);

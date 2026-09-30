@@ -23,11 +23,21 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
         void onDownloadClick(StoredFile file);
     }
 
+    public interface OnDeleteClickListener {
+        void onDeleteClick(StoredFile file);
+    }
+
     private final List<StoredFile> files = new ArrayList<>();
     private final OnDownloadClickListener downloadListener;
+    private final OnDeleteClickListener deleteListener;
 
     public FilesAdapter(OnDownloadClickListener downloadListener) {
+        this(downloadListener, null);
+    }
+
+    public FilesAdapter(OnDownloadClickListener downloadListener, OnDeleteClickListener deleteListener) {
         this.downloadListener = downloadListener;
+        this.deleteListener = deleteListener;
     }
 
     public void setFiles(List<StoredFile> newFiles) {
@@ -52,15 +62,26 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
 
         holder.tvFileName.setText(file.getOriginalFilename());
 
-        long size = file.getFileSize();
-        holder.tvFileSize.setText(Formatter.formatFileSize(context, size));
+        String typeLabel;
+        switch (file.getCategory()) {
+            case IMAGES: typeLabel = "Image"; break;
+            case VIDEOS: typeLabel = "Video"; break;
+            case PDFS: typeLabel = "PDF"; break;
+            default: typeLabel = "File"; break;
+        }
+        holder.tvFileSize.setText(typeLabel + " • " + Formatter.formatFileSize(context, file.getFileSize()));
 
         if (file.isEncrypted()) {
-            holder.tvEncryptionBadge.setText(R.string.encrypted_badge_label);
-            holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_encrypted));
+            int encColor = ThemeManager.getEncryptedColor(context);
+            holder.tvEncryptionBadge.setText("AES-256-GCM");
+            holder.tvEncryptionBadge.setTextColor(encColor);
+            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
+            holder.tvEncryptionBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
+            holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
         } else {
-            holder.tvEncryptionBadge.setText(R.string.unencrypted_badge_label);
+            holder.tvEncryptionBadge.setText("Unencrypted");
             holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
+            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
 
         switch (file.getCategory()) {
@@ -78,10 +99,25 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
                 break;
         }
 
+        if (file.hasPreview() && file.getId() != null) {
+            ThumbnailLoader.loadThumbnail(context, file.getId(), holder.ivThumbnail, holder.ivFileIcon,
+                    file.getCategory() == StoredFile.FileCategory.VIDEOS ? holder.ivVideoBadge : null);
+        } else {
+            holder.ivThumbnail.setVisibility(View.GONE);
+            holder.ivFileIcon.setVisibility(View.VISIBLE);
+            if (holder.ivVideoBadge != null) {
+                holder.ivVideoBadge.setVisibility(View.GONE);
+            }
+        }
+
         holder.itemView.setOnClickListener(v -> {
             FileDetailsBottomSheet.show(context, file, f -> {
                 if (downloadListener != null) {
                     downloadListener.onDownloadClick(f);
+                }
+            }, f -> {
+                if (deleteListener != null) {
+                    deleteListener.onDeleteClick(f);
                 }
             });
         });
@@ -91,6 +127,14 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
                 downloadListener.onDownloadClick(file);
             }
         });
+
+        if (holder.btnDelete != null) {
+            holder.btnDelete.setOnClickListener(v -> {
+                if (deleteListener != null) {
+                    deleteListener.onDeleteClick(file);
+                }
+            });
+        }
     }
 
     @Override
@@ -100,18 +144,24 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
 
     static class FileViewHolder extends RecyclerView.ViewHolder {
         final ImageView ivFileIcon;
+        final ImageView ivThumbnail;
+        final ImageView ivVideoBadge;
         final TextView tvFileName;
         final TextView tvFileSize;
         final TextView tvEncryptionBadge;
         final MaterialButton btnDownload;
+        final MaterialButton btnDelete;
 
         FileViewHolder(@NonNull View itemView) {
             super(itemView);
             ivFileIcon = itemView.findViewById(R.id.ivFileIcon);
+            ivThumbnail = itemView.findViewById(R.id.ivThumbnail);
+            ivVideoBadge = itemView.findViewById(R.id.ivVideoBadge);
             tvFileName = itemView.findViewById(R.id.tvFileName);
             tvFileSize = itemView.findViewById(R.id.tvFileSize);
             tvEncryptionBadge = itemView.findViewById(R.id.tvEncryptionBadge);
             btnDownload = itemView.findViewById(R.id.btnDownload);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 }

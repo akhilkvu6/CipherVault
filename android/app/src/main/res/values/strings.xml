@@ -89,6 +89,14 @@
     <string name="download_option_raw">Raw Encrypted (.encrypted)</string>
     <string name="download_success">Saved to Downloads!</string>
     <string name="dot_separator">" &#8226; "</string>
+    <string name="btn_sort">Sort</string>
+    <string name="sort_dialog_title">Sort by</string>
+    <string name="sort_name_asc">Name &#8212; A to Z</string>
+    <string name="sort_name_desc">Name &#8212; Z to A</string>
+    <string name="sort_date_oldest">Date &#8212; Oldest to Newest</string>
+    <string name="sort_date_newest">Date &#8212; Newest to Oldest</string>
+    <string name="sort_size_smallest">Size &#8212; Smallest to Largest</string>
+    <string name="sort_size_largest">Size &#8212; Largest to Smallest</string>
 
     <!-- File Details BottomSheet -->
     <string name="label_full_sha256">Full SHA-256 Checksum</string>
@@ -146,19 +154,14 @@
     <string name="label_quota_limit">Quota Limit</string>
     <string name="val_1gb">1.0 GB</string>
     <string name="label_usage_percent">Usage Percentage</string>
-    <string name="appearance_title">Appearance &amp; Theme</string>
-    <string name="label_appearance_mode">Appearance Mode</string>
-    <string name="label_theme_palette">Theme Palette</string>
-    <string name="palette_obsidian">Obsidian (Gold)</string>
-    <string name="palette_ruby">Ruby</string>
-    <string name="palette_copper">Copper</string>
-    <string name="palette_amethyst">Amethyst</string>
-    <string name="palette_rose">Rose</string>
-    <string name="palette_sapphire">Sapphire (Blue)</string>
-    <string name="palette_monochrome">Monochrome</string>
+    <string name="appearance_title">Appearance</string>
+    <string name="label_appearance_mode">Theme Mode</string>
     <string name="theme_system">System Default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="theme_amoled">AMOLED</string>
+    <string name="storage_details_title">Vault Storage</string>
+    <string name="storage_by_type">STORAGE BY TYPE</string>
     <string name="sign_out_dialog_title">Sign Out</string>
     <string name="sign_out_dialog_msg">Are you sure you want to sign out of your CipherVault account?</string>
     <string name="about_title">About CipherVault</string>
@@ -166,4 +169,11 @@
     <string name="about_desc">Private cloud storage with AES-256-GCM encrypted storage.</string>
     <string name="about_tech">Technologies: Android &#8226; Spring Boot &#8226; MySQL</string>
     <string name="spec_sha256_integrity">Integrity: SHA-256 Checksum</string>
+
+    <!-- File Deletion -->
+    <string name="btn_delete">Delete File</string>
+    <string name="delete_file_dialog_title">Delete File</string>
+    <string name="delete_file_dialog_msg">Are you sure you want to permanently delete \"%s\" from your vault? This cannot be undone.</string>
+    <string name="delete_file_success">File deleted successfully</string>
+    <string name="delete_file_failed">Failed to delete file</string>
 </resources>

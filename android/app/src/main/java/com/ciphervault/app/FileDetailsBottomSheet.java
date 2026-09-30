@@ -1,5 +1,7 @@
 package com.ciphervault.app;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
@@ -7,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -22,19 +25,29 @@ public class FileDetailsBottomSheet {
         void onDownloadRequested(StoredFile file);
     }
 
+    public interface OnDeleteRequestedListener {
+        void onDeleteRequested(StoredFile file);
+    }
+
     public static void show(@NonNull Context context, @NonNull StoredFile file, OnDownloadRequestedListener downloadListener) {
+        show(context, file, downloadListener, null);
+    }
+
+    public static void show(@NonNull Context context, @NonNull StoredFile file, OnDownloadRequestedListener downloadListener, OnDeleteRequestedListener deleteListener) {
         BottomSheetDialog dialog = new BottomSheetDialog(context);
         View view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_file_details, null);
 
         ImageView ivBottomSheetIcon = view.findViewById(R.id.ivBottomSheetIcon);
+        ImageView ivBottomSheetThumbnail = view.findViewById(R.id.ivBottomSheetThumbnail);
+        ImageView ivBottomSheetVideoBadge = view.findViewById(R.id.ivBottomSheetVideoBadge);
         TextView tvBottomSheetFileName = view.findViewById(R.id.tvBottomSheetFileName);
         TextView tvBottomSheetBadge = view.findViewById(R.id.tvBottomSheetBadge);
         TextView tvBottomSheetHash = view.findViewById(R.id.tvBottomSheetHash);
-        TextView tvBottomSheetTimestamp = view.findViewById(R.id.tvBottomSheetTimestamp);
         TextView tvBottomSheetExactSize = view.findViewById(R.id.tvBottomSheetExactSize);
         TextView tvBottomSheetAesSpec = view.findViewById(R.id.tvBottomSheetAesSpec);
         TextView tvBottomSheetMime = view.findViewById(R.id.tvBottomSheetMime);
         Button btnBottomSheetDownload = view.findViewById(R.id.btnBottomSheetDownload);
+        Button btnBottomSheetDelete = view.findViewById(R.id.btnBottomSheetDelete);
         Button btnBottomSheetClose = view.findViewById(R.id.btnBottomSheetClose);
 
         if (ivBottomSheetIcon != null) {
@@ -54,29 +67,50 @@ public class FileDetailsBottomSheet {
             }
         }
 
+        if (file.hasPreview() && file.getId() != null && ivBottomSheetThumbnail != null) {
+            ThumbnailLoader.loadThumbnail(context, file.getId(), ivBottomSheetThumbnail, ivBottomSheetIcon,
+                    file.getCategory() == StoredFile.FileCategory.VIDEOS ? ivBottomSheetVideoBadge : null);
+        } else {
+            if (ivBottomSheetThumbnail != null) ivBottomSheetThumbnail.setVisibility(View.GONE);
+            if (ivBottomSheetVideoBadge != null) ivBottomSheetVideoBadge.setVisibility(View.GONE);
+            if (ivBottomSheetIcon != null) ivBottomSheetIcon.setVisibility(View.VISIBLE);
+        }
+
         if (tvBottomSheetFileName != null) {
             tvBottomSheetFileName.setText(file.getOriginalFilename());
         }
 
         if (tvBottomSheetBadge != null) {
             if (file.isEncrypted()) {
-                tvBottomSheetBadge.setText(R.string.encrypted_badge_label);
-                tvBottomSheetBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_encrypted));
+                int encColor = ThemeManager.getEncryptedColor(context);
+                tvBottomSheetBadge.setText("AES-256-GCM");
+                tvBottomSheetBadge.setTextColor(encColor);
+                tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
+                tvBottomSheetBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
+                tvBottomSheetBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
             } else {
                 tvBottomSheetBadge.setText(R.string.unencrypted_badge_label);
                 tvBottomSheetBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
+                tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             }
         }
 
         if (tvBottomSheetHash != null) {
             String hash = file.getSha256Hash();
-            tvBottomSheetHash.setText(hash != null && !hash.trim().isEmpty() ? hash : "Not available");
+            final String validHash = (hash != null && !hash.trim().isEmpty()) ? hash : "Not available";
+            tvBottomSheetHash.setText(validHash);
+            tvBottomSheetHash.setOnClickListener(v -> {
+                if (hash != null && !hash.trim().isEmpty()) {
+                    ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (clipboard != null) {
+                        ClipData clip = ClipData.newPlainText("SHA-256 Checksum", hash);
+                        clipboard.setPrimaryClip(clip);
+                        Toast.makeText(context, "SHA-256 copied to clipboard", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
         }
 
-        if (tvBottomSheetTimestamp != null) {
-            String createdAt = file.getCreatedAt();
-            tvBottomSheetTimestamp.setText(createdAt != null && !createdAt.trim().isEmpty() ? createdAt : "Recently uploaded");
-        }
 
         if (tvBottomSheetExactSize != null) {
             long bytes = file.getFileSize();
@@ -88,7 +122,7 @@ public class FileDetailsBottomSheet {
         if (tvBottomSheetAesSpec != null) {
             if (file.isEncrypted()) {
                 tvBottomSheetAesSpec.setText("AES-256-GCM / 128-bit Auth Tag");
-                tvBottomSheetAesSpec.setTextColor(ContextCompat.getColor(context, R.color.vault_encrypted));
+                tvBottomSheetAesSpec.setTextColor(ThemeManager.getEncryptedColor(context));
             } else {
                 tvBottomSheetAesSpec.setText("None (Unencrypted)");
                 tvBottomSheetAesSpec.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
@@ -107,6 +141,18 @@ public class FileDetailsBottomSheet {
                     downloadListener.onDownloadRequested(file);
                 }
             });
+        }
+
+        if (btnBottomSheetDelete != null) {
+            if (deleteListener != null) {
+                btnBottomSheetDelete.setVisibility(View.VISIBLE);
+                btnBottomSheetDelete.setOnClickListener(v -> {
+                    dialog.dismiss();
+                    deleteListener.onDeleteRequested(file);
+                });
+            } else {
+                btnBottomSheetDelete.setVisibility(View.GONE);
+            }
         }
 
         if (btnBottomSheetClose != null) {

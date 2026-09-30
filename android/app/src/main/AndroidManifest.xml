@@ -41,6 +41,9 @@
             android:name=".MainActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".StorageDetailsActivity"
+            android:exported="false" />
     </application>
 
 </manifest>

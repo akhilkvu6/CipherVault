@@ -22,7 +22,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/upload_dialog_title"
-            android:textSize="20sp"
+            android:textSize="18sp"
+            android:fontFamily="sans-serif-medium"
             android:textStyle="bold"
             android:textColor="?attr/colorOnSurface" />
 
@@ -32,7 +33,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             tools:text="document.pdf"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:maxLines="1"
             android:ellipsize="middle" />
@@ -43,18 +44,20 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             tools:text="Uploading encrypted file..."
-            android:textSize="13sp"
+            android:textSize="12sp"
+            android:fontFamily="sans-serif-medium"
+            android:textStyle="bold"
             android:textColor="?attr/colorPrimary" />
 
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progressDialogIndicator"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="18dp"
             android:indeterminate="true"
             android:layoutDirection="ltr"
             app:trackCornerRadius="4dp"
-            app:trackThickness="8dp"
+            app:trackThickness="6dp"
             app:trackColor="?attr/colorSurfaceContainerHigh"
             app:indicatorColor="?attr/colorPrimary" />
 
@@ -63,7 +66,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:text="@string/status_please_wait"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textColor="?attr/colorOutline" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

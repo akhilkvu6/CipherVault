@@ -1,11 +1,9 @@
 package com.ciphervault.app;
 
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.provider.OpenableColumns;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -59,8 +57,8 @@ public class UploadFragment extends Fragment {
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
                 if (uri != null) {
                     selectedUri = uri;
-                    selectedFileName = resolveFileName(uri);
-                    selectedFileSize = resolveFileSize(uri);
+                    selectedFileName = FileUtils.getFileName(requireContext(), uri);
+                    selectedFileSize = FileUtils.getFileSize(requireContext(), uri);
 
                     tvSelectedFile.setText(selectedFileName);
                     if (selectedFileSize > 0) {
@@ -126,30 +124,14 @@ public class UploadFragment extends Fragment {
         new Thread(() -> {
             boolean isDuplicate = false;
             try {
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                byte[] buffer = new byte[8192];
-                int read;
-                try (InputStream is = requireContext().getContentResolver().openInputStream(uri)) {
-                    if (is != null) {
-                        while ((read = is.read(buffer)) != -1) {
-                            digest.update(buffer, 0, read);
+                String computedHash = FileUtils.calculateSha256(requireContext(), uri);
+
+                if (computedHash != null) {
+                    for (StoredFile existingFile : existingVaultFiles) {
+                        if (existingFile.getSha256Hash() != null && existingFile.getSha256Hash().equalsIgnoreCase(computedHash)) {
+                            isDuplicate = true;
+                            break;
                         }
-                    }
-                }
-
-                byte[] hashBytes = digest.digest();
-                StringBuilder hexString = new StringBuilder();
-                for (byte b : hashBytes) {
-                    String hex = Integer.toHexString(0xff & b);
-                    if (hex.length() == 1) hexString.append('0');
-                    hexString.append(hex);
-                }
-                String computedHash = hexString.toString();
-
-                for (StoredFile existingFile : existingVaultFiles) {
-                    if (existingFile.getSha256Hash() != null && existingFile.getSha256Hash().equalsIgnoreCase(computedHash)) {
-                        isDuplicate = true;
-                        break;
                     }
                 }
             } catch (Exception ignored) {}
@@ -185,7 +167,7 @@ public class UploadFragment extends Fragment {
         final long startTime = System.currentTimeMillis();
 
         try {
-            String filename = selectedFileName != null ? selectedFileName : resolveFileName(selectedUri);
+            String filename = selectedFileName != null ? selectedFileName : FileUtils.getFileName(requireContext(), selectedUri);
             String contentType = requireContext().getContentResolver().getType(selectedUri);
             if (contentType == null) contentType = "application/octet-stream";
 
@@ -223,7 +205,7 @@ public class UploadFragment extends Fragment {
                             showUploadSuccessDialog();
                             fetchExistingVaultFiles();
                         } else if (response.code() == 409) {
-                            showUploadFailedDialog("Duplicate File Detected: This exact file already exists in your vault.");
+                            showUploadFailedDialog("Duplicate file detected: An identical file already exists in your vault.");
                         } else {
                             showUploadFailedDialog("Upload failed (HTTP " + response.code() + ")");
                         }
@@ -337,35 +319,6 @@ public class UploadFragment extends Fragment {
         if (cardDuplicateWarning != null) {
             cardDuplicateWarning.setVisibility(View.GONE);
         }
-    }
-
-    private String resolveFileName(Uri uri) {
-        String name = "file.bin";
-        try (Cursor cursor = requireContext().getContentResolver().query(uri, null, null, null, null)) {
-            if (cursor != null && cursor.moveToFirst()) {
-                int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                if (index != -1) name = cursor.getString(index);
-            }
-        } catch (Exception ignored) {}
-        return name;
-    }
-
-    private long resolveFileSize(Uri uri) {
-        long size = 0L;
-        try (Cursor cursor = requireContext().getContentResolver().query(uri, null, null, null, null)) {
-            if (cursor != null && cursor.moveToFirst()) {
-                int index = cursor.getColumnIndex(OpenableColumns.SIZE);
-                if (index != -1 && !cursor.isNull(index)) {
-                    size = cursor.getLong(index);
-                }
-            }
-        } catch (Exception ignored) {}
-        if (size == 0L) {
-            try (InputStream is = requireContext().getContentResolver().openInputStream(uri)) {
-                if (is != null) size = is.available();
-            } catch (Exception ignored) {}
-        }
-        return size;
     }
 
     @Override

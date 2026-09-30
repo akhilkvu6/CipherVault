@@ -29,8 +29,15 @@ public class StoredFile {
     @SerializedName("createdAt")
     private String createdAt;
 
+    @SerializedName("hasPreview")
+    private boolean hasPreview;
+
     public Long getId() {
         return id;
+    }
+
+    public boolean hasPreview() {
+        return hasPreview;
     }
 
     public String getFilename() {

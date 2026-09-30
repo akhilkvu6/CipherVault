@@ -30,6 +30,7 @@ import retrofit2.Response;
 public class SettingsFragment extends Fragment {
 
     private TextView tvSettingsUsername;
+    private TextView tvSettingsEmail;
     private TextView tvSettingsInitials;
     private TextView tvSettingsUsedStorage;
     private LinearProgressIndicator progressSettingsQuota;
@@ -38,15 +39,7 @@ public class SettingsFragment extends Fragment {
     private Chip chipModeDark;
     private Chip chipModeLight;
     private Chip chipModeSystem;
-
-    private ChipGroup chipGroupPalette;
-    private Chip chipPaletteObsidian;
-    private Chip chipPaletteRuby;
-    private Chip chipPaletteCopper;
-    private Chip chipPaletteAmethyst;
-    private Chip chipPaletteRose;
-    private Chip chipPaletteSapphire;
-    private Chip chipPaletteMonochrome;
+    private Chip chipModeAmoled;
 
     private TextView tvSettingsServerUrl;
     private TextView tvSettingsHealthStatus;
@@ -63,6 +56,7 @@ public class SettingsFragment extends Fragment {
         apiService = ApiClient.getApiService(requireContext());
 
         tvSettingsUsername = view.findViewById(R.id.tvSettingsUsername);
+        tvSettingsEmail = view.findViewById(R.id.tvSettingsEmail);
         tvSettingsInitials = view.findViewById(R.id.tvSettingsInitials);
         tvSettingsUsedStorage = view.findViewById(R.id.tvSettingsUsedStorage);
         progressSettingsQuota = view.findViewById(R.id.progressSettingsQuota);
@@ -71,15 +65,7 @@ public class SettingsFragment extends Fragment {
         chipModeDark = view.findViewById(R.id.chipModeDark);
         chipModeLight = view.findViewById(R.id.chipModeLight);
         chipModeSystem = view.findViewById(R.id.chipModeSystem);
-
-        chipGroupPalette = view.findViewById(R.id.chipGroupPalette);
-        chipPaletteObsidian = view.findViewById(R.id.chipPaletteObsidian);
-        chipPaletteRuby = view.findViewById(R.id.chipPaletteRuby);
-        chipPaletteCopper = view.findViewById(R.id.chipPaletteCopper);
-        chipPaletteAmethyst = view.findViewById(R.id.chipPaletteAmethyst);
-        chipPaletteRose = view.findViewById(R.id.chipPaletteRose);
-        chipPaletteSapphire = view.findViewById(R.id.chipPaletteSapphire);
-        chipPaletteMonochrome = view.findViewById(R.id.chipPaletteMonochrome);
+        chipModeAmoled = view.findViewById(R.id.chipModeAmoled);
 
         tvSettingsServerUrl = view.findViewById(R.id.tvSettingsServerUrl);
         tvSettingsHealthStatus = view.findViewById(R.id.tvSettingsHealthStatus);
@@ -97,13 +83,22 @@ public class SettingsFragment extends Fragment {
             }
         }
 
+        if (tvSettingsEmail != null) {
+            String email = sessionManager.getEmail();
+            tvSettingsEmail.setText(email != null && !email.trim().isEmpty() ? email : "AES-256-GCM Encrypted Storage");
+        }
+
+        View cardAccountDetails = view.findViewById(R.id.cardAccountDetails);
+        if (cardAccountDetails != null) {
+            cardAccountDetails.setOnClickListener(v -> AccountBottomSheet.show(requireContext()));
+        }
+
         if (tvSettingsServerUrl != null) {
             String baseUrl = ApiClient.getBaseUrl(requireContext());
             tvSettingsServerUrl.setText("Host: " + baseUrl);
         }
 
         setupAppearanceControls();
-        setupPaletteControls();
 
         if (btnSettingsTestConnection != null) {
             btnSettingsTestConnection.setOnClickListener(v -> testConnection());
@@ -168,6 +163,8 @@ public class SettingsFragment extends Fragment {
             chipModeLight.setChecked(true);
         } else if (current == CipherVaultPreferences.AppearanceMode.DARK && chipModeDark != null) {
             chipModeDark.setChecked(true);
+        } else if (current == CipherVaultPreferences.AppearanceMode.AMOLED && chipModeAmoled != null) {
+            chipModeAmoled.setChecked(true);
         } else if (chipModeSystem != null) {
             chipModeSystem.setChecked(true);
         }
@@ -182,6 +179,8 @@ public class SettingsFragment extends Fragment {
                 selectedMode = CipherVaultPreferences.AppearanceMode.LIGHT;
             } else if (checkedId == R.id.chipModeDark) {
                 selectedMode = CipherVaultPreferences.AppearanceMode.DARK;
+            } else if (checkedId == R.id.chipModeAmoled) {
+                selectedMode = CipherVaultPreferences.AppearanceMode.AMOLED;
             } else {
                 selectedMode = CipherVaultPreferences.AppearanceMode.SYSTEM;
             }
@@ -189,65 +188,6 @@ public class SettingsFragment extends Fragment {
             CipherVaultPreferences.saveAppearance(requireContext(), selectedMode);
             ThemeManager.applyAppearanceMode(selectedMode);
             if (getActivity() != null) {
-                getActivity().recreate();
-            }
-        });
-    }
-
-    private void setupPaletteControls() {
-        if (chipGroupPalette == null) return;
-
-        CipherVaultPreferences.ThemeOption current = CipherVaultPreferences.getTheme(requireContext());
-        switch (current) {
-            case RUBY:
-                if (chipPaletteRuby != null) chipPaletteRuby.setChecked(true);
-                break;
-            case COPPER:
-                if (chipPaletteCopper != null) chipPaletteCopper.setChecked(true);
-                break;
-            case AMETHYST:
-                if (chipPaletteAmethyst != null) chipPaletteAmethyst.setChecked(true);
-                break;
-            case ROSE:
-                if (chipPaletteRose != null) chipPaletteRose.setChecked(true);
-                break;
-            case SAPPHIRE:
-                if (chipPaletteSapphire != null) chipPaletteSapphire.setChecked(true);
-                break;
-            case MONOCHROME:
-                if (chipPaletteMonochrome != null) chipPaletteMonochrome.setChecked(true);
-                break;
-            case OBSIDIAN:
-            default:
-                if (chipPaletteObsidian != null) chipPaletteObsidian.setChecked(true);
-                break;
-        }
-
-        chipGroupPalette.setOnCheckedStateChangeListener((group, checkedIds) -> {
-            if (checkedIds.isEmpty()) return;
-
-            int checkedId = checkedIds.get(0);
-            CipherVaultPreferences.ThemeOption selectedTheme;
-
-            if (checkedId == R.id.chipPaletteRuby) {
-                selectedTheme = CipherVaultPreferences.ThemeOption.RUBY;
-            } else if (checkedId == R.id.chipPaletteCopper) {
-                selectedTheme = CipherVaultPreferences.ThemeOption.COPPER;
-            } else if (checkedId == R.id.chipPaletteAmethyst) {
-                selectedTheme = CipherVaultPreferences.ThemeOption.AMETHYST;
-            } else if (checkedId == R.id.chipPaletteRose) {
-                selectedTheme = CipherVaultPreferences.ThemeOption.ROSE;
-            } else if (checkedId == R.id.chipPaletteSapphire) {
-                selectedTheme = CipherVaultPreferences.ThemeOption.SAPPHIRE;
-            } else if (checkedId == R.id.chipPaletteMonochrome) {
-                selectedTheme = CipherVaultPreferences.ThemeOption.MONOCHROME;
-            } else {
-                selectedTheme = CipherVaultPreferences.ThemeOption.OBSIDIAN;
-            }
-
-            CipherVaultPreferences.saveTheme(requireContext(), selectedTheme);
-            if (getActivity() != null) {
-                ThemeManager.applyTheme(getActivity());
                 getActivity().recreate();
             }
         });

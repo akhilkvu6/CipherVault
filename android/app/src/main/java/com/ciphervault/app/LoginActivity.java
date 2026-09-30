@@ -114,7 +114,7 @@ public class LoginActivity extends BaseActivity {
                                 return;
                             }
 
-                            sessionManager.saveLogin(token, username);
+                            sessionManager.saveLogin(token, username, email);
                             Toast.makeText(LoginActivity.this, "Welcome back, " + username, Toast.LENGTH_SHORT).show();
 
                             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
