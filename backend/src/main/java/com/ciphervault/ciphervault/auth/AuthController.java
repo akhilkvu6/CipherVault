@@ -51,7 +51,7 @@ public class AuthController {
             );
 
             return ResponseEntity.badRequest()
-                    .body("Username is required");
+                    .body(new RegisterResponse("Username is required", null, null));
         }
 
         // Validate email
@@ -63,7 +63,7 @@ public class AuthController {
             );
 
             return ResponseEntity.badRequest()
-                    .body("Email is required");
+                    .body(new RegisterResponse("Email is required", null, null));
         }
 
         // Validate password
@@ -75,7 +75,7 @@ public class AuthController {
             );
 
             return ResponseEntity.badRequest()
-                    .body("Password is required");
+                    .body(new RegisterResponse("Password is required", null, null));
         }
 
         // Check duplicate username
@@ -88,7 +88,7 @@ public class AuthController {
             );
 
             return ResponseEntity.badRequest()
-                    .body("Username already exists");
+                    .body(new RegisterResponse("Username already exists", null, null));
         }
 
         // Check duplicate email
@@ -101,7 +101,7 @@ public class AuthController {
             );
 
             return ResponseEntity.badRequest()
-                    .body("Email already exists");
+                    .body(new RegisterResponse("Email already exists", null, null));
         }
 
         // Create new user
@@ -132,7 +132,11 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(
-                "User registered successfully"
+                new RegisterResponse(
+                        "User registered successfully",
+                        user.getUsername(),
+                        user.getEmail()
+                )
         );
     }
 
@@ -231,7 +235,8 @@ public class AuthController {
         LoginResponse response = new LoginResponse(
                 true,
                 "Login successful",
-                token
+                token,
+                user.getUsername()
         );
 
         ConsoleLogger.success(
@@ -278,6 +283,39 @@ public class AuthController {
     }
 
     // =========================
+    // REGISTER RESPONSE
+    // =========================
+
+    public static class RegisterResponse {
+
+        private String message;
+        private String username;
+        private String email;
+
+        public RegisterResponse(
+                String message,
+                String username,
+                String email) {
+
+            this.message = message;
+            this.username = username;
+            this.email = email;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+    }
+
+    // =========================
     // LOGIN REQUEST
     // =========================
 
@@ -312,15 +350,18 @@ public class AuthController {
         private boolean success;
         private String message;
         private String token;
+        private String username;
 
         public LoginResponse(
                 boolean success,
                 String message,
-                String token) {
+                String token,
+                String username) {
 
             this.success = success;
             this.message = message;
             this.token = token;
+            this.username = username;
         }
 
         public boolean isSuccess() {
@@ -333,6 +374,10 @@ public class AuthController {
 
         public String getToken() {
             return token;
+        }
+
+        public String getUsername() {
+            return username;
         }
     }
 }
