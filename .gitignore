@@ -1,0 +1,23 @@
+# Environment and secrets
+.env
+.env.local
+.env.*
+!.env.example
+
+# IDE and Editor files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# Build artifacts
+backend/target/
+android/app/build/
+android/build/
+.gradle/
+
+# Temporary and log files
+*.log
+scratch/
+tunnel.log
