@@ -2,7 +2,7 @@ package com.ciphervault.app;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -13,7 +13,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -52,10 +51,6 @@ public class HomeFragment extends Fragment {
     private TextView tvSummaryStorage;
     private TextView tvSummaryEncryptedCount;
 
-    private TextView tvImagesUsage;
-    private TextView tvVideosUsage;
-    private TextView tvDocsUsage;
-    private TextView tvOtherUsage;
     private RecyclerView rvRecentUploads;
     private View layoutHomeEmpty;
 
@@ -79,10 +74,6 @@ public class HomeFragment extends Fragment {
         tvSummaryStorage = view.findViewById(R.id.tvSummaryStorage);
         tvSummaryEncryptedCount = view.findViewById(R.id.tvSummaryEncryptedCount);
 
-        tvImagesUsage = view.findViewById(R.id.tvImagesUsage);
-        tvVideosUsage = view.findViewById(R.id.tvVideosUsage);
-        tvDocsUsage = view.findViewById(R.id.tvDocsUsage);
-        tvOtherUsage = view.findViewById(R.id.tvOtherUsage);
         rvRecentUploads = view.findViewById(R.id.rvRecentUploads);
         layoutHomeEmpty = view.findViewById(R.id.layoutHomeEmpty);
 
@@ -93,18 +84,31 @@ public class HomeFragment extends Fragment {
 
         if (cardVaultStorage != null) {
             cardVaultStorage.setOnClickListener(v -> {
-                Intent intent = new Intent(requireActivity(), StorageDetailsActivity.class);
-                startActivity(intent);
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).navigateToTab(1);
+                }
             });
         }
         if (cardQuickUpload != null) {
-            cardQuickUpload.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 2));
+            cardQuickUpload.setOnClickListener(v -> {
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).navigateToTab(2);
+                }
+            });
         }
         if (cardViewFiles != null) {
-            cardViewFiles.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 1));
+            cardViewFiles.setOnClickListener(v -> {
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).navigateToTab(1);
+                }
+            });
         }
         if (btnUploadFirstFile != null) {
-            btnUploadFirstFile.setOnClickListener(v -> PillNavHelper.selectTab(requireActivity(), 2));
+            btnUploadFirstFile.setOnClickListener(v -> {
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).navigateToTab(2);
+                }
+            });
         }
 
         setupGreeting();
@@ -130,7 +134,24 @@ public class HomeFragment extends Fragment {
         rvRecentUploads.setAdapter(recentAdapter);
     }
 
-    private void loadDashboardData() {
+    public void loadDashboardData() {
+        // 1. Fetch server-authoritative profile metrics
+        apiService.getUserProfile().enqueue(new Callback<UserProfileResponse>() {
+            @Override
+            public void onResponse(@NonNull Call<UserProfileResponse> call, @NonNull Response<UserProfileResponse> response) {
+                if (!isAdded()) return;
+                if (response.isSuccessful() && response.body() != null) {
+                    updateProfileMetrics(response.body());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<UserProfileResponse> call, @NonNull Throwable t) {
+                // Ignore fallback to getFiles
+            }
+        });
+
+        // 2. Fetch recent files list
         apiService.getFiles().enqueue(new Callback<List<StoredFile>>() {
             @Override
             public void onResponse(@NonNull Call<List<StoredFile>> call, @NonNull Response<List<StoredFile>> response) {
@@ -138,7 +159,6 @@ public class HomeFragment extends Fragment {
 
                 if (response.isSuccessful() && response.body() != null) {
                     List<StoredFile> files = response.body();
-                    updateStorageStats(files);
                     updateRecentUploads(files);
                 }
             }
@@ -146,129 +166,77 @@ public class HomeFragment extends Fragment {
             @Override
             public void onFailure(@NonNull Call<List<StoredFile>> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
-                Toast.makeText(requireContext(), "Failed to load dashboard stats", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Failed to load dashboard files", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    private void updateStorageStats(List<StoredFile> files) {
-        long totalUsed = 0L;
-        long imagesUsed = 0L;
-        long videosUsed = 0L;
-        long docsUsed = 0L;
-        long otherUsed = 0L;
-        int encryptedCount = 0;
+    private void updateProfileMetrics(UserProfileResponse profile) {
+        if (profile == null || !isAdded()) return;
 
-        for (StoredFile file : files) {
-            long size = file.getFileSize();
-            totalUsed += size;
-
-            if (file.isEncrypted()) {
-                encryptedCount++;
-            }
-
-            switch (file.getCategory()) {
-                case IMAGES:
-                    imagesUsed += size;
-                    break;
-                case VIDEOS:
-                    videosUsed += size;
-                    break;
-                case PDFS:
-                    docsUsed += size;
-                    break;
-                default:
-                    otherUsed += size;
-                    break;
-            }
+        if (tvHomeUsername != null && !profile.getUsername().isEmpty()) {
+            tvHomeUsername.setText(profile.getUsername());
         }
+
+        long used = profile.getUsedStorage();
+        long limit = profile.getStorageLimit() > 0 ? profile.getStorageLimit() : TOTAL_QUOTA_BYTES;
 
         if (tvSummaryFileCount != null) {
-            tvSummaryFileCount.setText(String.valueOf(files.size()));
+            tvSummaryFileCount.setText(String.valueOf(profile.getFileCount()));
         }
         if (tvSummaryStorage != null) {
-            tvSummaryStorage.setText(Formatter.formatFileSize(requireContext(), totalUsed));
+            tvSummaryStorage.setText(FileUtils.formatStorageSize(requireContext(), used));
         }
         if (tvSummaryEncryptedCount != null) {
-            tvSummaryEncryptedCount.setText(String.valueOf(encryptedCount));
+            tvSummaryEncryptedCount.setText(String.valueOf(profile.getEncryptedCount()));
         }
 
         if (tvStorageUsage != null) {
-            String formattedUsed = Formatter.formatFileSize(requireContext(), totalUsed);
-            String text = formattedUsed + " used of 1.0 GB";
-            tvStorageUsage.setText(text);
+            String formattedUsed = FileUtils.formatStorageSize(requireContext(), used);
+            String formattedLimit = FileUtils.formatStorageSize(requireContext(), limit);
+            tvStorageUsage.setText(formattedUsed + " / " + formattedLimit);
         }
 
         if (progressStorage != null) {
-            int percentage = (int) Math.min(100, (totalUsed * 100) / TOTAL_QUOTA_BYTES);
-            progressStorage.setProgressCompat(percentage, true);
-        }
-
-        if (tvImagesUsage != null) {
-            tvImagesUsage.setText(Formatter.formatFileSize(requireContext(), imagesUsed));
-        }
-        if (tvVideosUsage != null) {
-            tvVideosUsage.setText(Formatter.formatFileSize(requireContext(), videosUsed));
-        }
-        if (tvDocsUsage != null) {
-            tvDocsUsage.setText(Formatter.formatFileSize(requireContext(), docsUsed));
-        }
-        if (tvOtherUsage != null) {
-            tvOtherUsage.setText(Formatter.formatFileSize(requireContext(), otherUsed));
+            int progressPercent = (int) Math.min(100, Math.max(0, (used * 100) / limit));
+            progressStorage.setProgress(progressPercent);
         }
     }
 
     private void updateRecentUploads(List<StoredFile> files) {
-        List<StoredFile> recent = new ArrayList<>();
-        int count = Math.min(3, files.size());
-        for (int i = 0; i < count; i++) {
-            recent.add(files.get(files.size() - 1 - i));
-        }
+        if (files == null || files.isEmpty()) {
+            if (layoutHomeEmpty != null) layoutHomeEmpty.setVisibility(View.VISIBLE);
+            if (rvRecentUploads != null) rvRecentUploads.setVisibility(View.GONE);
+            recentAdapter.setFiles(new ArrayList<>());
+        } else {
+            if (layoutHomeEmpty != null) layoutHomeEmpty.setVisibility(View.GONE);
+            if (rvRecentUploads != null) rvRecentUploads.setVisibility(View.VISIBLE);
 
-        recentAdapter.setFiles(recent);
-
-        if (layoutHomeEmpty != null) {
-            layoutHomeEmpty.setVisibility(recent.isEmpty() ? View.VISIBLE : View.GONE);
+            // Display top 5 most recent files
+            int count = Math.min(5, files.size());
+            List<StoredFile> recents = new ArrayList<>(files.subList(0, count));
+            recentAdapter.setFiles(recents);
         }
     }
 
     private void handleFileClick(StoredFile file) {
-        if (file == null || file.getId() == null) return;
-
-        if (file.isEncrypted()) {
-            View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_download_options, null);
-            CompoundButton cbDecrypt = dialogView.findViewById(R.id.cbDecrypt);
-
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Download File")
-                    .setView(dialogView)
-                    .setPositiveButton("Download", (dialog, which) -> {
-                        boolean decrypt = cbDecrypt == null || cbDecrypt.isChecked();
-                        executeDownload(file, decrypt);
-                    })
-                    .setNegativeButton("Cancel", null)
-                    .show();
-        } else {
-            executeDownload(file, false);
-        }
+        if (file == null || !isAdded()) return;
+        FileDetailsBottomSheet.show(requireContext(), file, this::handleDownloadClick, this::handleDeleteClick);
     }
 
-    private void executeDownload(StoredFile file, boolean decrypt) {
+    private void handleDownloadClick(StoredFile file) {
+        if (file == null || file.getId() == null || !isAdded()) return;
+
         String filename = file.getOriginalFilename();
-        if (file.isEncrypted() && !decrypt && !filename.toLowerCase().endsWith(".encrypted")) {
-            filename = filename + ".encrypted";
-        }
+        Toast.makeText(requireContext(), "Downloading " + filename + "...", Toast.LENGTH_SHORT).show();
 
-        final String finalFilename = filename;
-        Toast.makeText(requireContext(), "Downloading " + finalFilename + "...", Toast.LENGTH_SHORT).show();
-
-        apiService.downloadFile(file.getId(), decrypt).enqueue(new Callback<ResponseBody>() {
+        apiService.downloadFile(file.getId(), true).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                 if (!isAdded()) return;
 
                 if (response.isSuccessful() && response.body() != null) {
-                    saveFileToDisk(finalFilename, response.body());
+                    saveFileToDisk(filename, response.body());
                 } else {
                     Toast.makeText(requireContext(), "Download failed (HTTP " + response.code() + ")", Toast.LENGTH_SHORT).show();
                 }
@@ -283,57 +251,25 @@ public class HomeFragment extends Fragment {
     }
 
     private void saveFileToDisk(String filename, ResponseBody body) {
-        new Thread(() -> {
-            try {
-                File cipherVaultDir = new File(
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                        "CipherVault"
-                );
-                if (!cipherVaultDir.exists()) {
-                    cipherVaultDir.mkdirs();
-                }
-
-                File targetFile = new File(cipherVaultDir, filename);
-                OutputStream os = null;
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ContentValues values = new ContentValues();
-                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
-                    values.put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream");
-                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/CipherVault");
-                    Uri uri = requireContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                    if (uri != null) {
-                        os = requireContext().getContentResolver().openOutputStream(uri);
-                    }
-                }
-
-                if (os == null) {
-                    os = new FileOutputStream(targetFile);
-                }
-
-                try (InputStream is = body.byteStream();
-                     OutputStream targetOs = os) {
-                    byte[] buffer = new byte[8192];
-                    int read;
-                    while ((read = is.read(buffer)) != -1) {
-                        targetOs.write(buffer, 0, read);
-                    }
-                    targetOs.flush();
-                }
-
+        FileUtils.saveResponseBodyToDownloads(requireContext(), filename, body, new FileUtils.DownloadCallback() {
+            @Override
+            public void onSuccess(File savedFile) {
                 if (isAdded()) {
                     requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "Saved to Download/CipherVault: " + targetFile.getName(), Toast.LENGTH_LONG).show()
+                            Toast.makeText(requireContext(), "Saved to Download/CipherVault: " + savedFile.getName(), Toast.LENGTH_LONG).show()
                     );
                 }
-            } catch (Exception e) {
+            }
+
+            @Override
+            public void onError(Exception e) {
                 if (isAdded()) {
                     requireActivity().runOnUiThread(() ->
                             Toast.makeText(requireContext(), "Failed saving: " + e.getMessage(), Toast.LENGTH_SHORT).show()
                     );
                 }
             }
-        }).start();
+        });
     }
 
     private void handleDeleteClick(StoredFile file) {
@@ -369,7 +305,7 @@ public class HomeFragment extends Fragment {
                 .show();
     }
 
-    // Dedicated Adapter for Recent Uploads (NO Download button)
+    // Dedicated Adapter for Recent Uploads
     private static class RecentFilesAdapter extends RecyclerView.Adapter<RecentFilesAdapter.ViewHolder> {
 
         interface OnItemClickListener {
@@ -417,14 +353,14 @@ public class HomeFragment extends Fragment {
                 case PDFS: typeLabel = "PDF"; break;
                 default: typeLabel = "File"; break;
             }
-            holder.tvFileSize.setText(typeLabel + " • " + Formatter.formatFileSize(context, file.getFileSize()));
+            holder.tvFileSize.setText(typeLabel + " • " + FileUtils.formatStorageSize(context, file.getFileSize()));
 
             if (file.isEncrypted()) {
                 int encColor = ThemeManager.getEncryptedColor(context);
                 holder.tvEncryptionBadge.setText("AES-256-GCM");
                 holder.tvEncryptionBadge.setTextColor(encColor);
                 holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
-                holder.tvEncryptionBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
+                holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(encColor));
                 holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
                 holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             } else {
@@ -449,21 +385,18 @@ public class HomeFragment extends Fragment {
                     break;
             }
 
-            if (file.hasPreview() && file.getId() != null && holder.ivThumbnail != null) {
+            if (file.hasPreview() && file.getId() != null) {
                 ThumbnailLoader.loadThumbnail(context, file.getId(), holder.ivThumbnail, holder.ivFileIcon,
                         file.getCategory() == StoredFile.FileCategory.VIDEOS ? holder.ivVideoBadge : null);
             } else {
-                if (holder.ivThumbnail != null) holder.ivThumbnail.setVisibility(View.GONE);
-                if (holder.ivVideoBadge != null) holder.ivVideoBadge.setVisibility(View.GONE);
+                holder.ivThumbnail.setImageDrawable(null);
+                holder.ivThumbnail.setVisibility(View.GONE);
                 holder.ivFileIcon.setVisibility(View.VISIBLE);
+                holder.ivVideoBadge.setVisibility(View.GONE);
             }
 
             holder.itemView.setOnClickListener(v -> {
-                FileDetailsBottomSheet.show(context, file, f -> {
-                    if (listener != null) listener.onItemClick(f);
-                }, f -> {
-                    if (deleteListener != null) deleteListener.onItemDelete(f);
-                });
+                if (listener != null) listener.onItemClick(file);
             });
         }
 

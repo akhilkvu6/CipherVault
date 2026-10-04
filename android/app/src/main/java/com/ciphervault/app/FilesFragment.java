@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -15,18 +17,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
+import com.google.android.material.materialswitch.MaterialSwitch;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.File;
@@ -59,6 +66,12 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
     private ChipGroup chipGroupRecentSearches;
     private MaterialButton btnClearSearchHistory;
 
+    private View layoutSuggestionsHeader;
+    private View scrollSuggestions;
+    private ChipGroup chipGroupSuggestions;
+    private final Handler suggestionDebounceHandler = new Handler(Looper.getMainLooper());
+    private Runnable suggestionDebounceRunnable;
+
     private ChipGroup chipGroupCategory;
     private Chip chipAll;
     private Chip chipImages;
@@ -69,12 +82,32 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
     private RecyclerView rvFiles;
     private FilesAdapter adapter;
 
+    // Inline Download Panel
+    private MaterialCardView cardDownloadPanel;
+    private ImageView ivDownloadFileIcon;
+    private TextView tvDownloadFileName;
+    private TextView tvDownloadFileSize;
+    private TextView tvDownloadEncryptionBadge;
+    private MaterialCardView cardDownloadDecryptOption;
+    private MaterialSwitch switchDownloadDecrypt;
+    private View layoutDownloadProgress;
+    private TextView tvDownloadStatus;
+    private TextView tvDownloadPercent;
+    private LinearProgressIndicator progressDownload;
+    private View layoutDownloadActions;
+    private MaterialButton btnCancelDownload;
+    private MaterialButton btnStartDownload;
+    private StoredFile pendingDownloadFile;
+    private Call<ResponseBody> activeDownloadCall;
+
     private ApiService apiService;
     private SharedPreferences historyPrefs;
     private final List<StoredFile> allFiles = new ArrayList<>();
     private StoredFile.FileCategory currentCategory = StoredFile.FileCategory.ALL;
     private String currentSearchQuery = "";
     private FileSortOption currentSortOption = FileSortOption.NAME_ASC;
+    private final Handler searchDebounceHandler = new Handler(Looper.getMainLooper());
+    private Runnable searchDebounceRunnable;
 
     public static FilesFragment newInstance(String initialCategory) {
         FilesFragment fragment = new FilesFragment();
@@ -105,6 +138,10 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         chipGroupRecentSearches = view.findViewById(R.id.chipGroupRecentSearches);
         btnClearSearchHistory = view.findViewById(R.id.btnClearSearchHistory);
 
+        layoutSuggestionsHeader = view.findViewById(R.id.layoutSuggestionsHeader);
+        scrollSuggestions = view.findViewById(R.id.scrollSuggestions);
+        chipGroupSuggestions = view.findViewById(R.id.chipGroupSuggestions);
+
         chipGroupCategory = view.findViewById(R.id.chipGroupCategory);
         chipAll = view.findViewById(R.id.chipAll);
         chipImages = view.findViewById(R.id.chipImages);
@@ -123,6 +160,7 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         setupCategoryChips();
         applyInitialCategoryFromArgs();
         setupRecentHistory();
+        setupDownloadPanel(view);
 
         loadFiles();
         return view;
@@ -131,18 +169,27 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
     private void applyInitialCategoryFromArgs() {
         Bundle args = getArguments();
         if (args != null && args.containsKey("EXTRA_INITIAL_CATEGORY")) {
-            String cat = args.getString("EXTRA_INITIAL_CATEGORY");
-            if (cat != null) {
-                if ("IMAGES".equalsIgnoreCase(cat) && chipImages != null) {
-                    chipImages.setChecked(true);
-                } else if ("VIDEOS".equalsIgnoreCase(cat) && chipVideos != null) {
-                    chipVideos.setChecked(true);
-                } else if ("PDFS".equalsIgnoreCase(cat) && chipPdfs != null) {
-                    chipPdfs.setChecked(true);
-                } else if ("OTHER".equalsIgnoreCase(cat) && chipOther != null) {
-                    chipOther.setChecked(true);
-                }
-            }
+            applyCategoryFilter(args.getString("EXTRA_INITIAL_CATEGORY"));
+        }
+    }
+
+    public void applyCategoryFilter(String cat) {
+        if (cat == null) return;
+        if (getArguments() == null) {
+            setArguments(new Bundle());
+        }
+        getArguments().putString("EXTRA_INITIAL_CATEGORY", cat);
+
+        if ("IMAGES".equalsIgnoreCase(cat) && chipImages != null) {
+            chipImages.setChecked(true);
+        } else if ("VIDEOS".equalsIgnoreCase(cat) && chipVideos != null) {
+            chipVideos.setChecked(true);
+        } else if ("PDFS".equalsIgnoreCase(cat) && chipPdfs != null) {
+            chipPdfs.setChecked(true);
+        } else if ("OTHER".equalsIgnoreCase(cat) && chipOther != null) {
+            chipOther.setChecked(true);
+        } else if (chipAll != null) {
+            chipAll.setChecked(true);
         }
     }
 
@@ -160,8 +207,10 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
 
                 @Override
                 public void onTextChanged(CharSequence s, int start, int before, int count) {
-                    currentSearchQuery = s != null ? s.toString().trim().toLowerCase() : "";
+                    currentSearchQuery = s != null ? s.toString().trim() : "";
                     filterAndDisplayFiles();
+                    scheduleServerSearch();
+                    scheduleSuggestionsLookup(currentSearchQuery);
                 }
 
                 @Override
@@ -210,14 +259,41 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
             }
 
             filterAndDisplayFiles();
+            scheduleServerSearch();
         });
     }
 
+    private String getHistoryKey() {
+        if (getContext() == null) return KEY_HISTORY;
+        try {
+            SessionManager session = new SessionManager(requireContext());
+            String email = session.getEmail();
+            return KEY_HISTORY + "_" + (email != null ? email.replace("@", "_").replace(".", "_") : "default");
+        } catch (Exception e) {
+            return KEY_HISTORY;
+        }
+    }
+
+    private List<String> getSearchHistoryList() {
+        String key = getHistoryKey();
+        String raw = historyPrefs.getString(key, null);
+        List<String> list = new ArrayList<>();
+        if (raw != null && !raw.trim().isEmpty()) {
+            try {
+                org.json.JSONArray arr = new org.json.JSONArray(raw);
+                for (int i = 0; i < arr.length(); i++) {
+                    list.add(arr.getString(i));
+                }
+            } catch (Exception ignored) {}
+        }
+        return list;
+    }
+
     private void setupRecentHistory() {
-        if (chipGroupRecentSearches == null) return;
+        if (chipGroupRecentSearches == null || !isAdded()) return;
         chipGroupRecentSearches.removeAllViews();
 
-        Set<String> queries = historyPrefs.getStringSet(KEY_HISTORY, new HashSet<>());
+        List<String> queries = getSearchHistoryList();
         if (queries.isEmpty()) {
             if (layoutRecentHeader != null) layoutRecentHeader.setVisibility(View.GONE);
             chipGroupRecentSearches.setVisibility(View.GONE);
@@ -250,24 +326,102 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
     }
 
     private void saveSearchQuery(String query) {
-        Set<String> queries = new HashSet<>(historyPrefs.getStringSet(KEY_HISTORY, new HashSet<>()));
-        queries.add(query);
-        historyPrefs.edit().putStringSet(KEY_HISTORY, queries).apply();
+        if (query == null || query.trim().isEmpty()) return;
+        query = query.trim();
+        List<String> list = getSearchHistoryList();
+        list.remove(query);
+        list.add(0, query);
+        while (list.size() > 10) {
+            list.remove(list.size() - 1);
+        }
+        org.json.JSONArray arr = new org.json.JSONArray(list);
+        historyPrefs.edit().putString(getHistoryKey(), arr.toString()).apply();
         setupRecentHistory();
     }
 
     private void removeSearchQuery(String query) {
-        Set<String> queries = new HashSet<>(historyPrefs.getStringSet(KEY_HISTORY, new HashSet<>()));
-        queries.remove(query);
-        historyPrefs.edit().putStringSet(KEY_HISTORY, queries).apply();
+        List<String> list = getSearchHistoryList();
+        list.remove(query);
+        org.json.JSONArray arr = new org.json.JSONArray(list);
+        historyPrefs.edit().putString(getHistoryKey(), arr.toString()).apply();
     }
 
     private void clearSearchHistory() {
-        historyPrefs.edit().remove(KEY_HISTORY).apply();
+        historyPrefs.edit().remove(getHistoryKey()).apply();
         setupRecentHistory();
     }
 
-    private void loadFiles() {
+    private void loadInitialSuggestions() {
+        apiService.getSuggestions(null).enqueue(new Callback<List<String>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<String>> call, @NonNull Response<List<String>> response) {
+                if (!isAdded()) return;
+                if (response.isSuccessful() && response.body() != null) {
+                    displaySuggestions(response.body());
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<String>> call, @NonNull Throwable t) {
+                // Silently ignore suggestion errors
+            }
+        });
+    }
+
+    private void scheduleSuggestionsLookup(String prefix) {
+        suggestionDebounceHandler.removeCallbacksAndMessages(null);
+        suggestionDebounceRunnable = () -> {
+            String p = (prefix != null && !prefix.trim().isEmpty()) ? prefix.trim() : null;
+            apiService.getSuggestions(p).enqueue(new Callback<List<String>>() {
+                @Override
+                public void onResponse(@NonNull Call<List<String>> call, @NonNull Response<List<String>> response) {
+                    if (!isAdded()) return;
+                    if (response.isSuccessful() && response.body() != null) {
+                        displaySuggestions(response.body());
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<List<String>> call, @NonNull Throwable t) {}
+            });
+        };
+        suggestionDebounceHandler.postDelayed(suggestionDebounceRunnable, 250);
+    }
+
+    private void displaySuggestions(List<String> suggestions) {
+        if (chipGroupSuggestions == null || !isAdded()) return;
+        chipGroupSuggestions.removeAllViews();
+
+        if (suggestions == null || suggestions.isEmpty()) {
+            if (layoutSuggestionsHeader != null) layoutSuggestionsHeader.setVisibility(View.GONE);
+            if (scrollSuggestions != null) scrollSuggestions.setVisibility(View.GONE);
+            return;
+        }
+
+        if (layoutSuggestionsHeader != null) layoutSuggestionsHeader.setVisibility(View.VISIBLE);
+        if (scrollSuggestions != null) scrollSuggestions.setVisibility(View.VISIBLE);
+
+        for (String suggestion : suggestions) {
+            Chip chip = new Chip(requireContext());
+            chip.setText(suggestion);
+            chip.setClickable(true);
+            chip.setCheckable(false);
+            chip.setChipIconResource(R.drawable.ic_nav_search);
+            chip.setIconStartPadding(12f);
+
+            chip.setOnClickListener(v -> {
+                if (etFileSearch != null) {
+                    etFileSearch.setText(suggestion);
+                    etFileSearch.setSelection(suggestion.length());
+                }
+                saveSearchQuery(suggestion);
+            });
+
+            chipGroupSuggestions.addView(chip);
+        }
+    }
+
+    public void loadFiles() {
         if (tvFileCount != null) {
             tvFileCount.setText("Loading files...");
         }
@@ -282,6 +436,7 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
                     allFiles.addAll(response.body());
                     updateCategoryChipCounts();
                     filterAndDisplayFiles();
+                    loadInitialSuggestions();
                 } else {
                     if (tvFileCount != null) {
                         tvFileCount.setText("Failed to load files (HTTP " + response.code() + ")");
@@ -357,26 +512,83 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
     }
 
     private void filterAndDisplayFiles() {
+        renderFileList(allFiles, true);
+    }
+
+    private void scheduleServerSearch() {
+        searchDebounceHandler.removeCallbacksAndMessages(null);
+        searchDebounceRunnable = () -> performServerSearch(currentSearchQuery, currentCategory);
+        searchDebounceHandler.postDelayed(searchDebounceRunnable, 300);
+    }
+
+    private void performServerSearch(String query, StoredFile.FileCategory category) {
+        if (!isAdded()) return;
+
+        if (query.isEmpty() && category == StoredFile.FileCategory.ALL) {
+            filterAndDisplayFiles();
+            return;
+        }
+
+        String catParam = (category == StoredFile.FileCategory.ALL) ? null : category.name();
+        String queryParam = query.isEmpty() ? null : query;
+
+        apiService.searchFiles(queryParam, catParam).enqueue(new Callback<List<StoredFile>>() {
+            @Override
+            public void onResponse(@NonNull Call<List<StoredFile>> call, @NonNull Response<List<StoredFile>> response) {
+                if (!isAdded()) return;
+                if (response.isSuccessful() && response.body() != null) {
+                    renderFileList(response.body(), false);
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<List<StoredFile>> call, @NonNull Throwable t) {
+                // Retain local client-side filtered view on network error
+            }
+        });
+    }
+
+    private void renderFileList(List<StoredFile> sourceList, boolean applyTextAndCategoryFilters) {
+        if (!isAdded()) return;
+
         boolean onlyEncrypted = chipFilterEncrypted != null && chipFilterEncrypted.isChecked();
         boolean onlyLarge = chipFilterLarge != null && chipFilterLarge.isChecked();
 
         List<StoredFile> filteredList = new ArrayList<>();
 
-        for (StoredFile file : allFiles) {
-            boolean matchesCategory = (currentCategory == StoredFile.FileCategory.ALL || file.getCategory() == currentCategory);
-            if (!matchesCategory) continue;
+        for (StoredFile file : sourceList) {
+            if (applyTextAndCategoryFilters) {
+                boolean matchesCategory = (currentCategory == StoredFile.FileCategory.ALL || file.getCategory() == currentCategory);
+                if (!matchesCategory) continue;
+
+                if (!currentSearchQuery.isEmpty()) {
+                    String name = file.getFilename().toLowerCase();
+                    String mime = file.getContentType().toLowerCase();
+                    String hash = file.getSha256Hash() != null ? file.getSha256Hash().toLowerCase() : "";
+                    String q = currentSearchQuery.toLowerCase();
+                    boolean matchesMetadata = false;
+                    if (file.getMetadata() != null) {
+                        FileMetadataDTO m = file.getMetadata();
+                        if ((m.getCameraMake() != null && m.getCameraMake().toLowerCase().contains(q)) ||
+                                (m.getCameraModel() != null && m.getCameraModel().toLowerCase().contains(q)) ||
+                                (m.getResolution() != null && m.getResolution().toLowerCase().contains(q)) ||
+                                (m.getVideoCodec() != null && m.getVideoCodec().toLowerCase().contains(q)) ||
+                                (m.getAudioCodec() != null && m.getAudioCodec().toLowerCase().contains(q)) ||
+                                (m.getArtist() != null && m.getArtist().toLowerCase().contains(q)) ||
+                                (m.getAuthor() != null && m.getAuthor().toLowerCase().contains(q)) ||
+                                (m.getTitle() != null && m.getTitle().toLowerCase().contains(q)) ||
+                                (m.getGenre() != null && m.getGenre().toLowerCase().contains(q))) {
+                            matchesMetadata = true;
+                        }
+                    }
+                    if (!name.contains(q) && !mime.contains(q) && !hash.contains(q) && !matchesMetadata) {
+                        continue;
+                    }
+                }
+            }
 
             if (onlyEncrypted && !file.isEncrypted()) continue;
             if (onlyLarge && file.getFileSize() < (1024 * 1024)) continue;
-
-            if (!currentSearchQuery.isEmpty()) {
-                String name = file.getFilename().toLowerCase();
-                String mime = file.getContentType().toLowerCase();
-                String hash = file.getSha256Hash() != null ? file.getSha256Hash().toLowerCase() : "";
-                if (!name.contains(currentSearchQuery) && !mime.contains(currentSearchQuery) && !hash.contains(currentSearchQuery)) {
-                    continue;
-                }
-            }
 
             filteredList.add(file);
         }
@@ -399,26 +611,121 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         }
     }
 
+    private void setupDownloadPanel(View view) {
+        cardDownloadPanel = view.findViewById(R.id.cardDownloadPanel);
+        ivDownloadFileIcon = view.findViewById(R.id.ivDownloadFileIcon);
+        tvDownloadFileName = view.findViewById(R.id.tvDownloadFileName);
+        tvDownloadFileSize = view.findViewById(R.id.tvDownloadFileSize);
+        tvDownloadEncryptionBadge = view.findViewById(R.id.tvDownloadEncryptionBadge);
+        cardDownloadDecryptOption = view.findViewById(R.id.cardDownloadDecryptOption);
+        switchDownloadDecrypt = view.findViewById(R.id.switchDownloadDecrypt);
+        layoutDownloadProgress = view.findViewById(R.id.layoutDownloadProgress);
+        tvDownloadStatus = view.findViewById(R.id.tvDownloadStatus);
+        tvDownloadPercent = view.findViewById(R.id.tvDownloadPercent);
+        progressDownload = view.findViewById(R.id.progressDownload);
+        layoutDownloadActions = view.findViewById(R.id.layoutDownloadActions);
+        btnCancelDownload = view.findViewById(R.id.btnCancelDownload);
+        btnStartDownload = view.findViewById(R.id.btnStartDownload);
+
+        if (btnCancelDownload != null) {
+            btnCancelDownload.setOnClickListener(v -> cancelOrCloseDownload());
+        }
+        if (btnStartDownload != null) {
+            btnStartDownload.setOnClickListener(v -> {
+                if (pendingDownloadFile != null) {
+                    boolean decrypt = pendingDownloadFile.isEncrypted() && (switchDownloadDecrypt != null && switchDownloadDecrypt.isChecked());
+                    executeDownload(pendingDownloadFile, decrypt);
+                }
+            });
+        }
+    }
+
+    private void showDownloadPanel(StoredFile file) {
+        if (file == null || cardDownloadPanel == null || !isAdded()) return;
+
+        this.pendingDownloadFile = file;
+
+        // Reset state
+        cardDownloadPanel.setVisibility(View.VISIBLE);
+        if (layoutDownloadProgress != null) layoutDownloadProgress.setVisibility(View.GONE);
+        if (layoutDownloadActions != null) layoutDownloadActions.setVisibility(View.VISIBLE);
+        if (btnStartDownload != null) btnStartDownload.setEnabled(true);
+        if (btnCancelDownload != null) {
+            btnCancelDownload.setEnabled(true);
+            btnCancelDownload.setText(R.string.btn_cancel);
+        }
+
+        // File info
+        if (tvDownloadFileName != null) {
+            tvDownloadFileName.setText(file.getOriginalFilename());
+        }
+        if (tvDownloadFileSize != null) {
+            tvDownloadFileSize.setText(FileUtils.formatStorageSize(file.getFileSize()));
+        }
+
+        // Icon
+        if (ivDownloadFileIcon != null) {
+            switch (file.getCategory()) {
+                case IMAGES:
+                    ivDownloadFileIcon.setImageResource(R.drawable.ic_file_image);
+                    break;
+                case VIDEOS:
+                    ivDownloadFileIcon.setImageResource(R.drawable.ic_file_video);
+                    break;
+                case PDFS:
+                    ivDownloadFileIcon.setImageResource(R.drawable.ic_file_pdf);
+                    break;
+                default:
+                    ivDownloadFileIcon.setImageResource(R.drawable.ic_file_general);
+                    break;
+            }
+        }
+
+        // Encryption Badge & Decrypt Switch
+        if (file.isEncrypted()) {
+            if (tvDownloadEncryptionBadge != null) {
+                tvDownloadEncryptionBadge.setText(R.string.encrypted_badge_label);
+                tvDownloadEncryptionBadge.setTextColor(ThemeManager.getEncryptedColor(requireContext()));
+            }
+            if (cardDownloadDecryptOption != null) {
+                cardDownloadDecryptOption.setVisibility(View.VISIBLE);
+            }
+            if (switchDownloadDecrypt != null) {
+                switchDownloadDecrypt.setChecked(true);
+            }
+        } else {
+            if (tvDownloadEncryptionBadge != null) {
+                tvDownloadEncryptionBadge.setText(R.string.unencrypted_badge_label);
+                tvDownloadEncryptionBadge.setTextColor(ContextCompat.getColor(requireContext(), R.color.vault_unencrypted));
+            }
+            if (cardDownloadDecryptOption != null) {
+                cardDownloadDecryptOption.setVisibility(View.GONE);
+            }
+            if (switchDownloadDecrypt != null) {
+                switchDownloadDecrypt.setChecked(false);
+            }
+        }
+
+        if (rvFiles != null) {
+            rvFiles.smoothScrollToPosition(0);
+        }
+    }
+
+    private void cancelOrCloseDownload() {
+        if (activeDownloadCall != null && !activeDownloadCall.isCanceled()) {
+            activeDownloadCall.cancel();
+            activeDownloadCall = null;
+        }
+        if (cardDownloadPanel != null) {
+            cardDownloadPanel.setVisibility(View.GONE);
+        }
+        pendingDownloadFile = null;
+    }
+
     @Override
     public void onDownloadClick(StoredFile file) {
         if (file == null || file.getId() == null) return;
-
-        if (file.isEncrypted()) {
-            View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_download_options, null);
-            CompoundButton cbDecrypt = dialogView.findViewById(R.id.cbDecrypt);
-
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(R.string.download_dialog_title)
-                    .setView(dialogView)
-                    .setPositiveButton(R.string.btn_download, (dialog, which) -> {
-                        boolean decrypt = cbDecrypt == null || cbDecrypt.isChecked();
-                        executeDownload(file, decrypt);
-                    })
-                    .setNegativeButton(R.string.btn_close, null)
-                    .show();
-        } else {
-            executeDownload(file, false);
-        }
+        showDownloadPanel(file);
     }
 
     private void executeDownload(StoredFile file, boolean decrypt) {
@@ -428,24 +735,41 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         }
 
         final String finalFilename = filename;
-        Toast.makeText(requireContext(), "Downloading " + finalFilename + "...", Toast.LENGTH_SHORT).show();
 
-        apiService.downloadFile(file.getId(), decrypt).enqueue(new Callback<ResponseBody>() {
+        if (layoutDownloadProgress != null) layoutDownloadProgress.setVisibility(View.VISIBLE);
+        if (btnStartDownload != null) btnStartDownload.setEnabled(false);
+        if (btnCancelDownload != null) btnCancelDownload.setEnabled(true);
+        if (tvDownloadStatus != null) tvDownloadStatus.setText(decrypt ? "Preparing and decrypting..." : "Preparing...");
+        if (tvDownloadPercent != null) tvDownloadPercent.setText("0%");
+        if (progressDownload != null) {
+            progressDownload.setIndeterminate(false);
+            progressDownload.setProgress(0);
+        }
+
+        activeDownloadCall = apiService.downloadFile(file.getId(), decrypt);
+        activeDownloadCall.enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                 if (!isAdded()) return;
 
                 if (response.isSuccessful() && response.body() != null) {
-                    saveFileToDisk(finalFilename, response.body());
+                    if (tvDownloadStatus != null) tvDownloadStatus.setText(decrypt ? "Decrypting & Downloading..." : "Downloading...");
+                    saveFileToDisk(finalFilename, file.getFileSize(), response.body());
                 } else {
-                    Toast.makeText(requireContext(), "Download failed (HTTP " + response.code() + ")", Toast.LENGTH_SHORT).show();
+                    if (tvDownloadStatus != null) tvDownloadStatus.setText("Download failed (HTTP " + response.code() + ")");
+                    if (btnStartDownload != null) btnStartDownload.setEnabled(true);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
                 if (!isAdded()) return;
-                Toast.makeText(requireContext(), "Download error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                if (call.isCanceled()) {
+                    if (tvDownloadStatus != null) tvDownloadStatus.setText("Download cancelled");
+                } else {
+                    if (tvDownloadStatus != null) tvDownloadStatus.setText("Download error: " + t.getLocalizedMessage());
+                    if (btnStartDownload != null) btnStartDownload.setEnabled(true);
+                }
             }
         });
     }
@@ -490,57 +814,62 @@ public class FilesFragment extends Fragment implements FilesAdapter.OnDownloadCl
         });
     }
 
-    private void saveFileToDisk(String filename, ResponseBody body) {
-        new Thread(() -> {
-            try {
-                File cipherVaultDir = new File(
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                        "CipherVault"
-                );
-                if (!cipherVaultDir.exists()) {
-                    cipherVaultDir.mkdirs();
-                }
+    private void saveFileToDisk(String filename, long totalBytesExpected, ResponseBody body) {
+        FileUtils.saveResponseBodyToDownloads(
+                requireContext(),
+                filename,
+                totalBytesExpected,
+                body,
+                percent -> {
+                    if (isAdded()) {
+                        requireActivity().runOnUiThread(() -> {
+                            if (progressDownload != null) progressDownload.setProgress(percent);
+                            if (tvDownloadPercent != null) tvDownloadPercent.setText(percent + "%");
+                        });
+                    }
+                },
+                new FileUtils.DownloadCallback() {
+                    @Override
+                    public void onSuccess(File targetFile) {
+                        activeDownloadCall = null;
+                        if (isAdded()) {
+                            requireActivity().runOnUiThread(() -> {
+                                if (progressDownload != null) progressDownload.setProgress(100);
+                                if (tvDownloadPercent != null) tvDownloadPercent.setText("100%");
+                                if (tvDownloadStatus != null) tvDownloadStatus.setText("Saved to Download/CipherVault");
+                                if (btnCancelDownload != null) {
+                                    btnCancelDownload.setText(R.string.btn_close);
+                                    btnCancelDownload.setEnabled(true);
+                                }
+                                Toast.makeText(requireContext(), "Saved to Download/CipherVault: " + targetFile.getName(), Toast.LENGTH_LONG).show();
+                                searchDebounceHandler.postDelayed(() -> {
+                                    if (isAdded() && cardDownloadPanel != null) {
+                                        cardDownloadPanel.setVisibility(View.GONE);
+                                    }
+                                }, 2500);
+                            });
+                        }
+                    }
 
-                File targetFile = new File(cipherVaultDir, filename);
-                OutputStream os = null;
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ContentValues values = new ContentValues();
-                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, filename);
-                    values.put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream");
-                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/CipherVault");
-                    Uri uri = requireContext().getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
-                    if (uri != null) {
-                        os = requireContext().getContentResolver().openOutputStream(uri);
+                    @Override
+                    public void onError(Exception e) {
+                        activeDownloadCall = null;
+                        if (isAdded()) {
+                            requireActivity().runOnUiThread(() -> {
+                                if (tvDownloadStatus != null) tvDownloadStatus.setText("Failed saving: " + e.getMessage());
+                                if (btnStartDownload != null) btnStartDownload.setEnabled(true);
+                                Toast.makeText(requireContext(), "Failed saving: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                        }
                     }
                 }
+        );
+    }
 
-                if (os == null) {
-                    os = new FileOutputStream(targetFile);
-                }
-
-                try (InputStream is = body.byteStream();
-                     OutputStream targetOs = os) {
-                    byte[] buffer = new byte[8192];
-                    int read;
-                    while ((read = is.read(buffer)) != -1) {
-                        targetOs.write(buffer, 0, read);
-                    }
-                    targetOs.flush();
-                }
-
-                if (isAdded()) {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "Saved to Download/CipherVault: " + targetFile.getName(), Toast.LENGTH_LONG).show()
-                    );
-                }
-            } catch (Exception e) {
-                if (isAdded()) {
-                    requireActivity().runOnUiThread(() ->
-                            Toast.makeText(requireContext(), "Failed saving: " + e.getMessage(), Toast.LENGTH_SHORT).show()
-                    );
-                }
-            }
-        }).start();
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        searchDebounceHandler.removeCallbacksAndMessages(null);
+        suggestionDebounceHandler.removeCallbacksAndMessages(null);
     }
 }

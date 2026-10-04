@@ -13,6 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.io.InputStream;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -30,6 +32,12 @@ public class ThumbnailLoader {
     };
 
     private static final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private static final ExecutorService decodeExecutor = Executors.newFixedThreadPool(3, r -> {
+        Thread t = new Thread(r, "cv-thumb-decoder");
+        t.setDaemon(true);
+        t.setPriority(Thread.NORM_PRIORITY - 1);
+        return t;
+    });
 
     public static void loadThumbnail(@NonNull Context context,
                                      @NonNull Long fileId,
@@ -58,7 +66,7 @@ public class ThumbnailLoader {
             public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     final ResponseBody body = response.body();
-                    new Thread(() -> {
+                    decodeExecutor.execute(() -> {
                         try (InputStream is = body.byteStream()) {
                             Bitmap bitmap = BitmapFactory.decodeStream(is);
                             if (bitmap != null) {
@@ -74,7 +82,7 @@ public class ThumbnailLoader {
                                 });
                             }
                         } catch (Exception ignored) {}
-                    }).start();
+                    });
                 }
             }
 

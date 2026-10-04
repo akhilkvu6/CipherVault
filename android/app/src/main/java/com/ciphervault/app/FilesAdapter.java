@@ -69,17 +69,17 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
             case PDFS: typeLabel = "PDF"; break;
             default: typeLabel = "File"; break;
         }
-        holder.tvFileSize.setText(typeLabel + " • " + Formatter.formatFileSize(context, file.getFileSize()));
+        holder.tvFileSize.setText(typeLabel + " • " + FileUtils.formatStorageSize(file.getFileSize()));
 
         if (file.isEncrypted()) {
             int encColor = ThemeManager.getEncryptedColor(context);
-            holder.tvEncryptionBadge.setText("AES-256-GCM");
+            holder.tvEncryptionBadge.setText("Encrypted");
             holder.tvEncryptionBadge.setTextColor(encColor);
             holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
             holder.tvEncryptionBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
             holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
         } else {
-            holder.tvEncryptionBadge.setText("Unencrypted");
+            holder.tvEncryptionBadge.setText("Not encrypted");
             holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
             holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }

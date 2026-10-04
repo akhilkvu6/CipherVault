@@ -32,12 +32,55 @@ public class StoredFile {
     @SerializedName("hasPreview")
     private boolean hasPreview;
 
+    @SerializedName("category")
+    private String backendCategory;
+
+    @SerializedName("metadata")
+    private FileMetadataDTO metadata;
+
     public Long getId() {
         return id;
     }
 
     public boolean hasPreview() {
         return hasPreview;
+    }
+
+    public FileMetadataDTO getMetadata() {
+        return metadata;
+    }
+
+    public String getResolution() {
+        return (metadata != null && metadata.getResolution() != null) ? metadata.getResolution() : null;
+    }
+
+    public String getCameraInfo() {
+        if (metadata == null) return null;
+        String make = metadata.getCameraMake();
+        String model = metadata.getCameraModel();
+        if (make != null && model != null) {
+            if (model.toLowerCase().startsWith(make.toLowerCase())) {
+                return model;
+            }
+            return make + " " + model;
+        }
+        return make != null ? make : model;
+    }
+
+    public String getDuration() {
+        return (metadata != null && metadata.getDuration() != null) ? metadata.getDuration() : null;
+    }
+
+    public String getCodec() {
+        if (metadata == null) return null;
+        return metadata.getVideoCodec() != null ? metadata.getVideoCodec() : metadata.getAudioCodec();
+    }
+
+    public String getArtistOrAuthor() {
+        if (metadata == null) return null;
+        if (metadata.getArtist() != null) return metadata.getArtist();
+        if (metadata.getAuthor() != null) return metadata.getAuthor();
+        return metadata.getCreator();
     }
 
     public String getFilename() {
