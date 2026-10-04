@@ -28,8 +28,26 @@ public interface ApiService {
     @POST("api/auth/register")
     Call<RegisterResponse> register(@Body RegisterRequest request);
 
+    @POST("api/auth/change-password")
+    Call<Map<String, Object>> changePassword(@Body ChangePasswordRequest request);
+
+    @GET("api/user/profile")
+    Call<UserProfileResponse> getUserProfile();
+
     @GET("api/files")
     Call<List<StoredFile>> getFiles();
+
+    @GET("api/files/check-duplicate")
+    Call<DuplicateCheckResponse> checkDuplicate(@Query("hash") String hash);
+
+    @GET("api/files/search")
+    Call<List<StoredFile>> searchFiles(
+            @Query("query") String query,
+            @Query("category") String category
+    );
+
+    @GET("api/files/suggestions")
+    Call<List<String>> getSuggestions(@Query("prefix") String prefix);
 
     @Multipart
     @POST("api/files/upload")
@@ -44,10 +62,6 @@ public interface ApiService {
             @Path("id") Long id,
             @Query("decrypt") boolean decrypt
     );
-
-    @Streaming
-    @GET("api/files/{id}/download")
-    Call<ResponseBody> downloadFile(@Path("id") Long id);
 
     @Streaming
     @GET("api/files/{id}/preview")

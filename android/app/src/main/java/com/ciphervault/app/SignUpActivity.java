@@ -1,5 +1,6 @@
 package com.ciphervault.app;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -62,24 +63,63 @@ public class SignUpActivity extends BaseActivity {
             return;
         }
 
+        if (password.length() < 6) {
+            Toast.makeText(this, "Password must be at least 6 characters", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         registerButton.setEnabled(false);
+        registerButton.setText("Creating Account...");
 
         RegisterRequest request = new RegisterRequest(username, email, password);
         apiService.register(request).enqueue(new Callback<RegisterResponse>() {
             @Override
             public void onResponse(Call<RegisterResponse> call, Response<RegisterResponse> response) {
-                registerButton.setEnabled(true);
                 if (response.isSuccessful()) {
-                    Toast.makeText(SignUpActivity.this, "Account created! Please log in.", Toast.LENGTH_SHORT).show();
-                    finish();
+                    Toast.makeText(SignUpActivity.this, "Account created! Signing in...", Toast.LENGTH_SHORT).show();
+
+                    // Automatically sign in upon registration
+                    apiService.login(new LoginRequest(email, password)).enqueue(new Callback<LoginResponse>() {
+                        @Override
+                        public void onResponse(Call<LoginResponse> call, Response<LoginResponse> loginResp) {
+                            if (loginResp.isSuccessful() && loginResp.body() != null) {
+                                SessionManager sessionManager = new SessionManager(SignUpActivity.this);
+                                sessionManager.saveLogin(loginResp.body().getToken(), username, email);
+                                Intent intent = new Intent(SignUpActivity.this, MainActivity.class);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                startActivity(intent);
+                                finish();
+                            } else {
+                                finish();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<LoginResponse> call, Throwable t) {
+                            finish();
+                        }
+                    });
                 } else {
-                    Toast.makeText(SignUpActivity.this, "Registration failed: HTTP " + response.code(), Toast.LENGTH_SHORT).show();
+                    registerButton.setEnabled(true);
+                    registerButton.setText("Create Account");
+                    String errorMsg = "Registration failed: HTTP " + response.code();
+                    try {
+                        if (response.errorBody() != null) {
+                            String errString = response.errorBody().string();
+                            org.json.JSONObject errJson = new org.json.JSONObject(errString);
+                            if (errJson.has("message")) {
+                                errorMsg = errJson.getString("message");
+                            }
+                        }
+                    } catch (Exception ignored) {}
+                    Toast.makeText(SignUpActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
 
             @Override
             public void onFailure(Call<RegisterResponse> call, Throwable t) {
                 registerButton.setEnabled(true);
+                registerButton.setText("Create Account");
                 Toast.makeText(SignUpActivity.this, "Network error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });

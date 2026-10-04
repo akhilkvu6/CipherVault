@@ -12,8 +12,7 @@ public class CipherVaultPreferences {
     public enum AppearanceMode {
         SYSTEM,
         LIGHT,
-        DARK,
-        AMOLED
+        DARK
     }
 
     private static SharedPreferences getPrefs(Context context) {
@@ -26,11 +25,20 @@ public class CipherVaultPreferences {
     }
 
     public static AppearanceMode getAppearance(Context context) {
-        String name = getPrefs(context).getString(KEY_APPEARANCE, AppearanceMode.DARK.name());
+        if (context == null) return AppearanceMode.SYSTEM;
         try {
+            SharedPreferences prefs = getPrefs(context);
+            Object raw = prefs.getAll().get(KEY_APPEARANCE);
+            if (raw instanceof Integer) {
+                int modeInt = (Integer) raw;
+                if (modeInt == 1) return AppearanceMode.LIGHT;
+                if (modeInt == 2) return AppearanceMode.DARK;
+                return AppearanceMode.SYSTEM;
+            }
+            String name = prefs.getString(KEY_APPEARANCE, AppearanceMode.SYSTEM.name());
             return AppearanceMode.valueOf(name);
-        } catch (Exception e) {
-            return AppearanceMode.DARK;
+        } catch (ClassCastException | IllegalArgumentException e) {
+            return AppearanceMode.SYSTEM;
         }
     }
 
@@ -40,10 +48,21 @@ public class CipherVaultPreferences {
     }
 
     public static FileSortOption getFileSortOption(Context context) {
-        String name = getPrefs(context).getString(KEY_SORT_ORDER, FileSortOption.NAME_ASC.name());
+        if (context == null) return FileSortOption.NAME_ASC;
         try {
+            SharedPreferences prefs = getPrefs(context);
+            Object raw = prefs.getAll().get(KEY_SORT_ORDER);
+            if (raw instanceof Integer) {
+                int idx = (Integer) raw;
+                FileSortOption[] options = FileSortOption.values();
+                if (idx >= 0 && idx < options.length) {
+                    return options[idx];
+                }
+                return FileSortOption.NAME_ASC;
+            }
+            String name = prefs.getString(KEY_SORT_ORDER, FileSortOption.NAME_ASC.name());
             return FileSortOption.valueOf(name);
-        } catch (Exception e) {
+        } catch (ClassCastException | IllegalArgumentException e) {
             return FileSortOption.NAME_ASC;
         }
     }

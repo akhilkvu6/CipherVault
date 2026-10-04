@@ -31,8 +31,7 @@ public class ConnectionActivity extends BaseActivity {
 
     private EditText serverAddressInput;
     private Button testConnectionButton;
-    private Button signInButton;
-    private Button signUpButton;
+    private Button btnContinue;
 
     private LinearProgressIndicator progressConnection;
     private TextView tvStatusTitle;
@@ -58,8 +57,7 @@ public class ConnectionActivity extends BaseActivity {
 
         serverAddressInput = findViewById(R.id.etServerAddress);
         testConnectionButton = findViewById(R.id.btnTestConnection);
-        signInButton = findViewById(R.id.btnSignIn);
-        signUpButton = findViewById(R.id.btnSignUp);
+        btnContinue = findViewById(R.id.btnContinue);
 
         progressConnection = findViewById(R.id.progressConnection);
         tvStatusTitle = findViewById(R.id.tvStatusTitle);
@@ -87,15 +85,14 @@ public class ConnectionActivity extends BaseActivity {
 
         testConnectionButton.setOnClickListener(v -> performConnectionCheck());
 
-        signInButton.setOnClickListener(v -> {
-            applyAddress();
-            startActivity(new Intent(ConnectionActivity.this, LoginActivity.class));
-        });
-
-        signUpButton.setOnClickListener(v -> {
-            applyAddress();
-            startActivity(new Intent(ConnectionActivity.this, SignUpActivity.class));
-        });
+        if (btnContinue != null) {
+            btnContinue.setEnabled(false);
+            btnContinue.setOnClickListener(v -> {
+                applyAddress();
+                startActivity(new Intent(ConnectionActivity.this, LoginActivity.class));
+                finish();
+            });
+        }
 
         // Auto-check current configured address on activity start
         performConnectionCheck();
@@ -114,7 +111,12 @@ public class ConnectionActivity extends BaseActivity {
         }
         String formatted = input.trim();
         if (!formatted.startsWith("http://") && !formatted.startsWith("https://")) {
-            formatted = "http://" + formatted;
+            if (formatted.startsWith("127.0.0.1") || formatted.startsWith("localhost") || 
+                formatted.startsWith("10.0.") || formatted.startsWith("192.168.")) {
+                formatted = "http://" + formatted;
+            } else {
+                formatted = "https://" + formatted;
+            }
         }
         if (!formatted.endsWith("/")) {
             formatted = formatted + "/";
@@ -123,12 +125,14 @@ public class ConnectionActivity extends BaseActivity {
     }
 
     private String determineConnectionMethod(String url) {
-        if (url.contains("127.0.0.1")) {
+        if (url.startsWith("https://")) {
+            return "Secure Internet Tunnel (HTTPS)";
+        } else if (url.contains("127.0.0.1")) {
             return "USB / ADB Reverse";
         } else if (url.contains("10.0.2.2")) {
             return "Android Emulator";
         } else {
-            return "Manual";
+            return "Manual Gateway";
         }
     }
 
@@ -196,8 +200,7 @@ public class ConnectionActivity extends BaseActivity {
     private void showCheckingState() {
         if (progressConnection != null) progressConnection.setVisibility(View.VISIBLE);
         testConnectionButton.setEnabled(false);
-        signInButton.setEnabled(false);
-        signUpButton.setEnabled(false);
+        if (btnContinue != null) btnContinue.setEnabled(false);
 
         tvStatusTitle.setText("Checking connection...");
         tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.vault_unencrypted));
@@ -211,8 +214,7 @@ public class ConnectionActivity extends BaseActivity {
 
         if (progressConnection != null) progressConnection.setVisibility(View.GONE);
         testConnectionButton.setEnabled(true);
-        signInButton.setEnabled(true);
-        signUpButton.setEnabled(true);
+        if (btnContinue != null) btnContinue.setEnabled(true);
 
         tvStatusTitle.setText("✓ Backend Connected");
         tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.status_connected));
@@ -223,14 +225,13 @@ public class ConnectionActivity extends BaseActivity {
         tvStatusMethod.setText("Connection: " + determineConnectionMethod(successfulUrl));
         tvStatusMethod.setVisibility(View.VISIBLE);
 
-        tvStatusMessage.setText("Connection verified successfully. You may proceed to Sign In or Create Account.");
+        tvStatusMessage.setText("Connection verified successfully. Press Continue to proceed.");
     }
 
     private void showFailedState(String failedUrl, String errorDetails) {
         if (progressConnection != null) progressConnection.setVisibility(View.GONE);
         testConnectionButton.setEnabled(true);
-        signInButton.setEnabled(false);
-        signUpButton.setEnabled(false);
+        if (btnContinue != null) btnContinue.setEnabled(false);
 
         tvStatusTitle.setText("✕ Backend Not Connected");
         tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.status_error));
