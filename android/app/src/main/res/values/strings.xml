@@ -8,19 +8,8 @@
     <string name="nav_search">SEARCH</string>
     <string name="nav_profile">PROFILE</string>
     <string name="nav_settings">SETTINGS</string>
-
-    <!-- Onboarding -->
-    <string name="btn_skip">Skip</string>
-    <string name="btn_next">Next</string>
-    <string name="btn_get_started">Get Started</string>
-    <string name="onboarding_p1_title">Your Private Vault</string>
-    <string name="onboarding_p1_desc">Store your files securely with CipherVault.</string>
-    <string name="onboarding_p2_title">Encrypted Storage</string>
-    <string name="onboarding_p2_desc">Your files are protected using AES-256-GCM encryption.</string>
-    <string name="onboarding_p3_title">Secure File Management</string>
-    <string name="onboarding_p3_desc">Upload, download, search and manage your private files.</string>
-    <string name="onboarding_p4_title">You\'re Ready</string>
-    <string name="onboarding_p4_desc">Connect to your CipherVault server and access your private vault.</string>
+    <string name="fab_upload">Upload</string>
+    <string name="btn_change_address">Change Address</string>
 
     <!-- Upload Fragment -->
     <string name="upload_file_title">Upload File</string>
@@ -131,9 +120,10 @@
 
     <!-- Search -->
     <string name="search_title">Search Vault</string>
-    <string name="search_hint">Search files by name, type, or hash&#8230;</string>
+    <string name="search_hint">Search files by name, tag, or metadata&#8230;</string>
     <string name="recent_searches">Recent Searches</string>
     <string name="clear_history">Clear History</string>
+    <string name="smart_suggestions">Smart Suggestions</string>
 
     <!-- Profile & Settings -->
     <string name="profile_title">Account &amp; Security</string>
@@ -147,19 +137,24 @@
     <string name="gateway_status_connected">Gateway: Connected via Local Network</string>
     <string name="health_status_active">Health: Endpoint Active</string>
     <string name="app_version_spec">App Version: v1.0.0 (Build 1)</string>
-    <string name="cipher_suite_spec">Cipher Suite: AES-256-GCM / PBKDF2</string>
+    <string name="cipher_suite_spec">Cipher Suite: AES-256-GCM</string>
     <string name="storage_engine_spec">Storage Engine: Encrypted Android Storage</string>
     <string name="storage_quota_title">Storage &amp; Quota Details</string>
     <string name="label_used_storage">Used Storage</string>
     <string name="label_quota_limit">Quota Limit</string>
-    <string name="val_1gb">1.0 GB</string>
+    <string name="val_1gb">1 GB</string>
     <string name="label_usage_percent">Usage Percentage</string>
     <string name="appearance_title">Appearance</string>
     <string name="label_appearance_mode">Theme Mode</string>
     <string name="theme_system">System Default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
-    <string name="theme_amoled">AMOLED</string>
+    <string name="btn_continue">Continue</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="encrypt_before_upload">Encrypt before uploading</string>
+    <string name="encrypt_before_upload_desc">Your file will be protected before it is stored.</string>
+    <string name="decrypt_before_download">Decrypt before downloading</string>
+    <string name="decrypt_before_download_desc">Your downloaded file will be restored to its original form.</string>
     <string name="storage_details_title">Vault Storage</string>
     <string name="storage_by_type">STORAGE BY TYPE</string>
     <string name="sign_out_dialog_title">Sign Out</string>
@@ -176,4 +171,5 @@
     <string name="delete_file_dialog_msg">Are you sure you want to permanently delete \"%s\" from your vault? This cannot be undone.</string>
     <string name="delete_file_success">File deleted successfully</string>
     <string name="delete_file_failed">Failed to delete file</string>
+    <string name="action_upload">Upload File</string>
 </resources>

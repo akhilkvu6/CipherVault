@@ -114,7 +114,7 @@ public class FileDetailsBottomSheet {
 
         if (tvBottomSheetExactSize != null) {
             long bytes = file.getFileSize();
-            String formattedFormatted = Formatter.formatFileSize(context, bytes);
+            String formattedFormatted = FileUtils.formatStorageSize(bytes);
             String numberString = NumberFormat.getNumberInstance(Locale.US).format(bytes);
             tvBottomSheetExactSize.setText(String.format(Locale.US, "%s bytes (%s)", numberString, formattedFormatted));
         }
@@ -132,6 +132,80 @@ public class FileDetailsBottomSheet {
         if (tvBottomSheetMime != null) {
             String mime = file.getContentType();
             tvBottomSheetMime.setText(mime != null && !mime.trim().isEmpty() ? mime : "application/octet-stream");
+        }
+
+        View layoutMetadataSection = view.findViewById(R.id.layoutMetadataSection);
+        View rowMetadataCamera = view.findViewById(R.id.rowMetadataCamera);
+        TextView tvMetadataCamera = view.findViewById(R.id.tvMetadataCamera);
+        View rowMetadataResolution = view.findViewById(R.id.rowMetadataResolution);
+        TextView tvMetadataResolution = view.findViewById(R.id.tvMetadataResolution);
+        View rowMetadataDate = view.findViewById(R.id.rowMetadataDate);
+        TextView tvMetadataDate = view.findViewById(R.id.tvMetadataDate);
+        View rowMetadataCodec = view.findViewById(R.id.rowMetadataCodec);
+        TextView tvMetadataCodec = view.findViewById(R.id.tvMetadataCodec);
+        View rowMetadataDuration = view.findViewById(R.id.rowMetadataDuration);
+        TextView tvMetadataDuration = view.findViewById(R.id.tvMetadataDuration);
+        View rowMetadataAuthor = view.findViewById(R.id.rowMetadataAuthor);
+        TextView tvMetadataAuthor = view.findViewById(R.id.tvMetadataAuthor);
+        View rowMetadataTitle = view.findViewById(R.id.rowMetadataTitle);
+        TextView tvMetadataTitle = view.findViewById(R.id.tvMetadataTitle);
+
+        FileMetadataDTO metadata = file.getMetadata();
+        boolean hasAnyMetadata = false;
+
+        if (metadata != null) {
+            String camera = file.getCameraInfo();
+            if (camera != null && !camera.trim().isEmpty() && rowMetadataCamera != null && tvMetadataCamera != null) {
+                rowMetadataCamera.setVisibility(View.VISIBLE);
+                tvMetadataCamera.setText(camera);
+                hasAnyMetadata = true;
+            }
+
+            String resolution = file.getResolution();
+            if (resolution != null && !resolution.trim().isEmpty() && rowMetadataResolution != null && tvMetadataResolution != null) {
+                rowMetadataResolution.setVisibility(View.VISIBLE);
+                tvMetadataResolution.setText(resolution);
+                hasAnyMetadata = true;
+            }
+
+            String date = metadata.getDateTaken() != null ? metadata.getDateTaken() : metadata.getDocCreatedDate();
+            if (date != null && !date.trim().isEmpty() && rowMetadataDate != null && tvMetadataDate != null) {
+                rowMetadataDate.setVisibility(View.VISIBLE);
+                tvMetadataDate.setText(date);
+                hasAnyMetadata = true;
+            }
+
+            String codec = file.getCodec();
+            if (codec != null && !codec.trim().isEmpty() && rowMetadataCodec != null && tvMetadataCodec != null) {
+                rowMetadataCodec.setVisibility(View.VISIBLE);
+                tvMetadataCodec.setText(codec);
+                hasAnyMetadata = true;
+            }
+
+            String duration = file.getDuration();
+            if (duration != null && !duration.trim().isEmpty() && rowMetadataDuration != null && tvMetadataDuration != null) {
+                rowMetadataDuration.setVisibility(View.VISIBLE);
+                tvMetadataDuration.setText(duration);
+                hasAnyMetadata = true;
+            }
+
+            String author = file.getArtistOrAuthor();
+            if (author != null && !author.trim().isEmpty() && rowMetadataAuthor != null && tvMetadataAuthor != null) {
+                rowMetadataAuthor.setVisibility(View.VISIBLE);
+                tvMetadataAuthor.setText(author);
+                hasAnyMetadata = true;
+            }
+
+            String title = metadata.getTitle() != null ? metadata.getTitle() : metadata.getSubject();
+            if (title != null && !title.trim().isEmpty() && rowMetadataTitle != null && tvMetadataTitle != null) {
+                rowMetadataTitle.setVisibility(View.VISIBLE);
+                tvMetadataTitle.setText(title);
+                hasAnyMetadata = true;
+            }
+        }
+
+        if (layoutMetadataSection != null) {
+            layoutMetadataSection.setVisibility(hasAnyMetadata ? View.VISIBLE : View.GONE);
         }
 
         if (btnBottomSheetDownload != null) {

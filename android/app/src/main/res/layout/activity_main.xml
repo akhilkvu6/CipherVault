@@ -15,14 +15,14 @@
         android:layout_height="match_parent"
         android:layout_marginBottom="80dp" />
 
-    <!-- Compact Adaptive Rounded Navigation Dock -->
+    <!-- Consolidated 4-Tab Adaptive Navigation Dock -->
     <LinearLayout
         android:id="@+id/layoutPillNav"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:layout_gravity="bottom"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:background="@drawable/bg_pill_nav_container"
         android:orientation="horizontal"
@@ -39,7 +39,7 @@
             android:background="@drawable/bg_pill_active"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="10dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -54,10 +54,10 @@
                 android:id="@+id/textHome"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="@string/nav_home"
                 android:textColor="?attr/colorOnPrimaryContainer"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="visible" />
         </LinearLayout>
@@ -70,7 +70,7 @@
             android:layout_weight="1.0"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="10dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -85,10 +85,10 @@
                 android:id="@+id/textFiles"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="@string/nav_files"
                 android:textColor="?attr/colorOnPrimaryContainer"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
@@ -101,7 +101,7 @@
             android:layout_weight="1.0"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="10dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -109,17 +109,17 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:contentDescription="@string/nav_upload"
-                android:src="@drawable/ic_nav_upload"
+                android:src="@drawable/ic_file_upload"
                 app:tint="?attr/colorOnSurfaceVariant" />
 
             <TextView
                 android:id="@+id/textUpload"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="@string/nav_upload"
                 android:textColor="?attr/colorOnPrimaryContainer"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
@@ -132,7 +132,7 @@
             android:layout_weight="1.0"
             android:gravity="center"
             android:orientation="horizontal"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="10dp"
             android:clickable="true"
             android:focusable="true">
 
@@ -147,14 +147,30 @@
                 android:id="@+id/textSettings"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="6dp"
                 android:text="@string/nav_settings"
                 android:textColor="?attr/colorOnPrimaryContainer"
-                android:textSize="13sp"
+                android:textSize="12sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
 
     </LinearLayout>
+
+    <!-- Floating Upload FAB (Shortcut to Tab 2 / UploadFragment) -->
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabUpload"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="88dp"
+        android:text="@string/fab_upload"
+        android:textColor="?attr/colorOnPrimaryContainer"
+        app:icon="@drawable/ic_file_upload"
+        app:iconTint="?attr/colorOnPrimaryContainer"
+        app:backgroundTint="?attr/colorPrimaryContainer"
+        app:elevation="4dp"
+        android:contentDescription="@string/fab_upload" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

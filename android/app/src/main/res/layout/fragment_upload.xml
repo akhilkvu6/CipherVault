@@ -12,166 +12,232 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingHorizontal="20dp"
-        android:paddingTop="20dp"
+        android:paddingTop="28dp"
         android:paddingBottom="100dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/upload_file_title"
-            android:textSize="28sp"
-            android:fontFamily="sans-serif-medium"
-            android:textStyle="bold"
-            android:textColor="?attr/colorOnSurface" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="@string/upload_file_subtitle"
-            android:textSize="13sp"
-            android:textColor="?attr/colorOnSurfaceVariant" />
-
-        <!-- Interactive Selection Card -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/btnChooseFile"
+        <!-- Screen Header -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="210dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/nav_upload"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="28sp"
+                android:fontFamily="sans-serif-medium"
+                android:textStyle="bold"
+                android:letterSpacing="0.02" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="@string/upload_file_subtitle"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <!-- 1. File Picker / Selected File Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardFilePicker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:clickable="true"
-            android:focusable="true"
             app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1.5dp"
-            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
             app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
 
+            <!-- Empty / Unselected State View -->
             <LinearLayout
+                android:id="@+id/layoutUnselectedFile"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
+                android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:gravity="center"
+                android:paddingVertical="32dp"
+                android:paddingHorizontal="20dp"
+                android:clickable="true"
+                android:focusable="true">
 
                 <com.google.android.material.card.MaterialCardView
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="16dp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    app:cardCornerRadius="18dp"
                     app:cardElevation="0dp"
                     app:strokeWidth="0dp"
-                    app:cardBackgroundColor="?attr/colorPrimaryContainer">
+                    app:cardBackgroundColor="?attr/colorSecondaryContainer">
 
                     <ImageView
-                        android:id="@+id/ivUploadIcon"
                         android:layout_width="28dp"
                         android:layout_height="28dp"
                         android:layout_gravity="center"
-                        android:contentDescription="@string/cd_upload_icon"
                         android:src="@drawable/ic_file_upload"
-                        app:tint="?attr/colorOnPrimaryContainer" />
+                        android:contentDescription="@string/cd_upload_icon"
+                        app:tint="?attr/colorOnSecondaryContainer" />
                 </com.google.android.material.card.MaterialCardView>
 
                 <TextView
-                    android:id="@+id/tvSelectedFile"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
                     android:text="@string/upload_file_prompt"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="15sp"
+                    android:textSize="16sp"
                     android:fontFamily="sans-serif-medium"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:maxLines="2"
-                    android:ellipsize="middle" />
+                    android:textStyle="bold" />
 
                 <TextView
-                    android:id="@+id/tvUploadSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:text="@string/upload_file_supported_formats"
                     android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="12sp"
-                    android:gravity="center" />
+                    android:textSize="12sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/label_supported_formats_badges"
+                    android:textColor="?attr/colorOutline"
                     android:textSize="11sp"
-                    android:fontFamily="sans-serif-medium"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorPrimary"
-                    android:background="?attr/colorSurfaceContainer"
-                    android:paddingHorizontal="10dp"
-                    android:paddingVertical="4dp" />
+                    android:letterSpacing="0.04" />
+            </LinearLayout>
+
+            <!-- Selected File Details View -->
+            <LinearLayout
+                android:id="@+id/layoutSelectedFile"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp"
+                        app:cardBackgroundColor="?attr/colorSecondaryContainer">
+
+                        <ImageView
+                            android:id="@+id/ivSelectedFileIcon"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_file_general"
+                            app:tint="?attr/colorOnSecondaryContainer" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="14dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvSelectedFileName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="middle"
+                            android:singleLine="true"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="15sp"
+                            android:fontFamily="sans-serif-medium"
+                            android:textStyle="bold"
+                            tools:text="quarterly_report_2026.pdf" />
+
+                        <TextView
+                            android:id="@+id/tvSelectedFileSize"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="13sp"
+                            tools:text="4.2 MB" />
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChangeFile"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Change"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvSelectedFileHash"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:fontFamily="monospace"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="11sp"
+                    tools:text="SHA-256: 8a4f9b2c...5e1d" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Duplicate Warning Card (Red Destructive/Error Styling) -->
+        <!-- Duplicate Warning Card (Shown dynamically) -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardDuplicateWarning"
+            android:id="@+id/cardUploadDuplicateWarning"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:visibility="gone"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1.5dp"
+            app:strokeWidth="1dp"
             app:strokeColor="@color/status_error"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
+            app:cardBackgroundColor="@color/status_error_container">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
+                android:orientation="vertical"
                 android:padding="16dp">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:src="@drawable/ic_error"
-                    app:tint="@color/status_error"
-                    android:contentDescription="@string/duplicate_dialog_title" />
-
-                <LinearLayout
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="14dp"
-                    android:orientation="vertical">
+                    android:text="Duplicate file detected"
+                    android:textColor="@color/status_error"
+                    android:textSize="14sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvDuplicateWarningTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Duplicate file detected"
-                        android:textColor="@color/status_error"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif-medium"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvDuplicateWarningText"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="An identical file already exists in your vault."
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        android:textSize="12sp" />
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/tvUploadDuplicateMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="An identical file already exists in your vault."
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="12sp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Encryption Option Card -->
+        <!-- 2. Encryption Control Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardCornerRadius="18dp"
+            app:cardCornerRadius="20dp"
             app:cardElevation="0dp"
             app:strokeWidth="1dp"
             app:strokeColor="?attr/colorOutlineVariant"
@@ -180,75 +246,133 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:padding="16dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="0dp"
-                    app:strokeWidth="0dp"
-                    app:cardBackgroundColor="?attr/colorSecondaryContainer">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:layout_gravity="center"
-                        android:contentDescription="@string/app_name"
-                        android:src="@drawable/ic_lock"
-                        app:tint="@color/vault_encrypted" />
-                </com.google.android.material.card.MaterialCardView>
+                android:orientation="vertical"
+                android:padding="18dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="14dp"
-                    android:layout_marginEnd="8dp"
-                    android:orientation="vertical">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <TextView
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/encrypt_before_upload"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="15sp"
+                            android:fontFamily="sans-serif-medium"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/encrypt_before_upload_desc"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchUploadEncrypt"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="AES-256-GCM Encryption"
-                        android:textSize="14sp"
-                        android:fontFamily="sans-serif-medium"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="@string/encrypt_file_option_subtitle"
-                        android:textSize="12sp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
+                        android:checked="true" />
                 </LinearLayout>
-
-                <com.google.android.material.materialswitch.MaterialSwitch
-                    android:id="@+id/cbEncrypt"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Action Button -->
+        <!-- 3. Inline Upload Progress (Visible during and right after upload) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardUploadProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvUploadStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Encrypting &amp; uploading..."
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvUploadPercent"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0%"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="14sp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressUpload"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    app:trackCornerRadius="4dp"
+                    app:trackThickness="6dp"
+                    app:indicatorColor="?attr/colorPrimary" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 4. Upload Action Button -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnUpload"
+            android:id="@+id/btnStartUpload"
             android:layout_width="match_parent"
             android:layout_height="52dp"
             android:layout_marginTop="24dp"
+            android:enabled="false"
             android:text="@string/btn_upload_to_vault"
+            android:textAllCaps="false"
+            android:textColor="?attr/colorOnPrimary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="?attr/colorPrimary"
+            app:cornerRadius="26dp" />
+
+        <!-- 5. Reset / Upload Another File Button (Shown after completion) -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnUploadAnother"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"
+            android:text="Upload Another File"
             android:textAllCaps="false"
             android:textSize="14sp"
             android:textStyle="bold"
-            app:cornerRadius="26dp"
-            app:icon="@drawable/ic_file_upload"
-            app:iconSize="18dp"
-            app:iconGravity="textStart" />
+            app:cornerRadius="25dp" />
 
     </LinearLayout>
 </ScrollView>

@@ -16,6 +16,27 @@
         android:paddingTop="36dp"
         android:paddingBottom="24dp">
 
+        <!-- Server Connection Action -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnServerConfig"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="end"
+                android:text="Server Settings"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                app:icon="@drawable/ic_nav_settings"
+                app:iconSize="16dp"
+                app:iconTint="?attr/colorPrimary"
+                android:textColor="?attr/colorPrimary" />
+        </FrameLayout>
+
         <!-- Vault Icon Badge Container -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="68dp"

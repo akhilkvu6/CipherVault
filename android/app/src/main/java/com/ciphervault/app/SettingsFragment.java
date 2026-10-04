@@ -19,7 +19,6 @@ import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -39,7 +38,6 @@ public class SettingsFragment extends Fragment {
     private Chip chipModeDark;
     private Chip chipModeLight;
     private Chip chipModeSystem;
-    private Chip chipModeAmoled;
 
     private TextView tvSettingsServerUrl;
     private TextView tvSettingsHealthStatus;
@@ -65,12 +63,12 @@ public class SettingsFragment extends Fragment {
         chipModeDark = view.findViewById(R.id.chipModeDark);
         chipModeLight = view.findViewById(R.id.chipModeLight);
         chipModeSystem = view.findViewById(R.id.chipModeSystem);
-        chipModeAmoled = view.findViewById(R.id.chipModeAmoled);
 
         tvSettingsServerUrl = view.findViewById(R.id.tvSettingsServerUrl);
         tvSettingsHealthStatus = view.findViewById(R.id.tvSettingsHealthStatus);
 
         Button btnSettingsTestConnection = view.findViewById(R.id.btnSettingsTestConnection);
+        Button btnSettingsChangeServer = view.findViewById(R.id.btnSettingsChangeServer);
         Button btnSettingsSignOut = view.findViewById(R.id.btnSettingsSignOut);
 
         if (tvSettingsUsername != null) {
@@ -104,6 +102,10 @@ public class SettingsFragment extends Fragment {
             btnSettingsTestConnection.setOnClickListener(v -> testConnection());
         }
 
+        if (btnSettingsChangeServer != null) {
+            btnSettingsChangeServer.setOnClickListener(v -> showChangeServerAddressDialog());
+        }
+
         if (btnSettingsSignOut != null) {
             btnSettingsSignOut.setOnClickListener(v -> promptSignOutConfirmation());
         }
@@ -125,23 +127,23 @@ public class SettingsFragment extends Fragment {
     }
 
     private void loadStorageDetails() {
-        apiService.getFiles().enqueue(new Callback<List<StoredFile>>() {
+        apiService.getUserProfile().enqueue(new Callback<UserProfileResponse>() {
             @Override
-            public void onResponse(@NonNull Call<List<StoredFile>> call, @NonNull Response<List<StoredFile>> response) {
+            public void onResponse(@NonNull Call<UserProfileResponse> call, @NonNull Response<UserProfileResponse> response) {
                 if (!isAdded()) return;
 
                 if (response.isSuccessful() && response.body() != null) {
-                    long totalUsed = 0L;
-                    for (StoredFile file : response.body()) {
-                        totalUsed += file.getFileSize();
-                    }
+                    UserProfileResponse profile = response.body();
+                    long totalUsed = profile.getUsedStorage();
+                    long limit = profile.getStorageLimit() > 0 ? profile.getStorageLimit() : SessionManager.DEFAULT_LIMIT;
 
                     if (tvSettingsUsedStorage != null) {
-                        String formattedUsed = Formatter.formatFileSize(requireContext(), totalUsed);
-                        tvSettingsUsedStorage.setText(formattedUsed + " used of 1.0 GB");
+                        String formattedUsed = FileUtils.formatStorageSize(requireContext(), totalUsed);
+                        String formattedLimit = FileUtils.formatStorageSize(requireContext(), limit);
+                        tvSettingsUsedStorage.setText(formattedUsed + " used of " + formattedLimit);
                     }
 
-                    double percentage = (totalUsed * 100.0) / SessionManager.DEFAULT_LIMIT;
+                    double percentage = (totalUsed * 100.0) / limit;
                     if (progressSettingsQuota != null) {
                         progressSettingsQuota.setProgress((int) Math.min(100, percentage));
                     }
@@ -149,7 +151,7 @@ public class SettingsFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<StoredFile>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<UserProfileResponse> call, @NonNull Throwable t) {
                 // Ignore silent profile load failure
             }
         });
@@ -163,8 +165,6 @@ public class SettingsFragment extends Fragment {
             chipModeLight.setChecked(true);
         } else if (current == CipherVaultPreferences.AppearanceMode.DARK && chipModeDark != null) {
             chipModeDark.setChecked(true);
-        } else if (current == CipherVaultPreferences.AppearanceMode.AMOLED && chipModeAmoled != null) {
-            chipModeAmoled.setChecked(true);
         } else if (chipModeSystem != null) {
             chipModeSystem.setChecked(true);
         }
@@ -179,8 +179,6 @@ public class SettingsFragment extends Fragment {
                 selectedMode = CipherVaultPreferences.AppearanceMode.LIGHT;
             } else if (checkedId == R.id.chipModeDark) {
                 selectedMode = CipherVaultPreferences.AppearanceMode.DARK;
-            } else if (checkedId == R.id.chipModeAmoled) {
-                selectedMode = CipherVaultPreferences.AppearanceMode.AMOLED;
             } else {
                 selectedMode = CipherVaultPreferences.AppearanceMode.SYSTEM;
             }
@@ -240,9 +238,46 @@ public class SettingsFragment extends Fragment {
                 .show();
     }
 
+    private void showChangeServerAddressDialog() {
+        if (!isAdded()) return;
+        android.widget.FrameLayout container = new android.widget.FrameLayout(requireContext());
+        int paddingHorizontal = (int) (24 * getResources().getDisplayMetrics().density);
+        int paddingTop = (int) (12 * getResources().getDisplayMetrics().density);
+        container.setPadding(paddingHorizontal, paddingTop, paddingHorizontal, 0);
+
+        com.google.android.material.textfield.TextInputLayout inputLayout =
+                new com.google.android.material.textfield.TextInputLayout(requireContext());
+        inputLayout.setHint("Server Base URL");
+        inputLayout.setBoxBackgroundMode(com.google.android.material.textfield.TextInputLayout.BOX_BACKGROUND_OUTLINE);
+
+        com.google.android.material.textfield.TextInputEditText etUrl =
+                new com.google.android.material.textfield.TextInputEditText(inputLayout.getContext());
+        etUrl.setText(ApiClient.getBaseUrl(requireContext()));
+        etUrl.setSingleLine(true);
+        inputLayout.addView(etUrl);
+        container.addView(inputLayout);
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Server Address")
+                .setView(container)
+                .setPositiveButton("Save & Reconnect", (dialog, which) -> {
+                    String newUrl = etUrl.getText() != null ? etUrl.getText().toString().trim() : "";
+                    if (!newUrl.isEmpty()) {
+                        ApiClient.setBaseUrl(requireContext(), newUrl);
+                        if (tvSettingsServerUrl != null) {
+                            tvSettingsServerUrl.setText("Host: " + ApiClient.getBaseUrl(requireContext()));
+                        }
+                        apiService = ApiClient.getApiService(requireContext());
+                        testConnection();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private void signOut() {
         sessionManager.logout();
-        Intent intent = new Intent(requireActivity(), ConnectionActivity.class);
+        Intent intent = new Intent(requireActivity(), LoginActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         requireActivity().finish();

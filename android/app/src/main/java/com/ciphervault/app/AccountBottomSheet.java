@@ -14,6 +14,12 @@ import androidx.appcompat.app.AlertDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.Map;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class AccountBottomSheet {
 
     public static void show(@NonNull Context context) {
@@ -60,6 +66,7 @@ public class AccountBottomSheet {
     }
 
     private static void showChangePasswordDialog(@NonNull Context context) {
+        final SessionManager sessionManager = new SessionManager(context);
         View dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_change_password, null);
         EditText etCurrentPassword = dialogView.findViewById(R.id.etCurrentPassword);
         EditText etNewPassword = dialogView.findViewById(R.id.etNewPassword);
@@ -97,23 +104,64 @@ public class AccountBottomSheet {
                     return;
                 }
 
+                if (newPass.equals(currentPass)) {
+                    if (etNewPassword != null) etNewPassword.setError("New password cannot be same as current");
+                    return;
+                }
+
+                if (confirmPass.isEmpty()) {
+                    if (etConfirmNewPassword != null) etConfirmNewPassword.setError("Please confirm new password");
+                    return;
+                }
+
                 if (!newPass.equals(confirmPass)) {
                     if (etConfirmNewPassword != null) etConfirmNewPassword.setError("Passwords do not match");
                     return;
                 }
 
-                if (newPass.equals(currentPass)) {
-                    if (etNewPassword != null) etNewPassword.setError("New password cannot be the same as current password");
-                    return;
-                }
+                btnSubmit.setEnabled(false);
+                btnSubmit.setText("Updating...");
 
-                alertDialog.dismiss();
+                ApiService apiService = ApiClient.getApiService(context);
+                ChangePasswordRequest req = new ChangePasswordRequest(currentPass, newPass, confirmPass);
 
-                new MaterialAlertDialogBuilder(context)
-                        .setTitle("Backend Support Required")
-                        .setMessage("The CipherVault backend does not currently support changing passwords via an API endpoint. Backend support is required before passwords can be updated. Your password was not modified.")
-                        .setPositiveButton("OK", null)
-                        .show();
+                apiService.changePassword(req).enqueue(new Callback<Map<String, Object>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
+                        btnSubmit.setEnabled(true);
+                        btnSubmit.setText("Change Password");
+
+                        if (response.isSuccessful()) {
+                            if (response.body() != null && response.body().containsKey("token")) {
+                                Object tokenObj = response.body().get("token");
+                                if (tokenObj != null && !tokenObj.toString().isEmpty()) {
+                                    sessionManager.saveAuthToken(tokenObj.toString());
+                                }
+                            }
+                            alertDialog.dismiss();
+                            Toast.makeText(context, "Password changed successfully", Toast.LENGTH_SHORT).show();
+                        } else {
+                            String errorMsg = "Failed to update password";
+                            try {
+                                if (response.errorBody() != null) {
+                                    String errJson = response.errorBody().string();
+                                    if (errJson.contains("message")) {
+                                        org.json.JSONObject obj = new org.json.JSONObject(errJson);
+                                        if (obj.has("message")) errorMsg = obj.getString("message");
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
+                        btnSubmit.setEnabled(true);
+                        btnSubmit.setText("Change Password");
+                        Toast.makeText(context, "Connection error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
             });
         }
 

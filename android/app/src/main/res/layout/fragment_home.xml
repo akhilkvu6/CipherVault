@@ -281,7 +281,7 @@
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
-                        android:contentDescription="Upload"
+                        android:contentDescription="@string/action_upload"
                         android:src="@drawable/ic_nav_upload"
                         app:tint="?attr/colorOnPrimary" />
 
@@ -320,7 +320,7 @@
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
-                        android:contentDescription="Browse Files"
+                        android:contentDescription="@string/nav_files"
                         android:src="@drawable/ic_nav_files"
                         app:tint="?attr/colorOnSurface" />
 

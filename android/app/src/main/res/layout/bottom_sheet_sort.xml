@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="?attr/colorSurface">
+
+    <View
+        android:layout_width="32dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_bottom_sheet_handle"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sort Files"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <RadioGroup
+        android:id="@+id/radioGroupSort"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/rbSortNameAsc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Name (A to Z)"
+            android:textColor="?attr/colorOnSurface"
+            android:paddingVertical="12dp" />
+
+        <RadioButton
+            android:id="@+id/rbSortNameDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Name (Z to A)"
+            android:textColor="?attr/colorOnSurface"
+            android:paddingVertical="12dp" />
+
+        <RadioButton
+            android:id="@+id/rbSortDateDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Newest First"
+            android:textColor="?attr/colorOnSurface"
+            android:paddingVertical="12dp" />
+
+        <RadioButton
+            android:id="@+id/rbSortDateAsc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Oldest First"
+            android:textColor="?attr/colorOnSurface"
+            android:paddingVertical="12dp" />
+
+        <RadioButton
+            android:id="@+id/rbSortSizeDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Largest First"
+            android:textColor="?attr/colorOnSurface"
+            android:paddingVertical="12dp" />
+    </RadioGroup>
+
+</LinearLayout>
