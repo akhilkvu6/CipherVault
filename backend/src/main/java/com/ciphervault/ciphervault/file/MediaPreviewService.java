@@ -1,6 +1,13 @@
 package com.ciphervault.ciphervault.file;
 
-import com.ciphervault.ciphervault.util.ConsoleLogger;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.jcodec.api.FrameGrab;
+import org.jcodec.common.model.Picture;
+import org.jcodec.scale.AWTUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -19,11 +26,19 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MediaPreviewService {
 
+    private static final Logger log = LoggerFactory.getLogger(MediaPreviewService.class);
+
     private static final int MAX_PREVIEW_DIMENSION = 384;
     private static final List<String> COMMON_FFMPEG_PATHS = Arrays.asList(
             "ffmpeg",
-            "C:\\Program Files\\ShareX\\ffmpeg.exe",
-            "C:\\Program Files\\Krita (x64)\\bin\\ffmpeg.exe"
+            "ffmpeg.exe",
+            System.getProperty("user.home") + "\\AppData\\Local\\Microsoft\\WinGet\\Links\\ffmpeg.exe",
+            System.getProperty("user.home") + "\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.2-full_build\\bin\\ffmpeg.exe",
+            "C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe",
+            "C:\\ffmpeg\\bin\\ffmpeg.exe",
+            "/usr/bin/ffmpeg",
+            "/usr/local/bin/ffmpeg",
+            "/opt/homebrew/bin/ffmpeg"
     );
 
     public byte[] generatePreview(Path sourceFile, String filename, String contentType) {
@@ -38,16 +53,40 @@ public class MediaPreviewService {
 
             String mime = contentType != null ? contentType.toLowerCase() : "";
             String name = filename != null ? filename.toLowerCase() : "";
+            byte[] result = null;
+            String type = "IMAGE";
+            String generator = "ImageIO";
 
             if (isImage(mime, name)) {
-                return generateImagePreview(sourceFile);
+                type = "IMAGE";
+                generator = "ImageIO";
+                result = generateImagePreview(sourceFile);
+            } else if (isPdf(mime, name)) {
+                type = "PDF";
+                generator = "PDFBox";
+                result = generatePdfPreview(sourceFile);
             } else if (isVideo(mime, name)) {
-                return generateVideoPreview(sourceFile);
+                type = "VIDEO";
+                generator = "FFmpeg / JCodec";
+                result = generateVideoPreview(sourceFile);
             } else if (isAudio(mime, name)) {
-                return generateAudioPreview(sourceFile);
+                type = "AUDIO";
+                generator = "ExifTool ID3";
+                result = generateAudioPreview(sourceFile);
+            } else {
+                com.ciphervault.ciphervault.logging.ConsoleLogger.logPreviewUnavailable(filename, "No compatible preview generator");
+                return null;
+            }
+
+            if (result != null && result.length > 0) {
+                com.ciphervault.ciphervault.logging.ConsoleLogger.logPreviewReady(filename, null, type, generator, true, true);
+                return result;
+            } else {
+                com.ciphervault.ciphervault.logging.ConsoleLogger.logPreviewUnavailable(filename, "Frame extraction yielded empty preview");
             }
         } catch (Exception e) {
-            ConsoleLogger.warn("Preview generation failed for " + filename + ": " + e.getMessage());
+            log.warn("Preview generation failed for {}: {}", filename, e.getMessage());
+            com.ciphervault.ciphervault.logging.ConsoleLogger.logPreviewUnavailable(filename, e.getMessage());
         }
 
         return null;
@@ -64,7 +103,7 @@ public class MediaPreviewService {
             Files.write(temp, originalData);
             return generatePreview(temp, filename, contentType);
         } catch (Exception e) {
-            ConsoleLogger.warn("Preview generation error from bytes: " + e.getMessage());
+            log.warn("Preview generation error from bytes: {}", e.getMessage());
             return null;
         } finally {
             cleanupTempFile(temp);
@@ -76,6 +115,10 @@ public class MediaPreviewService {
                 || name.endsWith(".jpg") || name.endsWith(".jpeg")
                 || name.endsWith(".png") || name.endsWith(".webp")
                 || name.endsWith(".gif") || name.endsWith(".bmp");
+    }
+
+    private boolean isPdf(String mime, String name) {
+        return "application/pdf".equalsIgnoreCase(mime) || name.endsWith(".pdf");
     }
 
     private boolean isVideo(String mime, String name) {
@@ -91,6 +134,21 @@ public class MediaPreviewService {
                 || name.endsWith(".mp3") || name.endsWith(".m4a")
                 || name.endsWith(".flac") || name.endsWith(".aac")
                 || name.endsWith(".ogg") || name.endsWith(".wav");
+    }
+
+    public byte[] generatePdfPreview(Path sourceFile) {
+        try (PDDocument document = Loader.loadPDF(sourceFile.toFile())) {
+            if (document.getNumberOfPages() > 0) {
+                PDFRenderer renderer = new PDFRenderer(document);
+                BufferedImage bim = renderer.renderImageWithDPI(0, 96);
+                if (bim != null) {
+                    return scaleAndEncodeJpeg(bim);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("PDF preview extraction error: {}", e.getMessage());
+        }
+        return null;
     }
 
     public byte[] generateImagePreview(Path sourceFile) {
@@ -113,7 +171,7 @@ public class MediaPreviewService {
 
             return scaleAndEncodeJpeg(original);
         } catch (Exception e) {
-            ConsoleLogger.warn("Image preview processing error: " + e.getMessage());
+            log.warn("Image preview processing error: {}", e.getMessage());
             return null;
         }
     }
@@ -138,24 +196,31 @@ public class MediaPreviewService {
         try {
             tempOutput = Files.createTempFile("cv_vid_out_", ".jpg");
 
+            // 1. Primary: FFmpeg (supports H.264, H.265/HEVC, VP8/VP9/WebM, MKV, AVI, MP4, etc.)
             String ffmpegPath = findFfmpegExecutable();
             if (ffmpegPath != null) {
-                // Try 1 second mark first directly from the source file
                 boolean success = runFfmpegFrameExtract(ffmpegPath, sourceFile, tempOutput, "00:00:01");
                 if (!success || Files.size(tempOutput) == 0) {
-                    // Try 0 second mark
-                    runFfmpegFrameExtract(ffmpegPath, sourceFile, tempOutput, "00:00:00");
+                    success = runFfmpegFrameExtract(ffmpegPath, sourceFile, tempOutput, "00:00:00");
                 }
 
-                if (Files.exists(tempOutput) && Files.size(tempOutput) > 0) {
+                if (success && Files.exists(tempOutput) && Files.size(tempOutput) > 0) {
                     BufferedImage frame = ImageIO.read(tempOutput.toFile());
                     if (frame != null) {
+                        log.debug("Video preview generated via FFmpeg: {}", sourceFile.getFileName());
                         return scaleAndEncodeJpeg(frame);
                     }
                 }
             }
 
-            // Fallback: Check if ExifTool can extract embedded CoverArt / PreviewImage directly from source file
+            // 2. Pure-Java Fallback: JCodec (decodes MP4/MOV frames without external binaries)
+            byte[] jcodecResult = extractFrameWithJCodec(sourceFile);
+            if (jcodecResult != null && jcodecResult.length > 0) {
+                log.debug("Video preview generated via JCodec fallback: {}", sourceFile.getFileName());
+                return jcodecResult;
+            }
+
+            // 3. Metadata Fallback: Check if ExifTool can extract embedded CoverArt / PreviewImage directly
             byte[] cover = extractWithExiftool(sourceFile.toFile(), "-CoverArt");
             if (cover == null || cover.length == 0) {
                 cover = extractWithExiftool(sourceFile.toFile(), "-PreviewImage");
@@ -168,11 +233,35 @@ public class MediaPreviewService {
             }
 
         } catch (Exception e) {
-            ConsoleLogger.warn("Video preview frame extraction failed: " + e.getMessage());
+            log.warn("Video preview frame extraction failed: {}", e.getMessage());
         } finally {
             cleanupTempFile(tempOutput);
         }
 
+        return null;
+    }
+
+    private byte[] extractFrameWithJCodec(Path sourceFile) {
+        try {
+            File f = sourceFile.toFile();
+            Picture picture = null;
+            try {
+                picture = FrameGrab.getFrameFromFile(f, 1);
+            } catch (Exception ignored) {}
+            if (picture == null) {
+                try {
+                    picture = FrameGrab.getFrameFromFile(f, 0);
+                } catch (Exception ignored) {}
+            }
+            if (picture != null) {
+                BufferedImage bi = AWTUtil.toBufferedImage(picture);
+                if (bi != null) {
+                    return scaleAndEncodeJpeg(bi);
+                }
+            }
+        } catch (Throwable t) {
+            log.debug("JCodec frame extraction skipped: {}", t.getMessage());
+        }
         return null;
     }
 
@@ -190,7 +279,7 @@ public class MediaPreviewService {
                 }
             }
         } catch (Exception e) {
-            ConsoleLogger.warn("Audio artwork extraction error: " + e.getMessage());
+            log.warn("Audio artwork extraction error: {}", e.getMessage());
         }
 
         return null;
@@ -237,6 +326,7 @@ public class MediaPreviewService {
             ProcessBuilder pb = new ProcessBuilder(
                     ffmpegPath,
                     "-y",
+                    "-loglevel", "error",
                     "-ss", seekTime,
                     "-i", inputPath.toAbsolutePath().toString(),
                     "-vframes", "1",
@@ -246,13 +336,21 @@ public class MediaPreviewService {
             );
             pb.redirectErrorStream(true);
             Process process = pb.start();
+
+            // Crucial: Drain stdout/stderr so child process never blocks on OS pipe buffer
+            try (InputStream is = process.getInputStream()) {
+                byte[] buffer = new byte[4096];
+                while (is.read(buffer) != -1) {}
+            }
+
             boolean finished = process.waitFor(10, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
                 return false;
             }
-            return process.exitValue() == 0;
+            return process.exitValue() == 0 && Files.exists(outputPath) && Files.size(outputPath) > 0;
         } catch (Exception e) {
+            log.warn("FFmpeg execution error: {}", e.getMessage());
             return false;
         }
     }
@@ -264,19 +362,49 @@ public class MediaPreviewService {
         }
 
         for (String path : COMMON_FFMPEG_PATHS) {
-            if ("ffmpeg".equals(path)) {
-                try {
-                    Process process = new ProcessBuilder("ffmpeg", "-version").start();
-                    if (process.waitFor(3, TimeUnit.SECONDS) && process.exitValue() == 0) {
-                        return "ffmpeg";
-                    }
-                } catch (Exception ignored) {}
-            } else {
+            try {
                 File f = new File(path);
-                if (f.exists() && f.canExecute()) {
-                    return path;
+                if (f.exists() && f.isFile()) {
+                    return f.getAbsolutePath();
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Dynamically search in user LocalAppData WinGet Packages
+        try {
+            String localAppData = System.getenv("LOCALAPPDATA");
+            if (localAppData != null) {
+                File wingetDir = new File(localAppData, "Microsoft\\WinGet\\Packages");
+                if (wingetDir.exists() && wingetDir.isDirectory()) {
+                    File[] pkgs = wingetDir.listFiles((dir, name) -> name.toLowerCase().contains("ffmpeg"));
+                    if (pkgs != null) {
+                        for (File pkg : pkgs) {
+                            File[] binFolders = pkg.listFiles((dir, name) -> name.toLowerCase().contains("ffmpeg") || name.equalsIgnoreCase("bin"));
+                            if (binFolders != null) {
+                                for (File bf : binFolders) {
+                                    File cand = new File(bf, "ffmpeg.exe");
+                                    if (cand.exists() && cand.isFile()) return cand.getAbsolutePath();
+                                    File subBin = new File(bf, "bin\\ffmpeg.exe");
+                                    if (subBin.exists() && subBin.isFile()) return subBin.getAbsolutePath();
+                                }
+                            }
+                        }
+                    }
                 }
             }
+        } catch (Exception ignored) {}
+
+        for (String cmd : Arrays.asList("ffmpeg", "ffmpeg.exe")) {
+            try {
+                Process process = new ProcessBuilder(cmd, "-version").start();
+                try (InputStream is = process.getInputStream()) {
+                    byte[] b = new byte[1024];
+                    while (is.read(b) != -1) {}
+                }
+                if (process.waitFor(3, TimeUnit.SECONDS) && process.exitValue() == 0) {
+                    return cmd;
+                }
+            } catch (Exception ignored) {}
         }
         return null;
     }

@@ -1,199 +1,135 @@
 package com.ciphervault.ciphervault.file;
 
+import com.ciphervault.ciphervault.logging.ConsoleLogger;
+import com.ciphervault.ciphervault.logging.RequestContext;
+import com.ciphervault.ciphervault.security.KeyManagementService;
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
-import com.ciphervault.ciphervault.util.ConsoleLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.FileNotFoundException;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/files")
 public class FileController {
 
+    private static final Logger log = LoggerFactory.getLogger(FileController.class);
+
+    private final FileStorageService fileStorageService;
     private final FileRepository fileRepository;
     private final UserRepository userRepository;
-    private final EncryptionService encryptionService;
-    private final MediaPreviewService mediaPreviewService;
+    private final FileCategoryService fileCategoryService;
+    private final FileSearchService fileSearchService;
 
-    public FileController(FileRepository fileRepository, UserRepository userRepository,
-                          EncryptionService encryptionService, MediaPreviewService mediaPreviewService) {
+    @Autowired
+    public FileController(FileStorageService fileStorageService,
+                          FileRepository fileRepository,
+                          UserRepository userRepository,
+                          FileCategoryService fileCategoryService,
+                          FileSearchService fileSearchService) {
+        this.fileStorageService = fileStorageService;
         this.fileRepository = fileRepository;
         this.userRepository = userRepository;
-        this.encryptionService = encryptionService;
-        this.mediaPreviewService = mediaPreviewService;
-        ConsoleLogger.success("FileController initialized successfully.");
+        this.fileCategoryService = fileCategoryService;
+        this.fileSearchService = fileSearchService;
+    }
+
+    /**
+     * Backward-compatible constructor for testing and programmatic instantiation.
+     */
+    public FileController(FileRepository fileRepository,
+                          UserRepository userRepository,
+                          EncryptionService encryptionService,
+                          MediaPreviewService mediaPreviewService,
+                          KeyManagementService keyManagementService,
+                          MetadataExtractionService metadataExtractionService,
+                          FileMetadataRepository fileMetadataRepository,
+                          FileCategoryService fileCategoryService,
+                          FileSearchService fileSearchService) {
+        this(
+                new FileStorageService(
+                        fileRepository,
+                        userRepository,
+                        encryptionService,
+                        mediaPreviewService,
+                        keyManagementService,
+                        metadataExtractionService,
+                        fileMetadataRepository,
+                        fileCategoryService
+                ),
+                fileRepository,
+                userRepository,
+                fileCategoryService,
+                fileSearchService
+        );
     }
 
     @PostMapping("/upload")
     public ResponseEntity<FileUploadResponse> uploadFile(@RequestParam("file") MultipartFile file,
                                                          @RequestParam(value = "encrypt", defaultValue = "true") boolean encrypt,
                                                          Authentication authentication) {
-        ConsoleLogger.info("File upload request received.");
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new FileUploadResponse(false, "Authentication required", null, null, null, null, null));
+        }
 
-        Path tempSourceFile = null;
-        Path storagePath = null;
-        Path previewPath = null;
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new FileUploadResponse(false, "User not found", null, null, null, null, null));
+        }
+        RequestContext.setUser(user.getEmail(), user.getId());
+
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new FileUploadResponse(false, "File cannot be empty", null, null, null, null, null));
+        }
 
         try {
-            if (authentication == null || !authentication.isAuthenticated()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new FileUploadResponse(false, "Authentication required", null, null, null, null, null));
-            }
-
-            User user = userRepository.findByEmail(authentication.getName()).orElse(null);
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new FileUploadResponse(false, "User not found", null, null, null, null, null));
-            }
-
-            if (file == null || file.isEmpty()) {
-                return ResponseEntity.badRequest()
-                        .body(new FileUploadResponse(false, "File cannot be empty", null, null, null, null, null));
-            }
-
-            String originalFilename = file.getOriginalFilename();
-            if (originalFilename == null || originalFilename.isBlank()) originalFilename = "file";
-
-            String extension = getExtension(originalFilename);
-
-            // Stream MultipartFile directly into a temporary source file on disk
-            tempSourceFile = Files.createTempFile("cv_upload_src_", extension);
-            try (InputStream is = file.getInputStream();
-                 OutputStream os = Files.newOutputStream(tempSourceFile)) {
-                byte[] buffer = new byte[8192];
-                int bytesRead;
-                while ((bytesRead = is.read(buffer)) != -1) {
-                    os.write(buffer, 0, bytesRead);
-                }
-                os.flush();
-            }
-
-            long fileSize = Files.size(tempSourceFile);
-            String sha256Hash = calculateSha256(tempSourceFile);
-
-            if (fileRepository.existsByUserAndSha256Hash(user, sha256Hash)) {
-                ConsoleLogger.warn("Duplicate file upload rejected for user: " + authentication.getName());
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                        .body(new FileUploadResponse(false, "Duplicate file already exists", null, null, null, null, sha256Hash));
-            }
-
-            if (user.getUsedStorage() + fileSize > user.getStorageLimit()) {
-                ConsoleLogger.warn("Upload rejected: storage quota exceeded.");
-                return ResponseEntity.status(HttpStatus.INSUFFICIENT_STORAGE)
-                        .body(new FileUploadResponse(false, "Storage quota exceeded", null, null, null, null, sha256Hash));
-            }
-
-            String storedFilename = UUID.randomUUID() + extension;
-
-            Path storageDirectory = encrypt
-                    ? FileStorageConfig.ENCRYPTED_STORAGE
-                    : FileStorageConfig.NORMAL_STORAGE;
-
-            Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-            Path absoluteStorageDirectory = storageDirectory.toAbsolutePath().normalize();
-            storagePath = absoluteStorageDirectory.resolve(storedFilename).normalize();
-
-            if (!storagePath.startsWith(storageRoot)) {
-                ConsoleLogger.error("Invalid storage path detected.");
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                        .body(new FileUploadResponse(false, "Invalid storage path", null, null, null, null, null));
-            }
-
-            // 1. Generate preview directly from temporary source file before encryption
-            byte[] previewData = null;
-            try {
-                previewData = mediaPreviewService.generatePreview(tempSourceFile, originalFilename, file.getContentType());
-            } catch (Exception e) {
-                ConsoleLogger.warn("Preview generation error (continuing upload): " + e.getMessage());
-            }
-
-            if (previewData != null && previewData.length > 0) {
-                String previewFilename = "preview-" + UUID.randomUUID() + ".jpg";
-                Path candidatePreviewPath = FileStorageConfig.PREVIEW_STORAGE.toAbsolutePath().normalize().resolve(previewFilename).normalize();
-                if (candidatePreviewPath.startsWith(storageRoot)) {
-                    Files.createDirectories(FileStorageConfig.PREVIEW_STORAGE);
-                    Files.write(candidatePreviewPath, previewData);
-                    previewPath = candidatePreviewPath;
-                    ConsoleLogger.success("Preview generated and stored successfully.");
-                }
-            }
-
-            Files.createDirectories(absoluteStorageDirectory);
-
-            if (encrypt) {
-                ConsoleLogger.info("Encryption enabled. Encrypting uploaded file...");
-                byte[] rawBytes = Files.readAllBytes(tempSourceFile);
-                byte[] dataToStore = encryptionService.encrypt(rawBytes);
-                Files.write(storagePath, dataToStore);
-                ConsoleLogger.success("File encrypted successfully.");
-            } else {
-                ConsoleLogger.info("Encryption disabled. Storing original file...");
-                Files.copy(tempSourceFile, storagePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-            ConsoleLogger.success("File stored successfully on server.");
-
-            StoredFile storedFile = new StoredFile();
-            storedFile.setOriginalFilename(originalFilename);
-            storedFile.setStoredFilename(storedFilename);
-            storedFile.setFileSize(fileSize);
-            storedFile.setContentType(file.getContentType() != null ? file.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE);
-            storedFile.setSha256Hash(sha256Hash);
-            storedFile.setStoragePath(storagePath.toString());
-            storedFile.setEncrypted(encrypt);
-            storedFile.setUser(user);
-            if (previewPath != null) {
-                storedFile.setHasPreview(true);
-                storedFile.setPreviewPath(previewPath.toString());
-                storedFile.setPreviewMimeType("image/jpeg");
-            } else {
-                storedFile.setHasPreview(false);
-            }
-
-            StoredFile savedFile = fileRepository.save(storedFile);
-
-            user.setUsedStorage(user.getUsedStorage() + fileSize);
-            userRepository.save(user);
-
-            ConsoleLogger.success("File upload completed successfully.");
-
-            return ResponseEntity.ok(new FileUploadResponse(true, "File uploaded successfully",
-                    savedFile.getId(), originalFilename, fileSize, encrypt, sha256Hash));
-
+            StoredFile savedFile = fileStorageService.storeFile(user, file, encrypt);
+            return ResponseEntity.ok(new FileUploadResponse(
+                    true,
+                    "File uploaded successfully",
+                    savedFile.getId(),
+                    savedFile.getOriginalFilename(),
+                    savedFile.getFileSize(),
+                    savedFile.isEncrypted(),
+                    savedFile.getSha256Hash()
+            ));
+        } catch (DuplicateFileException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new FileUploadResponse(false, "Duplicate file already exists", null, null, null, null, e.getSha256Hash()));
+        } catch (StorageQuotaExceededException e) {
+            return ResponseEntity.status(HttpStatus.INSUFFICIENT_STORAGE)
+                    .body(new FileUploadResponse(false, "Storage quota exceeded", null, null, null, null, null));
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            log.warn("Database duplicate constraint violated: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new FileUploadResponse(false, "Duplicate file already exists", null, null, null, null, null));
         } catch (Exception e) {
-            ConsoleLogger.error("File upload failed: " + e.getClass().getSimpleName());
-            if (storagePath != null) {
-                try { Files.deleteIfExists(storagePath); } catch (Exception ignored) {}
-            }
-            if (previewPath != null) {
-                try { Files.deleteIfExists(previewPath); } catch (Exception ignored) {}
-            }
+            log.error("File upload failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new FileUploadResponse(false, "File upload failed", null, null, null, null, null));
-        } finally {
-            if (tempSourceFile != null) {
-                try {
-                    Files.deleteIfExists(tempSourceFile);
-                    ConsoleLogger.info("Temporary source file cleaned successfully.");
-                } catch (Exception ignored) {}
-            }
+                    .body(new FileUploadResponse(false, "File upload failed: " + e.getMessage(), null, null, null, null, null));
         }
     }
 
     @GetMapping
-    public ResponseEntity<List<FileResponse>> listFiles(Authentication authentication) {
-        ConsoleLogger.info("File list request received.");
+    public ResponseEntity<List<FileResponse>> listFiles(
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
+            Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -201,22 +137,36 @@ public class FileController {
 
         User user = userRepository.findByEmail(authentication.getName()).orElse(null);
         if (user == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        RequestContext.setUser(user.getEmail(), user.getId());
 
-        List<FileResponse> files = fileRepository.findByUser(user).stream()
-                .map(file -> new FileResponse(file.getId(), file.getOriginalFilename(), file.getFileSize(),
-                        file.getContentType(), file.isEncrypted(), file.getSha256Hash(), file.getCreatedAt(),
-                        file.isHasPreview()))
-                .toList();
+        HttpHeaders headers = new HttpHeaders();
+        List<FileResponse> files;
 
-        ConsoleLogger.success("File list retrieved successfully.");
-        return ResponseEntity.ok(files);
+        if (page != null || size != null) {
+            int pageNum = page != null ? Math.max(0, page) : 0;
+            int pageSize = size != null ? Math.min(100, Math.max(1, size)) : 50;
+            Page<StoredFile> pageResult = fileRepository.findByUserOrderByCreatedAtDesc(user, PageRequest.of(pageNum, pageSize));
+            files = pageResult.getContent().stream().map(this::mapToFileResponse).toList();
+            headers.set("X-Total-Count", String.valueOf(pageResult.getTotalElements()));
+            headers.set("X-Total-Pages", String.valueOf(pageResult.getTotalPages()));
+            headers.set("X-Current-Page", String.valueOf(pageResult.getNumber()));
+            headers.set("X-Page-Size", String.valueOf(pageResult.getSize()));
+        } else {
+            List<StoredFile> allFiles = fileRepository.findByUserOrderByCreatedAtDesc(user);
+            files = allFiles.stream().map(this::mapToFileResponse).toList();
+            headers.set("X-Total-Count", String.valueOf(files.size()));
+            headers.set("X-Total-Pages", "1");
+            headers.set("X-Current-Page", "0");
+            headers.set("X-Page-Size", String.valueOf(files.size()));
+        }
+
+        return ResponseEntity.ok().headers(headers).body(files);
     }
 
-    @GetMapping("/{id}/download")
-    public ResponseEntity<byte[]> downloadFile(@PathVariable Long id,
-                                               @RequestParam(value = "decrypt", defaultValue = "true") boolean decrypt,
-                                               Authentication authentication) {
-        ConsoleLogger.info("File download request received.");
+    @GetMapping("/check-duplicate")
+    public ResponseEntity<Map<String, Object>> checkDuplicate(
+            @RequestParam("hash") String hash,
+            Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -225,73 +175,150 @@ public class FileController {
         User user = userRepository.findByEmail(authentication.getName()).orElse(null);
         if (user == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
 
-        StoredFile storedFile = fileRepository.findByIdAndUser(id, user).orElse(null);
-        if (storedFile == null) {
-            ConsoleLogger.warn("File not found or user does not own file ID: " + id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        Optional<StoredFile> existing = fileRepository.findByUserAndSha256Hash(user, hash.trim().toLowerCase());
+        Map<String, Object> result = new LinkedHashMap<>();
+        if (existing.isPresent()) {
+            result.put("isDuplicate", true);
+            result.put("existingFileName", existing.get().getOriginalFilename());
+            result.put("fileId", existing.get().getId());
+        } else {
+            result.put("isDuplicate", false);
+            result.put("existingFileName", null);
+            result.put("fileId", null);
         }
 
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<FileResponse>> searchFiles(
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "cameraMake", required = false) String cameraMake,
+            @RequestParam(value = "cameraModel", required = false) String cameraModel,
+            @RequestParam(value = "resolution", required = false) String resolution,
+            @RequestParam(value = "codec", required = false) String codec,
+            @RequestParam(value = "artist", required = false) String artist,
+            @RequestParam(value = "author", required = false) String author,
+            @RequestParam(value = "genre", required = false) String genre,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String reqId = RequestContext.getRequestId();
+        long sSearch = System.currentTimeMillis();
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        RequestContext.setUser(user.getEmail(), user.getId());
+
+        HttpHeaders headers = new HttpHeaders();
+        List<FileResponse> response;
+
+        if (page != null || size != null) {
+            int pageNum = page != null ? Math.max(0, page) : 0;
+            int pageSize = size != null ? Math.min(100, Math.max(1, size)) : 50;
+            Page<StoredFile> pageResult = fileSearchService.search(
+                    user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre,
+                    PageRequest.of(pageNum, pageSize)
+            );
+            response = pageResult.getContent().stream().map(this::mapToFileResponse).toList();
+            headers.set("X-Total-Count", String.valueOf(pageResult.getTotalElements()));
+            headers.set("X-Total-Pages", String.valueOf(pageResult.getTotalPages()));
+            headers.set("X-Current-Page", String.valueOf(pageResult.getNumber()));
+            headers.set("X-Page-Size", String.valueOf(pageResult.getSize()));
+        } else {
+            List<StoredFile> files = fileSearchService.search(
+                    user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre
+            );
+            response = files.stream().map(this::mapToFileResponse).toList();
+            headers.set("X-Total-Count", String.valueOf(response.size()));
+            headers.set("X-Total-Pages", "1");
+            headers.set("X-Current-Page", "0");
+            headers.set("X-Page-Size", String.valueOf(response.size()));
+        }
+
+        long duration = Math.max(1, System.currentTimeMillis() - sSearch);
+        StringBuilder filters = new StringBuilder();
+        if (cameraMake != null && !cameraMake.isBlank()) filters.append("make=").append(cameraMake).append(" ");
+        if (cameraModel != null && !cameraModel.isBlank()) filters.append("model=").append(cameraModel).append(" ");
+        if (resolution != null && !resolution.isBlank()) filters.append("res=").append(resolution).append(" ");
+        if (codec != null && !codec.isBlank()) filters.append("codec=").append(codec).append(" ");
+        if (artist != null && !artist.isBlank()) filters.append("artist=").append(artist).append(" ");
+        if (author != null && !author.isBlank()) filters.append("author=").append(author).append(" ");
+        if (genre != null && !genre.isBlank()) filters.append("genre=").append(genre).append(" ");
+
+        ConsoleLogger.logSearchTrace(
+                reqId,
+                user.getId(),
+                query,
+                category,
+                filters.length() > 0 ? filters.toString().trim() : null,
+                response.size(),
+                duration
+        );
+
+        return ResponseEntity.ok().headers(headers).body(response);
+    }
+
+    public ResponseEntity<List<FileResponse>> searchFiles(
+            String query, String category, String cameraMake, String cameraModel,
+            String resolution, String codec, String artist, String author, String genre,
+            Authentication authentication) {
+        return searchFiles(query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre, null, null, authentication);
+    }
+
+    @GetMapping("/suggestions")
+    public ResponseEntity<List<String>> getSuggestions(
+            @RequestParam(value = "prefix", required = false) String prefix,
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+
+        List<String> suggestions = fileSearchService.getSuggestions(user, prefix);
+        return ResponseEntity.ok(suggestions);
+    }
+
+    @GetMapping(value = {"/{id}/download", "/download/{id}"})
+    public ResponseEntity<StreamingResponseBody> downloadFile(@PathVariable Long id,
+                                                              @RequestParam(value = "decrypt", defaultValue = "true") boolean decrypt,
+                                                              Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        RequestContext.setUser(user.getEmail(), user.getId());
+
         try {
-            Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-            Path filePath = Path.of(storedFile.getStoragePath()).toAbsolutePath().normalize();
-
-            if (!filePath.startsWith(storageRoot)) {
-                ConsoleLogger.error("Invalid file storage path detected.");
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            }
-
-            if (!Files.exists(filePath)) {
-                ConsoleLogger.error("Physical file does not exist on server.");
+            FileStorageService.DownloadPayload payload = fileStorageService.prepareDownload(user, id, decrypt);
+            if (payload == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            ConsoleLogger.info("Reading file from secure storage...");
-            byte[] storedData = Files.readAllBytes(filePath);
-            byte[] responseData;
-            String downloadFilename = storedFile.getOriginalFilename();
-
-            if (storedFile.isEncrypted() && decrypt) {
-                ConsoleLogger.info("Encrypted file detected. Decrypting...");
-                responseData = encryptionService.decrypt(storedData);
-
-                ConsoleLogger.info("Verifying downloaded file integrity...");
-                String downloadedHash = calculateSha256(responseData);
-
-                if (!downloadedHash.equalsIgnoreCase(storedFile.getSha256Hash())) {
-                    ConsoleLogger.error("File integrity check failed: SHA-256 hash mismatch.");
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-                }
-
-                ConsoleLogger.success("File integrity verified: SHA-256 hash matches.");
-            } else if (storedFile.isEncrypted()) {
-                ConsoleLogger.info("Encrypted download requested. Returning raw encrypted file.");
-                responseData = storedData;
-                downloadFilename += ".encrypted";
-            } else {
-                ConsoleLogger.info("Unencrypted file detected.");
-                responseData = storedData;
-
-                ConsoleLogger.info("Verifying downloaded file integrity...");
-                String downloadedHash = calculateSha256(responseData);
-
-                if (!downloadedHash.equalsIgnoreCase(storedFile.getSha256Hash())) {
-                    ConsoleLogger.error("File integrity check failed: SHA-256 hash mismatch.");
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-                }
-
-                ConsoleLogger.success("File integrity verified: SHA-256 hash matches.");
-            }
-
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.parseMediaType(storedFile.getContentType()));
-            headers.setContentDisposition(ContentDisposition.attachment().filename(downloadFilename).build());
-            headers.setContentLength(responseData.length);
+            headers.setContentType(MediaType.parseMediaType(payload.getContentType()));
+            headers.setContentDisposition(ContentDisposition.attachment().filename(payload.getFilename(), StandardCharsets.UTF_8).build());
+            headers.setContentLength(payload.getContentLength());
+            headers.set("X-File-SHA256", payload.getSha256());
+            headers.set("X-Encrypted", String.valueOf(payload.isEncrypted()));
 
-            ConsoleLogger.success("File ready for download: " + downloadFilename);
-            return new ResponseEntity<>(responseData, headers, HttpStatus.OK);
+            return ResponseEntity.ok().headers(headers).body(payload.getBody());
 
+        } catch (FileNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         } catch (Exception e) {
-            ConsoleLogger.error("File download failed: " + e.getClass().getSimpleName());
+            log.error("File download initialization failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -299,8 +326,6 @@ public class FileController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, Object>> deleteFile(@PathVariable Long id,
                                                           Authentication authentication) {
-        ConsoleLogger.info("File delete request received for ID: " + id);
-
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -309,56 +334,24 @@ public class FileController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+        RequestContext.setUser(user.getEmail(), user.getId());
 
-        StoredFile storedFile = fileRepository.findByIdAndUser(id, user).orElse(null);
-        if (storedFile == null) {
-            ConsoleLogger.warn("File not found or user does not own file ID: " + id);
+        boolean deleted = fileStorageService.deleteFile(user, id);
+        if (!deleted) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        try {
-            Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-            Path filePath = Path.of(storedFile.getStoragePath()).toAbsolutePath().normalize();
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("success", true);
+        response.put("message", "File deleted successfully");
+        response.put("fileId", id);
 
-            if (filePath.startsWith(storageRoot) && Files.exists(filePath)) {
-                Files.delete(filePath);
-                ConsoleLogger.info("Physical file deleted from disk: " + filePath);
-            }
-
-            if (storedFile.getPreviewPath() != null) {
-                Path previewPath = Path.of(storedFile.getPreviewPath()).toAbsolutePath().normalize();
-                if (previewPath.startsWith(storageRoot) && Files.exists(previewPath)) {
-                    Files.delete(previewPath);
-                    ConsoleLogger.info("Preview file deleted from disk: " + previewPath);
-                }
-            }
-
-            long fileSize = storedFile.getFileSize() != null ? storedFile.getFileSize() : 0L;
-            long newUsedStorage = Math.max(0L, user.getUsedStorage() - fileSize);
-            user.setUsedStorage(newUsedStorage);
-            userRepository.save(user);
-
-            fileRepository.delete(storedFile);
-            ConsoleLogger.success("File deleted successfully from database and user quota updated. User: " + user.getEmail());
-
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("success", true);
-            response.put("message", "File deleted successfully");
-            response.put("fileId", id);
-
-            return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
-            ConsoleLogger.error("Failed to delete file ID: " + id + " - " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{id}/preview")
+    @GetMapping(value = {"/{id}/preview", "/preview/{id}"})
     public ResponseEntity<byte[]> getFilePreview(@PathVariable Long id,
                                                  Authentication authentication) {
-        ConsoleLogger.info("File preview request received for ID: " + id);
-
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -367,72 +360,184 @@ public class FileController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-
-        StoredFile storedFile = fileRepository.findByIdAndUser(id, user).orElse(null);
-        if (storedFile == null) {
-            ConsoleLogger.warn("File not found or user does not own file ID: " + id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
-
-        if (!storedFile.isHasPreview() || storedFile.getPreviewPath() == null) {
-            ConsoleLogger.info("No preview available for file ID: " + id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-        }
+        RequestContext.setUser(user.getEmail(), user.getId());
 
         try {
-            Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-            Path previewPath = Path.of(storedFile.getPreviewPath()).toAbsolutePath().normalize();
-
-            if (!previewPath.startsWith(storageRoot) || !Files.exists(previewPath)) {
-                ConsoleLogger.warn("Invalid or missing preview file path: " + previewPath);
+            byte[] previewData = fileStorageService.getPreviewBytes(user, id);
+            if (previewData == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            byte[] previewData = Files.readAllBytes(previewPath);
+            StoredFile storedFile = fileRepository.findByIdAndUser(id, user).orElse(null);
+            String mimeType = storedFile != null && storedFile.getPreviewMimeType() != null
+                    ? storedFile.getPreviewMimeType()
+                    : MediaType.IMAGE_JPEG_VALUE;
+
             HttpHeaders headers = new HttpHeaders();
-            String mimeType = storedFile.getPreviewMimeType() != null ? storedFile.getPreviewMimeType() : MediaType.IMAGE_JPEG_VALUE;
             headers.setContentType(MediaType.parseMediaType(mimeType));
             headers.setCacheControl(CacheControl.maxAge(1, java.util.concurrent.TimeUnit.DAYS).cachePrivate().getHeaderValue());
             headers.setContentLength(previewData.length);
 
             return new ResponseEntity<>(previewData, headers, HttpStatus.OK);
         } catch (Exception e) {
-            ConsoleLogger.error("Failed to read preview for file ID: " + id + " - " + e.getMessage());
+            log.error("Failed to read preview for file ID: {} - {}", id, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    private String calculateSha256(byte[] data) {
+    @PostMapping("/{id}/regenerate-preview")
+    public ResponseEntity<Map<String, Object>> regeneratePreview(@PathVariable Long id,
+                                                                 Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
         try {
-            byte[] hash = MessageDigest.getInstance("SHA-256").digest(data);
-            StringBuilder result = new StringBuilder();
-            for (byte b : hash) result.append(String.format("%02x", b));
-            return result.toString();
-        } catch (Exception e) {
-            throw new RuntimeException("SHA-256 calculation failed.", e);
-        }
-    }
-
-    private String calculateSha256(Path file) {
-        try (InputStream is = Files.newInputStream(file)) {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] buffer = new byte[8192];
-            int read;
-            while ((read = is.read(buffer)) != -1) {
-                digest.update(buffer, 0, read);
+            boolean success = fileStorageService.regeneratePreview(user, id);
+            if (success) {
+                return ResponseEntity.ok(Map.of("success", true, "message", "Preview regenerated successfully", "hasPreview", true));
+            } else {
+                return ResponseEntity.ok(Map.of("success", false, "message", "Preview generation not supported for this file format", "hasPreview", false));
             }
-            byte[] hash = digest.digest();
-            StringBuilder result = new StringBuilder();
-            for (byte b : hash) result.append(String.format("%02x", b));
-            return result.toString();
         } catch (Exception e) {
-            throw new RuntimeException("SHA-256 calculation failed.", e);
+            log.error("Failed to regenerate preview for file ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("success", false, "message", "Preview regeneration failed: " + e.getMessage()));
         }
     }
 
-    private String getExtension(String filename) {
-        int lastDot = filename.lastIndexOf('.');
-        return lastDot == -1 ? "" : filename.substring(lastDot);
+    private FileResponse mapToFileResponse(StoredFile file) {
+        String category = fileCategoryService.determineCategory(file.getOriginalFilename(), file.getContentType());
+        FileMetadataDTO metaDTO = null;
+        if (file.getMetadata() != null) {
+            FileMetadata m = file.getMetadata();
+            metaDTO = new FileMetadataDTO(
+                    m.getCameraMake(), m.getCameraModel(), m.getLens(), m.getFocalLength(),
+                    m.getIso(), m.getExposureTime(), m.getFNumber(), m.getDateTaken(),
+                    m.getWidth(), m.getHeight(), m.getResolution(), m.getDuration(),
+                    m.getVideoCodec(), m.getAudioCodec(), m.getFrameRate(), m.getBitrate(),
+                    m.getTitle(), m.getArtist(), m.getAlbum(), m.getGenre(),
+                    m.getReleaseYear(), m.getAuthor(), m.getCreator(), m.getSubject(),
+                    m.getKeywords(), m.getDocCreatedDate(), m.getDocModifiedDate()
+            );
+        }
+        return new FileResponse(
+                file.getId(),
+                file.getOriginalFilename(),
+                file.getFileSize(),
+                file.getContentType(),
+                file.isEncrypted(),
+                file.getSha256Hash(),
+                file.getCreatedAt(),
+                file.isHasPreview(),
+                category,
+                metaDTO
+        );
+    }
+
+    // =========================
+    // DTOs
+    // =========================
+
+    public static class FileMetadataDTO {
+        private String cameraMake;
+        private String cameraModel;
+        private String lens;
+        private String focalLength;
+        private String iso;
+        private String exposureTime;
+        private String fNumber;
+        private String dateTaken;
+        private Integer width;
+        private Integer height;
+        private String resolution;
+        private String duration;
+        private String videoCodec;
+        private String audioCodec;
+        private String frameRate;
+        private String bitrate;
+        private String title;
+        private String artist;
+        private String album;
+        private String genre;
+        private String releaseYear;
+        private String author;
+        private String creator;
+        private String subject;
+        private String keywords;
+        private String docCreatedDate;
+        private String docModifiedDate;
+
+        public FileMetadataDTO() {}
+
+        public FileMetadataDTO(String cameraMake, String cameraModel, String lens, String focalLength,
+                               String iso, String exposureTime, String fNumber, String dateTaken,
+                               Integer width, Integer height, String resolution, String duration,
+                               String videoCodec, String audioCodec, String frameRate, String bitrate,
+                               String title, String artist, String album, String genre,
+                               String releaseYear, String author, String creator, String subject,
+                               String keywords, String docCreatedDate, String docModifiedDate) {
+            this.cameraMake = cameraMake;
+            this.cameraModel = cameraModel;
+            this.lens = lens;
+            this.focalLength = focalLength;
+            this.iso = iso;
+            this.exposureTime = exposureTime;
+            this.fNumber = fNumber;
+            this.dateTaken = dateTaken;
+            this.width = width;
+            this.height = height;
+            this.resolution = resolution;
+            this.duration = duration;
+            this.videoCodec = videoCodec;
+            this.audioCodec = audioCodec;
+            this.frameRate = frameRate;
+            this.bitrate = bitrate;
+            this.title = title;
+            this.artist = artist;
+            this.album = album;
+            this.genre = genre;
+            this.releaseYear = releaseYear;
+            this.author = author;
+            this.creator = creator;
+            this.subject = subject;
+            this.keywords = keywords;
+            this.docCreatedDate = docCreatedDate;
+            this.docModifiedDate = docModifiedDate;
+        }
+
+        public String getCameraMake() { return cameraMake; }
+        public String getCameraModel() { return cameraModel; }
+        public String getLens() { return lens; }
+        public String getFocalLength() { return focalLength; }
+        public String getIso() { return iso; }
+        public String getExposureTime() { return exposureTime; }
+        public String getFNumber() { return fNumber; }
+        public String getDateTaken() { return dateTaken; }
+        public Integer getWidth() { return width; }
+        public Integer getHeight() { return height; }
+        public String getResolution() { return resolution; }
+        public String getDuration() { return duration; }
+        public String getVideoCodec() { return videoCodec; }
+        public String getAudioCodec() { return audioCodec; }
+        public String getFrameRate() { return frameRate; }
+        public String getBitrate() { return bitrate; }
+        public String getTitle() { return title; }
+        public String getArtist() { return artist; }
+        public String getAlbum() { return album; }
+        public String getGenre() { return genre; }
+        public String getReleaseYear() { return releaseYear; }
+        public String getAuthor() { return author; }
+        public String getCreator() { return creator; }
+        public String getSubject() { return subject; }
+        public String getKeywords() { return keywords; }
+        public String getDocCreatedDate() { return docCreatedDate; }
+        public String getDocModifiedDate() { return docModifiedDate; }
     }
 
     public static class FileUploadResponse {
@@ -445,7 +550,7 @@ public class FileController {
         private String sha256Hash;
 
         public FileUploadResponse(boolean success, String message, Long fileId, String filename,
-                                   Long fileSize, Boolean encrypted, String sha256Hash) {
+                                  Long fileSize, Boolean encrypted, String sha256Hash) {
             this.success = success;
             this.message = message;
             this.fileId = fileId;
@@ -473,10 +578,12 @@ public class FileController {
         private String sha256Hash;
         private java.time.LocalDateTime createdAt;
         private boolean hasPreview;
+        private String category;
+        private FileMetadataDTO metadata;
 
         public FileResponse(Long id, String filename, Long fileSize, String contentType,
                             boolean encrypted, String sha256Hash, java.time.LocalDateTime createdAt,
-                            boolean hasPreview) {
+                            boolean hasPreview, String category, FileMetadataDTO metadata) {
             this.id = id;
             this.filename = filename;
             this.fileSize = fileSize;
@@ -485,11 +592,8 @@ public class FileController {
             this.sha256Hash = sha256Hash;
             this.createdAt = createdAt;
             this.hasPreview = hasPreview;
-        }
-
-        public FileResponse(Long id, String filename, Long fileSize, String contentType,
-                            boolean encrypted, String sha256Hash, java.time.LocalDateTime createdAt) {
-            this(id, filename, fileSize, contentType, encrypted, sha256Hash, createdAt, false);
+            this.category = category;
+            this.metadata = metadata;
         }
 
         public Long getId() { return id; }
@@ -500,5 +604,7 @@ public class FileController {
         public String getSha256Hash() { return sha256Hash; }
         public java.time.LocalDateTime getCreatedAt() { return createdAt; }
         public boolean isHasPreview() { return hasPreview; }
+        public String getCategory() { return category; }
+        public FileMetadataDTO getMetadata() { return metadata; }
     }
 }

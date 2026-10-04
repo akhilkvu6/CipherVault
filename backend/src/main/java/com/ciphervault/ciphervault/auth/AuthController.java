@@ -1,12 +1,19 @@
 package com.ciphervault.ciphervault.auth;
 
+import com.ciphervault.ciphervault.logging.ConsoleLogger;
+import com.ciphervault.ciphervault.logging.RequestContext;
 import com.ciphervault.ciphervault.security.JwtService;
+import com.ciphervault.ciphervault.security.KeyManagementService;
+import com.ciphervault.ciphervault.security.LoginRateLimiterService;
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
-import com.ciphervault.ciphervault.util.ConsoleLogger;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -15,244 +22,249 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final KeyManagementService keyManagementService;
+    private final LoginRateLimiterService loginRateLimiterService;
 
     public AuthController(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
-            JwtService jwtService) {
-
+            JwtService jwtService,
+            KeyManagementService keyManagementService,
+            LoginRateLimiterService loginRateLimiterService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
-
-        ConsoleLogger.success(
-                "AuthController initialized successfully."
-        );
+        this.keyManagementService = keyManagementService;
+        this.loginRateLimiterService = loginRateLimiterService;
     }
 
-    // =========================
-    // REGISTER
-    // =========================
-
+    // Register a new user and create the user's encrypted data key.
     @PostMapping("/register")
-    public ResponseEntity<?> register(
-            @RequestBody RegisterRequest request) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        long start = System.currentTimeMillis();
+        String requestId = RequestContext.getRequestId();
 
-        ConsoleLogger.info(
-                "Registration request received."
-        );
-
-        // Validate username
-        if (request.getUsername() == null
-                || request.getUsername().isBlank()) {
-
-            ConsoleLogger.warn(
-                    "Registration failed: username is required."
-            );
-
-            return ResponseEntity.badRequest()
-                    .body(new RegisterResponse("Username is required", null, null));
+        if (request.getUsername() == null || request.getUsername().isBlank()) {
+            return badRequest("Username is required");
         }
 
-        // Validate email
-        if (request.getEmail() == null
-                || request.getEmail().isBlank()) {
-
-            ConsoleLogger.warn(
-                    "Registration failed: email is required."
-            );
-
-            return ResponseEntity.badRequest()
-                    .body(new RegisterResponse("Email is required", null, null));
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            return badRequest("Email is required");
         }
 
-        // Validate password
-        if (request.getPassword() == null
-                || request.getPassword().isBlank()) {
-
-            ConsoleLogger.warn(
-                    "Registration failed: password is required."
-            );
-
-            return ResponseEntity.badRequest()
-                    .body(new RegisterResponse("Password is required", null, null));
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            return badRequest("Password must be at least 6 characters");
         }
 
-        // Check duplicate username
-        if (userRepository.existsByUsername(
-                request.getUsername())) {
-
-            ConsoleLogger.warn(
-                    "Registration failed: username already exists: "
-                            + request.getUsername()
-            );
-
-            return ResponseEntity.badRequest()
-                    .body(new RegisterResponse("Username already exists", null, null));
+        if (userRepository.existsByUsername(request.getUsername())) {
+            ConsoleLogger.logAuthRegisterTrace(
+                    requestId, request.getUsername(), request.getEmail(),
+                    true, false, false, "Username already exists",
+                    elapsed(start));
+            return badRequest("Username already exists");
         }
 
-        // Check duplicate email
-        if (userRepository.existsByEmail(
-                request.getEmail())) {
-
-            ConsoleLogger.warn(
-                    "Registration failed: email already exists: "
-                            + request.getEmail()
-            );
-
-            return ResponseEntity.badRequest()
-                    .body(new RegisterResponse("Email already exists", null, null));
+        if (userRepository.existsByEmail(request.getEmail())) {
+            ConsoleLogger.logAuthRegisterTrace(
+                    requestId, request.getUsername(), request.getEmail(),
+                    false, true, false, "Email already exists",
+                    elapsed(start));
+            return badRequest("Email already exists");
         }
 
-        // Create new user
         User user = new User();
+        user.setUsername(request.getUsername().trim());
+        user.setEmail(request.getEmail().trim().toLowerCase());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setUserKey(keyManagementService.generateAndEncryptUserKey());
 
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-
-        ConsoleLogger.info(
-                "Hashing user password with BCrypt."
-        );
-
-        // Hash password using BCrypt
-        user.setPassword(
-                passwordEncoder.encode(request.getPassword())
-        );
-
-        ConsoleLogger.success(
-                "Password hashed successfully."
-        );
-
-        // Save user
         userRepository.save(user);
+        RequestContext.setUser(user.getEmail(), user.getId());
 
-        ConsoleLogger.success(
-                "User registered successfully: "
-                        + user.getEmail()
-        );
+        ConsoleLogger.logAuthRegisterTrace(
+                requestId, user.getUsername(), user.getEmail(),
+                false, false, true, null, elapsed(start));
 
         return ResponseEntity.ok(
                 new RegisterResponse(
                         "User registered successfully",
                         user.getUsername(),
-                        user.getEmail()
-                )
-        );
+                        user.getEmail()));
     }
 
-    // =========================
-    // LOGIN
-    // =========================
-
+    // Authenticate the user and return a JWT.
     @PostMapping("/login")
     public ResponseEntity<?> login(
-            @RequestBody LoginRequest request) {
+            @RequestBody LoginRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
 
-        ConsoleLogger.info(
-                "Login request received: "
-                        + request.getEmail()
-        );
+        long start = System.currentTimeMillis();
+        String requestId = RequestContext.getRequestId();
 
-        // Validate email
-        if (request.getEmail() == null
-                || request.getEmail().isBlank()) {
-
-            ConsoleLogger.warn(
-                    "Login failed: email is required."
-            );
-
-            return ResponseEntity.badRequest()
-                    .body("Email is required");
+        if (request.getEmail() == null || request.getEmail().isBlank()) {
+            return badRequest("Email is required");
         }
 
-        // Validate password
-        if (request.getPassword() == null
-                || request.getPassword().isBlank()) {
-
-            ConsoleLogger.warn(
-                    "Login failed: password is required."
-            );
-
-            return ResponseEntity.badRequest()
-                    .body("Password is required");
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            return badRequest("Password is required");
         }
 
-        // Find user by email
-        User user = userRepository
-                .findByEmail(request.getEmail())
-                .orElse(null);
-
-        // Email is not registered
-        if (user == null) {
-
-            ConsoleLogger.warn(
-                    "Login failed: email is not registered: "
-                            + request.getEmail()
-            );
-
-            return ResponseEntity.status(401)
-                    .body("Email is not registered");
+        String clientIp = httpRequest.getHeader("X-Forwarded-For");
+        if (clientIp == null || clientIp.isBlank()) {
+            clientIp = httpRequest.getRemoteAddr();
         }
 
-        ConsoleLogger.info(
-                "Verifying user password."
-        );
+        String email = request.getEmail().trim().toLowerCase();
 
-        // Verify password
-        if (!passwordEncoder.matches(
-                request.getPassword(),
-                user.getPassword())) {
+        if (loginRateLimiterService.isBlocked(clientIp, email)) {
+            long seconds = loginRateLimiterService.getRemainingLockoutSeconds(clientIp, email);
+            long minutes = Math.max(1, (seconds + 59) / 60);
 
-            ConsoleLogger.warn(
-                    "Login failed: incorrect password for: "
-                            + request.getEmail()
-            );
+            ConsoleLogger.logAuthLoginTrace(
+                    requestId, email, null, false, false,
+                    "Rate limited", elapsed(start));
 
-            return ResponseEntity.status(401)
-                    .body("Wrong password");
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", String.valueOf(seconds > 0 ? seconds : 900))
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Too many failed login attempts. Please wait "
+                                    + minutes + " minute(s) before trying again."));
         }
 
-        ConsoleLogger.success(
-                "Password verification successful: "
-                        + user.getEmail()
-        );
+        User user = userRepository.findByEmail(email).orElse(null);
 
-        // Generate JWT
-        ConsoleLogger.info(
-                "Generating JWT authentication token."
-        );
+        if (user == null || !passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            ConsoleLogger.logAuthLoginTrace(
+                    requestId,
+                    email,
+                    user != null ? user.getId() : null,
+                    user != null,
+                    false,
+                    "Invalid credentials",
+                    elapsed(start));
 
-        String token = jwtService.generateToken(
-                user.getEmail()
-        );
+            loginRateLimiterService.recordFailedAttempt(clientIp, email);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid email or password");
+        }
 
-        ConsoleLogger.success(
-                "JWT generated successfully for: "
-                        + user.getEmail()
-        );
+        loginRateLimiterService.recordSuccessfulLogin(clientIp, email);
 
-        // Return successful login response
-        LoginResponse response = new LoginResponse(
+        // Generate a missing user key for older accounts.
+        if (user.getUserKey() == null) {
+            keyManagementService.getOrGenerateUserKey(user);
+        }
+
+        int tokenVersion = user.getTokenVersion() != null
+                ? user.getTokenVersion()
+                : 1;
+
+        String token = jwtService.generateToken(user.getEmail(), tokenVersion);
+
+        RequestContext.setUser(user.getEmail(), user.getId());
+
+        ConsoleLogger.logAuthLoginTrace(
+                requestId,
+                user.getEmail(),
+                user.getId(),
                 true,
-                "Login successful",
-                token,
-                user.getUsername()
-        );
+                true,
+                null,
+                elapsed(start));
 
-        ConsoleLogger.success(
-                "Login successful: "
-                        + user.getEmail()
-        );
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                new LoginResponse(
+                        true,
+                        "Login successful",
+                        token,
+                        user.getUsername()));
     }
 
-    // =========================
-    // REGISTER REQUEST
-    // =========================
+    // Change the authenticated user's password and invalidate old tokens.
+    @RequestMapping(
+            value = "/change-password",
+            method = {RequestMethod.POST, RequestMethod.PUT})
+    public ResponseEntity<?> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
 
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "Authentication required"));
+        }
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "success", false,
+                            "message", "User not found"));
+        }
+
+        if (request.getCurrentPassword() == null || request.getCurrentPassword().isBlank()) {
+            return badRequest("Current password is required");
+        }
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            return badRequest("Incorrect current password");
+        }
+
+        if (request.getNewPassword() == null || request.getNewPassword().isBlank()) {
+            return badRequest("New password is required");
+        }
+
+        if (request.getNewPassword().length() < 6) {
+            return badRequest("New password must be at least 6 characters");
+        }
+
+        if (request.getNewPassword().equals(request.getCurrentPassword())) {
+            return badRequest("New password cannot be the same as current password");
+        }
+
+        if (request.getConfirmPassword() == null || !request.getNewPassword().equals(request.getConfirmPassword())) {
+            return badRequest("New password and confirmation do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        int tokenVersion = user.getTokenVersion() != null
+                ? user.getTokenVersion()
+                : 1;
+
+        user.setTokenVersion(tokenVersion + 1);
+        userRepository.save(user);
+
+        ConsoleLogger.logAuthPasswordChanged(
+                RequestContext.getRequestId(),
+                user.getEmail(),
+                25);
+
+        String newToken = jwtService.generateToken(
+                user.getEmail(),
+                user.getTokenVersion());
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "message", "Password changed successfully",
+                        "token", newToken));
+    }
+
+    private ResponseEntity<Map<String, String>> badRequest(String message) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("message", message));
+    }
+
+    private long elapsed(long start) {
+        return System.currentTimeMillis() - start;
+    }
+
+    // Registration request.
     public static class RegisterRequest {
-
         private String username;
         private String email;
         private String password;
@@ -282,45 +294,14 @@ public class AuthController {
         }
     }
 
-    // =========================
-    // REGISTER RESPONSE
-    // =========================
-
-    public static class RegisterResponse {
-
-        private String message;
-        private String username;
-        private String email;
-
-        public RegisterResponse(
-                String message,
-                String username,
-                String email) {
-
-            this.message = message;
-            this.username = username;
-            this.email = email;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-
-        public String getUsername() {
-            return username;
-        }
-
-        public String getEmail() {
-            return email;
-        }
+    public record RegisterResponse(
+            String message,
+            String username,
+            String email) {
     }
 
-    // =========================
-    // LOGIN REQUEST
-    // =========================
-
+    // Login request.
     public static class LoginRequest {
-
         private String email;
         private String password;
 
@@ -341,43 +322,44 @@ public class AuthController {
         }
     }
 
-    // =========================
-    // LOGIN RESPONSE
-    // =========================
+    public record LoginResponse(
+            boolean success,
+            String message,
+            String token,
+            String username) {
+    }
 
-    public static class LoginResponse {
+    // Password-change request.
+    public static class ChangePasswordRequest {
+        private String currentPassword;
+        private String newPassword;
+        private String confirmPassword;
 
-        private boolean success;
-        private String message;
-        private String token;
-        private String username;
-
-        public LoginResponse(
-                boolean success,
-                String message,
-                String token,
-                String username) {
-
-            this.success = success;
-            this.message = message;
-            this.token = token;
-            this.username = username;
+        public ChangePasswordRequest() {
         }
 
-        public boolean isSuccess() {
-            return success;
+        public String getCurrentPassword() {
+            return currentPassword;
         }
 
-        public String getMessage() {
-            return message;
+        public void setCurrentPassword(String currentPassword) {
+            this.currentPassword = currentPassword;
         }
 
-        public String getToken() {
-            return token;
+        public String getNewPassword() {
+            return newPassword;
         }
 
-        public String getUsername() {
-            return username;
+        public void setNewPassword(String newPassword) {
+            this.newPassword = newPassword;
+        }
+
+        public String getConfirmPassword() {
+            return confirmPassword;
+        }
+
+        public void setConfirmPassword(String confirmPassword) {
+            this.confirmPassword = confirmPassword;
         }
     }
 }

@@ -63,4 +63,33 @@ class MediaPreviewServiceTest {
         assertEquals(384, preview.getWidth());
         assertEquals(288, preview.getHeight());
     }
+
+    @Test
+    void generateVideoPreviewShouldExtractFrame() throws Exception {
+        java.nio.file.Path testVideo = java.nio.file.Path.of("storage/test_sample.mp4");
+        if (java.nio.file.Files.exists(testVideo)) {
+            byte[] previewBytes = mediaPreviewService.generatePreview(testVideo, "sample.mp4", "video/mp4");
+            assertNotNull(previewBytes, "Preview bytes for video should not be null");
+            assertTrue(previewBytes.length > 0);
+
+            BufferedImage preview = ImageIO.read(new ByteArrayInputStream(previewBytes));
+            assertNotNull(preview, "Preview image should be decodable as a BufferedImage");
+            assertTrue(preview.getWidth() <= 384);
+            assertTrue(preview.getHeight() <= 384);
+        }
+    }
+
+    @Test
+    void extractFrameWithJCodecShouldExtractFrameFromMp4() throws Exception {
+        java.nio.file.Path testVideo = java.nio.file.Path.of("storage/test_sample.mp4");
+        if (java.nio.file.Files.exists(testVideo)) {
+            java.lang.reflect.Method m = MediaPreviewService.class.getDeclaredMethod("extractFrameWithJCodec", java.nio.file.Path.class);
+            m.setAccessible(true);
+            byte[] frame = (byte[]) m.invoke(mediaPreviewService, testVideo);
+            assertNotNull(frame, "JCodec should extract a frame from test_sample.mp4");
+            assertTrue(frame.length > 0);
+            BufferedImage bi = ImageIO.read(new ByteArrayInputStream(frame));
+            assertNotNull(bi);
+        }
+    }
 }

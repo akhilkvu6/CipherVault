@@ -26,6 +26,12 @@ public class User {
     @Column(nullable = false)
     private Long usedStorage = 0L;
 
+    @Column(name = "user_key")
+    private String userKey;
+
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 1;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
@@ -80,6 +86,22 @@ public class User {
 
     public void setUsedStorage(Long usedStorage) {
         this.usedStorage = usedStorage;
+    }
+
+    public String getUserKey() {
+        return userKey;
+    }
+
+    public void setUserKey(String userKey) {
+        this.userKey = userKey;
+    }
+
+    public Integer getTokenVersion() {
+        return tokenVersion != null ? tokenVersion : 1;
+    }
+
+    public void setTokenVersion(Integer tokenVersion) {
+        this.tokenVersion = tokenVersion;
     }
 
     public LocalDateTime getCreatedAt() {

@@ -44,4 +44,16 @@ class JwtServiceTest {
                 )
         );
     }
+
+    @Test
+    void shouldGenerateAndExtractTokenVersion() {
+        JwtService jwtService = new JwtService();
+        String email = "alice@example.com";
+
+        String tokenDefault = jwtService.generateToken(email);
+        assertEquals(Integer.valueOf(1), jwtService.extractTokenVersion(tokenDefault));
+
+        String tokenV2 = jwtService.generateToken(email, 2);
+        assertEquals(Integer.valueOf(2), jwtService.extractTokenVersion(tokenV2));
+    }
 }

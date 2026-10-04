@@ -6,7 +6,16 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "stored_files")
+@Table(
+        name = "stored_files",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uq_stored_files_user_sha256", columnNames = {"user_id", "sha256_hash"})
+        },
+        indexes = {
+                @Index(name = "idx_stored_files_user_created", columnList = "user_id, created_at DESC"),
+                @Index(name = "idx_stored_files_user_filename", columnList = "user_id, original_filename")
+        }
+)
 public class StoredFile {
 
     @Id
@@ -25,7 +34,7 @@ public class StoredFile {
     @Column(nullable = false)
     private String contentType;
 
-    @Column(nullable = false, length = 64)
+    @Column(name = "sha256_hash", nullable = false, length = 64)
     private String sha256Hash;
 
     @Column(nullable = false)
@@ -42,6 +51,9 @@ public class StoredFile {
 
     @Column(name = "preview_mime_type")
     private String previewMimeType;
+
+    @OneToOne(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private FileMetadata metadata;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
@@ -65,10 +77,6 @@ public class StoredFile {
 
     public void setOriginalFilename(String originalFilename) {
         this.originalFilename = originalFilename;
-    }
-
-    public String getStoredFilename() {
-        return storedFilename;
     }
 
     public void setStoredFilename(String storedFilename) {
@@ -150,4 +158,12 @@ public class StoredFile {
     public void setPreviewMimeType(String previewMimeType) {
         this.previewMimeType = previewMimeType;
     }
-}   
+
+    public FileMetadata getMetadata() {
+        return metadata;
+    }
+
+    public void setMetadata(FileMetadata metadata) {
+        this.metadata = metadata;
+    }
+}

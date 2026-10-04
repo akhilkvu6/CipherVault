@@ -1,7 +1,6 @@
 package com.ciphervault.ciphervault.config;
 
 import com.ciphervault.ciphervault.security.JwtAuthenticationFilter;
-import com.ciphervault.ciphervault.util.ConsoleLogger;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,118 +14,35 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
-
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-
-        ConsoleLogger.success(
-                "SecurityConfig initialized successfully."
-        );
     }
 
+    // Configure stateless JWT authentication and public endpoints.
     @Bean
-    public SecurityFilterChain securityFilterChain(
-            HttpSecurity http) throws Exception {
-
-        ConsoleLogger.info(
-                "Configuring Spring Security..."
-        );
-
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                /*
-                 * CipherVault is a stateless REST API.
-                 * CSRF protection is therefore disabled.
-                 */
                 .csrf(csrf -> csrf.disable())
-
-                /*
-                 * JWT authentication does not use HTTP sessions.
-                 */
-                .sessionManagement(session ->
-                        session.sessionCreationPolicy(
-                                SessionCreationPolicy.STATELESS
-                        )
-                )
-
-                /*
-                 * Configure which endpoints require authentication.
-                 */
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-
-                        /*
-                         * Login and registration are public.
-                         */
-                        .requestMatchers("/api/auth/**")
-                        .permitAll()
-
-                        /*
-                         * Health endpoint is public so the backend
-                         * can be checked without authentication.
-                         */
-                        .requestMatchers("/api/health")
-                        .permitAll()
-
-                        /*
-                         * Spring Boot error endpoint must be accessible
-                         * when an internal request is forwarded to /error.
-                         */
-                        .requestMatchers("/error")
-                        .permitAll()
-
-                        /*
-                         * Every other endpoint requires JWT authentication.
-                         */
-                        .anyRequest()
-                        .authenticated()
-                )
-
-                /*
-                 * Return HTTP 401 for unauthenticated requests.
-                 */
-                .exceptionHandling(exception ->
-                        exception.authenticationEntryPoint(
-                                (request, response, authException) -> {
-
-                                    ConsoleLogger.warn(
-                                            "Authentication required for: "
-                                                    + request.getRequestURI()
-                                    );
-
-                                    response.sendError(
-                                            HttpServletResponse.SC_UNAUTHORIZED,
-                                            "Unauthorized"
-                                    );
-                                }
-                        )
-                )
-
-                /*
-                 * Disable HTTP Basic authentication.
-                 */
-                .httpBasic(httpBasic ->
-                        httpBasic.disable()
-                )
-
-                /*
-                 * Disable browser form login.
-                 */
-                .formLogin(formLogin ->
-                        formLogin.disable()
-                )
-
-                /*
-                 * Process JWT before Spring's normal
-                 * username/password authentication filter.
-                 */
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/health",
+                                "/error"
+                        ).permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, ex) ->
+                                response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED,
+                                        "Unauthorized")))
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(formLogin -> formLogin.disable())
                 .addFilterBefore(
                         jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
-
-        ConsoleLogger.success(
-                "Spring Security configured successfully."
-        );
+                        UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

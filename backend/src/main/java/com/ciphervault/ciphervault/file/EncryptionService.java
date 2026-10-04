@@ -1,236 +1,132 @@
 package com.ciphervault.ciphervault.file;
 
-import com.ciphervault.ciphervault.util.ConsoleLogger;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import javax.crypto.spec.GCMParameterSpec;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
 @Service
 public class EncryptionService {
 
-    private static final String AES_ALGORITHM = "AES";
-    private static final String GCM_ALGORITHM = "AES/GCM/NoPadding";
+    private static final String TRANSFORMATION = "AES/GCM/NoPadding";
+    private static final int IV_LENGTH = 12;
+    private static final int TAG_LENGTH = 128;
+    private static final int BUFFER_SIZE = 16 * 1024;
 
-    private static final int AES_KEY_SIZE = 256;
-    private static final int AES_KEY_LENGTH_BYTES = AES_KEY_SIZE / 8;
-    private static final int GCM_IV_LENGTH = 12;
-    private static final int GCM_TAG_LENGTH = 128;
+    private final SecureRandom secureRandom = new SecureRandom();
 
-    /*
-     * Temporary AES-256 key for the MCA mini project.
-     *
-     * This value contains exactly 32 ASCII characters
-     * which equals 256 bits.
-     *
-     * For production deployment, this should be loaded
-     * from an environment variable or secure key store.
-     */
-    private static final String SECRET_KEY =
-            "CipherVaultAES256Key2026Secure!!";
+    // Encrypt a file stream with AES-256-GCM.
+    public void encryptStream(
+            InputStream input,
+            OutputStream output,
+            SecretKey key) throws IOException, GeneralSecurityException {
 
-    private final SecretKey secretKey;
-    private final SecureRandom secureRandom;
+        requireKey(key);
 
-    public EncryptionService() {
+        byte[] iv = new byte[IV_LENGTH];
+        secureRandom.nextBytes(iv);
+        output.write(iv);
 
-        ConsoleLogger.info(
-                "Initializing AES-256-GCM encryption service..."
-        );
+        Cipher cipher = createCipher(Cipher.ENCRYPT_MODE, key, iv);
 
-        this.secretKey = createSecretKey();
-        this.secureRandom = new SecureRandom();
-
-        ConsoleLogger.success(
-                "AES-256-GCM encryption service initialized successfully."
-        );
+        try (CipherOutputStream encrypted = new CipherOutputStream(output, cipher)) {
+            copy(input, encrypted);
+        }
     }
 
-    private SecretKey createSecretKey() {
+    // Decrypt a file stream with the IV stored at the beginning of the file.
+    public void decryptStream(
+            InputStream input,
+            OutputStream output,
+            SecretKey key) throws IOException, GeneralSecurityException {
 
-        byte[] keyBytes = SECRET_KEY.getBytes(
-                StandardCharsets.UTF_8
-        );
+        requireKey(key);
 
-        if (keyBytes.length != AES_KEY_LENGTH_BYTES) {
-
-            ConsoleLogger.error(
-                    "Invalid AES key length: "
-                            + keyBytes.length
-                            + " bytes."
-            );
-
-            throw new IllegalStateException(
-                    "AES-256 secret key must be exactly 32 bytes."
-            );
+        byte[] iv = input.readNBytes(IV_LENGTH);
+        if (iv.length != IV_LENGTH) {
+            throw new IOException("Invalid encrypted file: missing GCM IV.");
         }
 
-        return new SecretKeySpec(
-                keyBytes,
-                AES_ALGORITHM
-        );
+        Cipher cipher = createCipher(Cipher.DECRYPT_MODE, key, iv);
+
+        try (CipherInputStream decrypted = new CipherInputStream(input, cipher)) {
+            copy(decrypted, output);
+        }
     }
 
-    public byte[] encrypt(byte[] data) {
+    // Encrypt small in-memory data with AES-256-GCM.
+    public byte[] encrypt(byte[] data, SecretKey key) {
+        requireKey(key);
 
         try {
-
-            ConsoleLogger.info(
-                    "Encrypting file using AES-256-GCM..."
-            );
-
-            byte[] iv = new byte[GCM_IV_LENGTH];
-
+            byte[] iv = new byte[IV_LENGTH];
             secureRandom.nextBytes(iv);
 
-            GCMParameterSpec gcmParameterSpec =
-                    new GCMParameterSpec(
-                            GCM_TAG_LENGTH,
-                            iv
-                    );
+            byte[] ciphertext = createCipher(
+                    Cipher.ENCRYPT_MODE, key, iv).doFinal(data);
 
-            Cipher cipher =
-                    Cipher.getInstance(GCM_ALGORITHM);
-
-            cipher.init(
-                    Cipher.ENCRYPT_MODE,
-                    secretKey,
-                    gcmParameterSpec
-            );
-
-            byte[] encryptedData =
-                    cipher.doFinal(data);
-
-            /*
-             * Store the IV at the beginning of the
-             * encrypted file.
-             *
-             * Format:
-             *
-             * [12-byte IV][ciphertext + authentication tag]
-             */
-            byte[] result =
-                    new byte[
-                            iv.length
-                                    + encryptedData.length
-                    ];
-
-            System.arraycopy(
-                    iv,
-                    0,
-                    result,
-                    0,
-                    iv.length
-            );
-
-            System.arraycopy(
-                    encryptedData,
-                    0,
-                    result,
-                    iv.length,
-                    encryptedData.length
-            );
-
-            ConsoleLogger.success(
-                    "AES-256-GCM encryption completed."
-            );
-
+            byte[] result = new byte[iv.length + ciphertext.length];
+            System.arraycopy(iv, 0, result, 0, iv.length);
+            System.arraycopy(ciphertext, 0, result, iv.length, ciphertext.length);
             return result;
-
-        } catch (Exception e) {
-
-            ConsoleLogger.error(
-                    "File encryption failed: "
-                            + e.getClass().getSimpleName()
-            );
-
-            throw new RuntimeException(
-                    "File encryption failed.",
-                    e
-            );
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Encryption failed.", e);
         }
     }
 
-    public byte[] decrypt(byte[] encryptedData) {
+    // Decrypt small in-memory data containing IV + ciphertext.
+    public byte[] decrypt(byte[] encryptedData, SecretKey key) {
+        requireKey(key);
+
+        if (encryptedData == null || encryptedData.length <= IV_LENGTH + 16) {
+            throw new IllegalArgumentException("Invalid encrypted data.");
+        }
 
         try {
+            byte[] iv = Arrays.copyOf(encryptedData, IV_LENGTH);
+            byte[] ciphertext = Arrays.copyOfRange(
+                    encryptedData, IV_LENGTH, encryptedData.length);
 
-            ConsoleLogger.info(
-                    "Decrypting file using AES-256-GCM..."
-            );
+            return createCipher(
+                    Cipher.DECRYPT_MODE, key, iv).doFinal(ciphertext);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("Decryption failed.", e);
+        }
+    }
 
-            /*
-             * The encrypted data must contain:
-             *
-             * 12-byte IV
-             * +
-             * ciphertext
-             * +
-             * 16-byte GCM authentication tag
-             */
-            if (encryptedData == null
-                    || encryptedData.length
-                    <= GCM_IV_LENGTH + 16) {
+    private Cipher createCipher(int mode, SecretKey key, byte[] iv)
+            throws GeneralSecurityException {
 
-                throw new IllegalArgumentException(
-                        "Invalid encrypted file data."
-                );
-            }
+        Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+        cipher.init(
+                mode,
+                key,
+                new GCMParameterSpec(TAG_LENGTH, iv)
+        );
+        return cipher;
+    }
 
-            byte[] iv =
-                    Arrays.copyOfRange(
-                            encryptedData,
-                            0,
-                            GCM_IV_LENGTH
-                    );
+    private void copy(InputStream input, OutputStream output) throws IOException {
+        byte[] buffer = new byte[BUFFER_SIZE];
+        int read;
 
-            byte[] cipherText =
-                    Arrays.copyOfRange(
-                            encryptedData,
-                            GCM_IV_LENGTH,
-                            encryptedData.length
-                    );
+        while ((read = input.read(buffer)) != -1) {
+            output.write(buffer, 0, read);
+        }
+    }
 
-            GCMParameterSpec gcmParameterSpec =
-                    new GCMParameterSpec(
-                            GCM_TAG_LENGTH,
-                            iv
-                    );
-
-            Cipher cipher =
-                    Cipher.getInstance(GCM_ALGORITHM);
-
-            cipher.init(
-                    Cipher.DECRYPT_MODE,
-                    secretKey,
-                    gcmParameterSpec
-            );
-
-            byte[] decryptedData =
-                    cipher.doFinal(cipherText);
-
-            ConsoleLogger.success(
-                    "AES-256-GCM decryption completed."
-            );
-
-            return decryptedData;
-
-        } catch (Exception e) {
-
-            ConsoleLogger.error(
-                    "File decryption failed: "
-                            + e.getClass().getSimpleName()
-            );
-
-            throw new RuntimeException(
-                    "File decryption failed.",
-                    e
-            );
+    private void requireKey(SecretKey key) {
+        if (key == null) {
+            throw new IllegalArgumentException("Encryption key is required.");
         }
     }
 }
