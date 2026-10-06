@@ -14,6 +14,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:theme="@style/Theme.CipherVault.Starting"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

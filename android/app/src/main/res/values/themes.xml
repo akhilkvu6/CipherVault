@@ -23,9 +23,17 @@
         <!-- Typography / Text Appearance defaults -->
         <item name="android:textColorPrimary">@color/cv_text_primary</item>
         <item name="android:textColorSecondary">@color/cv_text_secondary</item>
+        <item name="android:fontFamily">@font/nunito_sans</item>
+        <item name="fontFamily">@font/nunito_sans</item>
     </style>
 
     <style name="Theme.CipherVault" parent="Base.Theme.CipherVault" />
+
+    <style name="Theme.CipherVault.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cv_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.CipherVault</item>
+    </style>
 
     <!-- Button Styles -->
     <style name="Widget.CipherVault.Button.Primary" parent="Widget.Material3.Button">

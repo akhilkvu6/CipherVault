@@ -63,21 +63,31 @@ public class OnboardingActivity extends AppCompatActivity {
         });
     }
 
+    private final ViewPager2.OnPageChangeCallback pageChangeCallback = new ViewPager2.OnPageChangeCallback() {
+        @Override
+        public void onPageSelected(int position) {
+            super.onPageSelected(position);
+            updateUiForPage(position);
+        }
+    };
+
     private void setupViewPager() {
         OnboardingAdapter adapter = new OnboardingAdapter(this, pages);
         viewPager.setAdapter(adapter);
         viewPager.setOffscreenPageLimit(1);
         viewPager.setPageTransformer(new OnboardingPageTransformer());
 
-        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
-            @Override
-            public void onPageSelected(int position) {
-                super.onPageSelected(position);
-                updateUiForPage(position);
-            }
-        });
+        viewPager.registerOnPageChangeCallback(pageChangeCallback);
 
         updateUiForPage(0);
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (viewPager != null) {
+            viewPager.unregisterOnPageChangeCallback(pageChangeCallback);
+        }
+        super.onDestroy();
     }
 
     private void setupListeners() {

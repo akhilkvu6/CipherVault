@@ -47,6 +47,7 @@
             android:layout_marginTop="@dimen/cv_spacing_s"
             android:textColor="@color/cv_text_primary"
             android:textSize="@dimen/cv_text_size_title"
+            android:fontFamily="@font/source_serif_4"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
