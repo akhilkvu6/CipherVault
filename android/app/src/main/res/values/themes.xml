@@ -1,9 +1,47 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
+    <!-- Base application theme with One UI styling. -->
     <style name="Base.Theme.CipherVault" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <!-- Brand Colors -->
+        <item name="colorPrimary">@color/cv_primary</item>
+        <item name="colorOnPrimary">@color/cv_on_primary</item>
+        <item name="colorPrimaryContainer">@color/cv_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/cv_on_primary_container</item>
+
+        <!-- Background & Surface Colors -->
+        <item name="android:windowBackground">@color/cv_background</item>
+        <item name="colorSurface">@color/cv_surface</item>
+        <item name="colorSurfaceVariant">@color/cv_surface_variant</item>
+        <item name="colorOnSurface">@color/cv_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/cv_text_secondary</item>
+
+        <!-- Status & Navigation Bars -->
+        <item name="android:statusBarColor">@color/cv_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/cv_background</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <!-- Typography / Text Appearance defaults -->
+        <item name="android:textColorPrimary">@color/cv_text_primary</item>
+        <item name="android:textColorSecondary">@color/cv_text_secondary</item>
     </style>
 
     <style name="Theme.CipherVault" parent="Base.Theme.CipherVault" />
+
+    <!-- Button Styles -->
+    <style name="Widget.CipherVault.Button.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/cv_primary</item>
+        <item name="android:textColor">@color/cv_on_primary</item>
+        <item name="cornerRadius">@dimen/cv_corner_radius_button</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:textSize">@dimen/cv_text_size_button</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <style name="Widget.CipherVault.Button.Ghost" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/cv_text_secondary</item>
+        <item name="cornerRadius">@dimen/cv_corner_radius_button</item>
+        <item name="android:textSize">@dimen/cv_text_size_button</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
 </resources>

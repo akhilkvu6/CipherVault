@@ -5,15 +5,57 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/cv_background"
+    android:padding="@dimen/cv_spacing_xl"
     tools:context=".MainActivity">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- Grouped Surface Container for Stage Placeholder -->
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
+        android:background="@drawable/bg_grouped_card"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="@dimen/cv_spacing_xxl"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:contentDescription="@string/cd_onboarding_visual"
+            android:src="@drawable/ic_shield_check" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/cv_spacing_m"
+            android:text="@string/placeholder_ready_title"
+            android:textColor="@color/cv_text_primary"
+            android:textSize="@dimen/cv_text_size_title"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/cv_spacing_s"
+            android:gravity="center"
+            android:lineSpacingExtra="4dp"
+            android:text="@string/placeholder_ready_subtitle"
+            android:textColor="@color/cv_text_secondary"
+            android:textSize="@dimen/cv_text_size_subtitle" />
+
+        <!-- Debug button to reset onboarding for easy re-testing -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnResetOnboarding"
+            style="@style/Widget.CipherVault.Button.Ghost"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/cv_button_height"
+            android:layout_marginTop="@dimen/cv_spacing_xl"
+            android:text="@string/placeholder_reset_onboarding" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
