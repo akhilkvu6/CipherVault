@@ -4,6 +4,8 @@ import com.ciphervault.ciphervault.user.User;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 /**
@@ -23,59 +26,94 @@ public class FileSearchService {
     private final FileMetadataRepository fileMetadataRepository;
     private final FileCategoryService fileCategoryService;
 
-    public FileSearchService(FileRepository fileRepository,
-                             FileMetadataRepository fileMetadataRepository,
-                             FileCategoryService fileCategoryService) {
+    public FileSearchService(
+            FileRepository fileRepository,
+            FileMetadataRepository fileMetadataRepository,
+            FileCategoryService fileCategoryService) {
         this.fileRepository = fileRepository;
         this.fileMetadataRepository = fileMetadataRepository;
         this.fileCategoryService = fileCategoryService;
     }
 
-    public org.springframework.data.domain.Page<StoredFile> search(User user,
-                                                   String query,
-                                                   String category,
-                                                   String cameraMake,
-                                                   String cameraModel,
-                                                   String resolution,
-                                                   String codec,
-                                                   String artist,
-                                                   String author,
-                                                   String genre,
-                                                   org.springframework.data.domain.Pageable pageable) {
-        Specification<StoredFile> spec = buildSpecification(user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre);
-        return fileRepository.findAll(spec, pageable);
+    public Page<StoredFile> search(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre,
+            Pageable pageable) {
+
+        Specification<StoredFile> specification = buildSpecification(
+                user,
+                query,
+                category,
+                cameraMake,
+                cameraModel,
+                resolution,
+                codec,
+                artist,
+                author,
+                genre
+        );
+
+        return fileRepository.findAll(specification, pageable);
     }
 
-    public List<StoredFile> search(User user,
-                                   String query,
-                                   String category,
-                                   String cameraMake,
-                                   String cameraModel,
-                                   String resolution,
-                                   String codec,
-                                   String artist,
-                                   String author,
-                                   String genre) {
-        if (fileMetadataRepository == null) {
+    public List<StoredFile> search(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre) {        if (fileMetadataRepository == null) {
             if (query != null && !query.isBlank()) {
-                return fileRepository.findByUserAndOriginalFilenameContainingIgnoreCaseOrderByCreatedAtDesc(user, query.trim());
+                return fileRepository
+                        .findByUserAndOriginalFilenameContainingIgnoreCaseOrderByCreatedAtDesc(
+                                user,
+                                query.trim()
+                        );
             }
+
             return fileRepository.findByUserOrderByCreatedAtDesc(user);
         }
-        Specification<StoredFile> spec = buildSpecification(user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre);
-        return fileRepository.findAll(spec);
+
+        Specification<StoredFile> specification = buildSpecification(
+                user,
+                query,
+                category,
+                cameraMake,
+                cameraModel,
+                resolution,
+                codec,
+                artist,
+                author,
+                genre
+        );
+
+        return fileRepository.findAll(specification);
     }
 
-    private Specification<StoredFile> buildSpecification(User user,
-                                                         String query,
-                                                         String category,
-                                                         String cameraMake,
-                                                         String cameraModel,
-                                                         String resolution,
-                                                         String codec,
-                                                         String artist,
-                                                         String author,
-                                                         String genre) {
+    private Specification<StoredFile> buildSpecification(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre) {
+
         return (root, cq, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -83,62 +121,97 @@ public class FileSearchService {
             predicates.add(cb.equal(root.get("user"), user));
 
             // Join metadata table
-            Join<StoredFile, FileMetadata> meta = root.join("metadata", JoinType.LEFT);
+            Join<StoredFile, FileMetadata> meta =
+                    root.join("metadata", JoinType.LEFT);
 
             // 2. Free-text search matching filename OR any metadata tag (case-insensitive)
             if (query != null && !query.isBlank()) {
-                String p = "%" + query.trim().toLowerCase() + "%";
+                String pattern = containsPattern(query);
+
                 predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("originalFilename")), p),
-                        cb.like(cb.lower(meta.get("cameraMake")), p),
-                        cb.like(cb.lower(meta.get("cameraModel")), p),
-                        cb.like(cb.lower(meta.get("lens")), p),
-                        cb.like(cb.lower(meta.get("resolution")), p),
-                        cb.like(cb.lower(meta.get("videoCodec")), p),
-                        cb.like(cb.lower(meta.get("audioCodec")), p),
-                        cb.like(cb.lower(meta.get("artist")), p),
-                        cb.like(cb.lower(meta.get("album")), p),
-                        cb.like(cb.lower(meta.get("genre")), p),
-                        cb.like(cb.lower(meta.get("title")), p),
-                        cb.like(cb.lower(meta.get("author")), p),
-                        cb.like(cb.lower(meta.get("creator")), p),
-                        cb.like(cb.lower(meta.get("subject")), p),
-                        cb.like(cb.lower(meta.get("keywords")), p)
+                        likeIgnoreCase(cb, root.get("originalFilename"), pattern),
+                        likeIgnoreCase(cb, meta.get("cameraMake"), pattern),
+                        likeIgnoreCase(cb, meta.get("cameraModel"), pattern),
+                        likeIgnoreCase(cb, meta.get("lens"), pattern),
+                        likeIgnoreCase(cb, meta.get("resolution"), pattern),
+                        likeIgnoreCase(cb, meta.get("videoCodec"), pattern),
+                        likeIgnoreCase(cb, meta.get("audioCodec"), pattern),
+                        likeIgnoreCase(cb, meta.get("artist"), pattern),
+                        likeIgnoreCase(cb, meta.get("album"), pattern),
+                        likeIgnoreCase(cb, meta.get("genre"), pattern),
+                        likeIgnoreCase(cb, meta.get("title"), pattern),
+                        likeIgnoreCase(cb, meta.get("author"), pattern),
+                        likeIgnoreCase(cb, meta.get("creator"), pattern),
+                        likeIgnoreCase(cb, meta.get("subject"), pattern),
+                        likeIgnoreCase(cb, meta.get("keywords"), pattern)
                 ));
             }
 
             // 3. Category filter at database level
-            Predicate catPred = fileCategoryService.buildCategoryPredicate(cb, root, category);
+            Predicate catPred =
+                    fileCategoryService.buildCategoryPredicate(cb, root, category);
+
             if (catPred != null) {
                 predicates.add(catPred);
             }
 
             // 4. Attribute-specific multi-filter matching
-            if (cameraMake != null && !cameraMake.isBlank()) {
-                predicates.add(cb.like(cb.lower(meta.get("cameraMake")), "%" + cameraMake.trim().toLowerCase() + "%"));
-            }
-            if (cameraModel != null && !cameraModel.isBlank()) {
-                predicates.add(cb.like(cb.lower(meta.get("cameraModel")), "%" + cameraModel.trim().toLowerCase() + "%"));
-            }
-            if (resolution != null && !resolution.isBlank()) {
-                predicates.add(cb.like(cb.lower(meta.get("resolution")), "%" + resolution.trim().toLowerCase() + "%"));
-            }
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "cameraMake",
+                    cameraMake
+            );
+
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "cameraModel",
+                    cameraModel
+            );
+
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "resolution",
+                    resolution
+            );
+
             if (codec != null && !codec.isBlank()) {
-                String c = "%" + codec.trim().toLowerCase() + "%";
+                String pattern = containsPattern(codec);
+
                 predicates.add(cb.or(
-                        cb.like(cb.lower(meta.get("videoCodec")), c),
-                        cb.like(cb.lower(meta.get("audioCodec")), c)
+                        likeIgnoreCase(cb, meta.get("videoCodec"), pattern),
+                        likeIgnoreCase(cb, meta.get("audioCodec"), pattern)
                 ));
             }
-            if (artist != null && !artist.isBlank()) {
-                predicates.add(cb.like(cb.lower(meta.get("artist")), "%" + artist.trim().toLowerCase() + "%"));
-            }
-            if (author != null && !author.isBlank()) {
-                predicates.add(cb.like(cb.lower(meta.get("author")), "%" + author.trim().toLowerCase() + "%"));
-            }
-            if (genre != null && !genre.isBlank()) {
-                predicates.add(cb.like(cb.lower(meta.get("genre")), "%" + genre.trim().toLowerCase() + "%"));
-            }
+
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "artist",
+                    artist
+            );
+
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "author",
+                    author
+            );
+
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "genre",
+                    genre
+            );
 
             if (cq != null) {
                 cq.distinct(true);
@@ -154,27 +227,41 @@ public class FileSearchService {
             return Collections.emptyList();
         }
 
+        String normalizedPrefix = prefix != null
+                ? prefix.trim().toLowerCase(Locale.ROOT)
+                : "";
+                
         Set<String> resultSet = new LinkedHashSet<>();
-        String p = (prefix != null) ? prefix.trim().toLowerCase() : "";
+        
+        // If empty prefix, just use % in the repository (which matches everything)
+        // Wait, findSuggestions already handles it if we pass "".
+        List<Object[]> rows = fileMetadataRepository.findSuggestions(user, normalizedPrefix);
 
-        List<List<String>> attributeLists = List.of(
-                safeList(fileMetadataRepository.findDistinctCameraMakesByUser(user)),
-                safeList(fileMetadataRepository.findDistinctCameraModelsByUser(user)),
-                safeList(fileMetadataRepository.findDistinctResolutionsByUser(user)),
-                safeList(fileMetadataRepository.findDistinctVideoCodecsByUser(user)),
-                safeList(fileMetadataRepository.findDistinctArtistsByUser(user)),
-                safeList(fileMetadataRepository.findDistinctAuthorsByUser(user)),
-                safeList(fileMetadataRepository.findDistinctAlbumsByUser(user)),
-                safeList(fileMetadataRepository.findDistinctGenresByUser(user)),
-                safeList(fileMetadataRepository.findDistinctTitlesByUser(user))
-        );
+        for (Object[] row : rows) {
+            for (Object valueObj : row) {
+                if (valueObj == null) continue;
+                String value = valueObj.toString().trim();
+                if (value.isBlank()) continue;
+                
+                if (normalizedPrefix.isEmpty() || value.toLowerCase(Locale.ROOT).startsWith(normalizedPrefix)) {
+                    resultSet.add(value);
+                    if (resultSet.size() >= 10) {
+                        return new ArrayList<>(resultSet);
+                    }
+                }
+            }
+        }
 
-        for (List<String> list : attributeLists) {
-            for (String val : list) {
-                if (val != null && !val.isBlank()) {
-                    String trimmed = val.trim();
-                    if (p.isEmpty() || trimmed.toLowerCase().startsWith(p)) {
-                        resultSet.add(trimmed);
+        // If prefix didn't match startsWith, also check contains if space permits
+        if (resultSet.size() < 10) {
+            for (Object[] row : rows) {
+                for (Object valueObj : row) {
+                    if (valueObj == null) continue;
+                    String value = valueObj.toString().trim();
+                    if (value.isBlank()) continue;
+
+                    if (value.toLowerCase(Locale.ROOT).contains(normalizedPrefix)) {
+                        resultSet.add(value);
                         if (resultSet.size() >= 10) {
                             return new ArrayList<>(resultSet);
                         }
@@ -183,24 +270,40 @@ public class FileSearchService {
             }
         }
 
-        // If prefix didn't match startsWith, also check contains if space permits
-        if (!p.isEmpty() && resultSet.size() < 10) {
-            for (List<String> list : attributeLists) {
-                for (String val : list) {
-                    if (val != null && !val.isBlank()) {
-                        String trimmed = val.trim();
-                        if (trimmed.toLowerCase().contains(p)) {
-                            resultSet.add(trimmed);
-                            if (resultSet.size() >= 10) {
-                                return new ArrayList<>(resultSet);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         return new ArrayList<>(resultSet);
+    }
+
+    private void addMetadataFilter(
+            List<Predicate> predicates,
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            Join<StoredFile, FileMetadata> meta,
+            String field,
+            String value) {
+
+        if (value != null && !value.isBlank()) {
+            predicates.add(
+                    likeIgnoreCase(
+                            cb,
+                            meta.get(field),
+                            containsPattern(value)
+                    )
+            );
+        }
+    }
+
+    private Predicate likeIgnoreCase(
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            jakarta.persistence.criteria.Expression<String> expression,
+            String pattern) {
+
+        return cb.like(
+                cb.lower(expression),
+                pattern.toLowerCase(Locale.ROOT)
+        );
+    }
+
+    private String containsPattern(String value) {
+        return "%" + value.trim().toLowerCase(Locale.ROOT) + "%";
     }
 
     private List<String> safeList(List<String> list) {

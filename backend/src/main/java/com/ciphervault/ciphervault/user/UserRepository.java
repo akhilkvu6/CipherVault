@@ -18,11 +18,30 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Transactional
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE User u SET u.usedStorage = u.usedStorage + :delta WHERE u.id = :userId AND (u.usedStorage + :delta) <= u.storageLimit")
-    int incrementStorageUsedAtomic(@Param("userId") Long userId, @Param("delta") Long delta);
+    @Query("""
+            UPDATE User u
+            SET u.usedStorage = u.usedStorage + :delta
+            WHERE u.id = :userId
+              AND (u.usedStorage + :delta) <= u.storageLimit
+            """)
+    int incrementStorageUsedAtomic(
+            @Param("userId") Long userId,
+            @Param("delta") Long delta
+    );
 
     @Transactional
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE User u SET u.usedStorage = CASE WHEN (u.usedStorage - :delta) < 0 THEN 0 ELSE (u.usedStorage - :delta) END WHERE u.id = :userId")
-    int decrementStorageUsedAtomic(@Param("userId") Long userId, @Param("delta") Long delta);
+    @Query("""
+            UPDATE User u
+            SET u.usedStorage =
+                CASE
+                    WHEN (u.usedStorage - :delta) < 0 THEN 0
+                    ELSE (u.usedStorage - :delta)
+                END
+            WHERE u.id = :userId
+            """)
+    int decrementStorageUsedAtomic(
+            @Param("userId") Long userId,
+            @Param("delta") Long delta
+    );
 }

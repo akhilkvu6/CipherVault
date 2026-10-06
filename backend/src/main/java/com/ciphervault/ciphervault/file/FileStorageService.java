@@ -7,7 +7,6 @@ import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +19,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.HexFormat;
 import java.security.MessageDigest;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,7 +28,10 @@ import java.util.UUID;
 @Service
 public class FileStorageService {
 
-    private static final Logger log = LoggerFactory.getLogger(FileStorageService.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(FileStorageService.class);
+
+    private static final int BUFFER_SIZE = 16 * 1024;
 
     private final FileRepository fileRepository;
     private final UserRepository userRepository;
@@ -38,15 +42,16 @@ public class FileStorageService {
     private final FileMetadataRepository fileMetadataRepository;
     private final FileCategoryService fileCategoryService;
 
-    @Autowired
-    public FileStorageService(FileRepository fileRepository,
-                              UserRepository userRepository,
-                              EncryptionService encryptionService,
-                              MediaPreviewService mediaPreviewService,
-                              KeyManagementService keyManagementService,
-                              @Autowired(required = false) MetadataExtractionService metadataExtractionService,
-                              @Autowired(required = false) FileMetadataRepository fileMetadataRepository,
-                              FileCategoryService fileCategoryService) {
+    public FileStorageService(
+            FileRepository fileRepository,
+            UserRepository userRepository,
+            EncryptionService encryptionService,
+            MediaPreviewService mediaPreviewService,
+            KeyManagementService keyManagementService,
+            MetadataExtractionService metadataExtractionService,
+            FileMetadataRepository fileMetadataRepository,
+            FileCategoryService fileCategoryService) {
+
         this.fileRepository = fileRepository;
         this.userRepository = userRepository;
         this.encryptionService = encryptionService;
@@ -60,214 +65,557 @@ public class FileStorageService {
     /**
      * Store and optionally encrypt an uploaded file.
      */
-    public StoredFile storeFile(User user, MultipartFile file, boolean encrypt) throws Exception {
+    public StoredFile storeFile(
+            User user,
+            MultipartFile file) throws Exception {
+
+        boolean encrypt = true;
+
         long uploadStart = System.currentTimeMillis();
-        ConsoleLogger.UploadTimingTracker timings = new ConsoleLogger.UploadTimingTracker();
+        ConsoleLogger.UploadTimingTracker timings =
+                new ConsoleLogger.UploadTimingTracker();
+
         String reqId = RequestContext.getRequestId();
         String failedStage = "VALIDATION";
 
         Path tempSourceFile = null;
         Path storagePath = null;
         Path previewPath = null;
+
         long fileSize = 0L;
         boolean quotaIncremented = false;
-        long quotaBefore = user.getUsedStorage() != null ? user.getUsedStorage() : 0L;
+
+        long quotaBefore = user.getUsedStorage() != null
+                ? user.getUsedStorage()
+                : 0L;
+
         String originalFilename = null;
 
         try {
-            long sVal = System.currentTimeMillis();
+            long validationStart = System.currentTimeMillis();
+
             if (file == null || file.isEmpty()) {
                 throw new IllegalArgumentException("File cannot be empty");
             }
 
             originalFilename = file.getOriginalFilename();
+
             if (originalFilename == null || originalFilename.isBlank()) {
                 originalFilename = "file";
             }
 
             String extension = getExtension(originalFilename);
 
-            // Stream MultipartFile directly into a temporary source file on disk
-            tempSourceFile = Files.createTempFile("cv_upload_src_", extension);
-            try (InputStream is = file.getInputStream();
-                 OutputStream os = Files.newOutputStream(tempSourceFile)) {
-                byte[] buffer = new byte[16384];
+            // Stream the multipart upload to a temporary file before processing.
+            tempSourceFile = Files.createTempFile(
+                    "cv_upload_src_",
+                    extension
+            );
+
+            try (InputStream input = file.getInputStream();
+                 OutputStream output = Files.newOutputStream(tempSourceFile)) {
+
+                byte[] buffer = new byte[BUFFER_SIZE];
                 int bytesRead;
-                while ((bytesRead = is.read(buffer)) != -1) {
-                    os.write(buffer, 0, bytesRead);
+
+                while ((bytesRead = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, bytesRead);
                 }
-                os.flush();
+
+                output.flush();
             }
 
             fileSize = Files.size(tempSourceFile);
 
-            if (user.getUsedStorage() + fileSize > user.getStorageLimit()) {
-                log.warn("Upload rejected: storage quota exceeded for user: {}", user.getEmail());
-                throw new StorageQuotaExceededException("Storage quota exceeded");
+            long usedStorage = user.getUsedStorage() != null
+                    ? user.getUsedStorage()
+                    : 0L;
+
+            if (usedStorage + fileSize > user.getStorageLimit()) {
+                log.warn(
+                        "Upload rejected: storage quota exceeded for user: {}",
+                        user.getEmail()
+                );
+
+                throw new StorageQuotaExceededException(
+                        "Storage quota exceeded"
+                );
             }
 
-            String storedFilename = UUID.randomUUID() + extension;
+            String storedFilename =
+                    UUID.randomUUID() + extension;
+
             Path storageDirectory = encrypt
                     ? FileStorageConfig.ENCRYPTED_STORAGE
                     : FileStorageConfig.NORMAL_STORAGE;
 
-            Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-            Path absoluteStorageDirectory = storageDirectory.toAbsolutePath().normalize();
-            storagePath = absoluteStorageDirectory.resolve(storedFilename).normalize();
+            Path storageRoot =
+                    FileStorageConfig.STORAGE_ROOT
+                            .toAbsolutePath()
+                            .normalize();
+
+            Path absoluteStorageDirectory =
+                    storageDirectory
+                            .toAbsolutePath()
+                            .normalize();
+
+            storagePath = absoluteStorageDirectory
+                    .resolve(storedFilename)
+                    .normalize();
 
             if (!storagePath.startsWith(storageRoot)) {
-                log.error("Invalid storage path detected: {}", storagePath);
-                throw new SecurityException("Invalid storage path");
-            }
-            timings.tValidation = Math.max(1, System.currentTimeMillis() - sVal);
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_FILE, "Upload validation passed (" + timings.tValidation + " ms)");
-
-            // Stage 2: SHA-256
-            failedStage = "SHA-256";
-            long sSha = System.currentTimeMillis();
-            String sha256Hash = calculateSha256(tempSourceFile);
-            timings.tSha256 = Math.max(1, System.currentTimeMillis() - sSha);
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_HASH, "SHA-256 calculated: " + ConsoleLogger.truncateSha(sha256Hash) + " (" + timings.tSha256 + " ms)");
-
-            // Stage 3: Duplicate Check
-            failedStage = "DUPLICATE CHECK";
-            long sDup = System.currentTimeMillis();
-            Optional<StoredFile> existingDup = fileRepository.findByUserAndSha256Hash(user, sha256Hash);
-            timings.tDuplicateCheck = Math.max(1, System.currentTimeMillis() - sDup);
-            if (existingDup.isPresent()) {
-                ConsoleLogger.logDuplicateDetectedTrace(
-                        reqId, originalFilename, fileSize, sha256Hash, user.getId(),
-                        existingDup.get().getId(), existingDup.get().getOriginalFilename()
+                log.error(
+                        "Invalid storage path detected: {}",
+                        storagePath
                 );
-                throw new DuplicateFileException("Duplicate file already exists", sha256Hash);
-            }
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_DB, "Duplicate check complete: UNIQUE (" + timings.tDuplicateCheck + " ms)");
 
-            // Stage 4: Preview Generation (before encryption)
+                throw new SecurityException(
+                        "Invalid storage path"
+                );
+            }
+
+            timings.tValidation =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis() - validationStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_FILE,
+                    "Upload validation passed ("
+                            + timings.tValidation
+                            + " ms)"
+            );
+
+            // Stage 2: Calculate SHA-256 before encryption.
+            failedStage = "SHA-256";
+
+            long shaStart = System.currentTimeMillis();
+
+            String sha256Hash =
+                    calculateSha256(tempSourceFile);
+
+            timings.tSha256 =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis() - shaStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_HASH,
+                    "SHA-256 calculated: "
+                            + ConsoleLogger.truncateSha(sha256Hash)
+                            + " ("
+                            + timings.tSha256
+                            + " ms)"
+            );
+
+            // Stage 3: Reject duplicate files belonging to the same user.
+            failedStage = "DUPLICATE CHECK";
+
+            long duplicateStart =
+                    System.currentTimeMillis();
+
+            Optional<StoredFile> existingDuplicate =
+                    fileRepository.findByUserAndSha256Hash(
+                            user,
+                            sha256Hash
+                    );
+
+            timings.tDuplicateCheck =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - duplicateStart
+                    );
+
+            if (existingDuplicate.isPresent()) {
+                ConsoleLogger.logDuplicateDetectedTrace(
+                        reqId,
+                        originalFilename,
+                        fileSize,
+                        sha256Hash,
+                        user.getId(),
+                        existingDuplicate.get().getId(),
+                        existingDuplicate.get().getOriginalFilename()
+                );
+
+                throw new DuplicateFileException(
+                        "Duplicate file already exists",
+                        sha256Hash
+                );
+            }
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_DB,
+                    "Duplicate check complete: UNIQUE ("
+                            + timings.tDuplicateCheck
+                            + " ms)"
+            );
+
+            // Stage 4: Generate preview before encryption.
             failedStage = "PREVIEW";
-            long sPrev = System.currentTimeMillis();
+
+            long previewStart =
+                    System.currentTimeMillis();
+
             byte[] previewData = null;
+
             try {
                 if (mediaPreviewService != null) {
-                    previewData = mediaPreviewService.generatePreview(tempSourceFile, originalFilename, file.getContentType());
+                    previewData =
+                            mediaPreviewService.generatePreview(
+                                    tempSourceFile,
+                                    originalFilename,
+                                    file.getContentType()
+                            );
                 }
             } catch (Exception e) {
-                log.warn("Preview generation error (continuing upload): {}", e.getMessage());
+                log.warn(
+                        "Preview generation error (continuing upload): {}",
+                        e.getMessage()
+                );
             }
 
             String previewFilename = null;
+
             if (previewData != null && previewData.length > 0) {
-                previewFilename = "preview-" + UUID.randomUUID() + ".jpg";
-                Path candidatePreviewPath = FileStorageConfig.PREVIEW_STORAGE.toAbsolutePath().normalize().resolve(previewFilename).normalize();
+                previewFilename =
+                        "preview-" + UUID.randomUUID() + ".jpg";
+
+                storageRoot =
+                        FileStorageConfig.STORAGE_ROOT
+                                .toAbsolutePath()
+                                .normalize();
+
+                Path candidatePreviewPath =
+                        FileStorageConfig.PREVIEW_STORAGE
+                                .toAbsolutePath()
+                                .normalize()
+                                .resolve(previewFilename)
+                                .normalize();
+
                 if (candidatePreviewPath.startsWith(storageRoot)) {
-                    Files.createDirectories(FileStorageConfig.PREVIEW_STORAGE);
-                    Files.write(candidatePreviewPath, previewData);
+                    Files.createDirectories(
+                            FileStorageConfig.PREVIEW_STORAGE
+                    );
+
+                    Files.write(
+                            candidatePreviewPath,
+                            previewData
+                    );
+
                     previewPath = candidatePreviewPath;
                 } else {
                     previewFilename = null;
                 }
             }
-            timings.tPreview = Math.max(1, System.currentTimeMillis() - sPrev);
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_PREVIEW, "Preview generated: " + (previewPath != null ? "YES" : "NO") + " (" + timings.tPreview + " ms)");
 
-            // Stage 5: Metadata Extraction (before encryption)
+            timings.tPreview =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - previewStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_PREVIEW,
+                    "Preview generated: "
+                            + (previewPath != null ? "YES" : "NO")
+                            + " ("
+                            + timings.tPreview
+                            + " ms)"
+            );
+
+            // Stage 5: Extract metadata before encryption.
             failedStage = "METADATA";
-            long sMeta = System.currentTimeMillis();
+
+            long metadataStart =
+                    System.currentTimeMillis();
+
             FileMetadata fileMetadata = null;
+
             if (metadataExtractionService != null) {
                 try {
-                    fileMetadata = metadataExtractionService.extractMetadata(tempSourceFile, originalFilename, file.getContentType());
+                    fileMetadata =
+                            metadataExtractionService.extractMetadata(
+                                    tempSourceFile,
+                                    originalFilename,
+                                    file.getContentType()
+                            );
                 } catch (Exception e) {
-                    log.warn("Metadata extraction non-fatal error: {}", e.getMessage());
+                    log.warn(
+                            "Metadata extraction non-fatal error: {}",
+                            e.getMessage()
+                    );
                 }
             }
-            timings.tMetadata = Math.max(1, System.currentTimeMillis() - sMeta);
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_META, "ExifTool metadata extracted: " + (fileMetadata != null ? "YES" : "NO") + " (" + timings.tMetadata + " ms)");
 
-            // Stage 6: Encryption
+            timings.tMetadata =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - metadataStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_META,
+                    "ExifTool metadata extracted: "
+                            + (fileMetadata != null ? "YES" : "NO")
+                            + " ("
+                            + timings.tMetadata
+                            + " ms)"
+            );
+
+            // Stage 6: Encrypt the source file or copy it unchanged.
             failedStage = "ENCRYPTION";
-            long sEnc = System.currentTimeMillis();
-            Files.createDirectories(absoluteStorageDirectory);
+
+            long encryptionStart =
+                    System.currentTimeMillis();
+
+            Files.createDirectories(
+                    absoluteStorageDirectory
+            );
 
             if (encrypt) {
-                SecretKey userKey = null;
-                if (keyManagementService != null) {
-                    userKey = keyManagementService.getOrGenerateUserKey(user);
-                }
-                try (InputStream fis = Files.newInputStream(tempSourceFile);
-                     OutputStream fos = Files.newOutputStream(storagePath)) {
-                    encryptionService.encryptStream(fis, fos, userKey);
+                SecretKey userKey =
+                        keyManagementService.getOrGenerateUserKey(user);
+
+                try (InputStream input =
+                             Files.newInputStream(tempSourceFile);
+                     OutputStream output =
+                             Files.newOutputStream(storagePath)) {
+
+                    encryptionService.encryptStream(
+                            input,
+                            output,
+                            userKey
+                    );
                 }
             } else {
-                Files.copy(tempSourceFile, storagePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            }
-            timings.tEncryption = Math.max(1, System.currentTimeMillis() - sEnc);
-            if (encrypt) {
-                ConsoleLogger.stage(reqId, ConsoleLogger.TAG_CRYPTO, "AES-256-GCM streaming encryption complete (" + timings.tEncryption + " ms)");
-            } else {
-                ConsoleLogger.stage(reqId, ConsoleLogger.TAG_CRYPTO, "Encryption disabled / bypassed (" + timings.tEncryption + " ms)");
+                Files.copy(
+                        tempSourceFile,
+                        storagePath,
+                        StandardCopyOption.REPLACE_EXISTING
+                );
             }
 
-            // Stage 7: Storage Write Verification
+            timings.tEncryption =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - encryptionStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_CRYPTO,
+                    encrypt
+                            ? "AES-256-GCM streaming encryption complete ("
+                            + timings.tEncryption
+                            + " ms)"
+                            : "Encryption disabled / bypassed ("
+                            + timings.tEncryption
+                            + " ms)"
+            );
+
+            // Stage 7: Confirm the storage operation completed.
             failedStage = "STORAGE";
-            long sStore = System.currentTimeMillis();
-            timings.tStorage = Math.max(1, System.currentTimeMillis() - sStore);
-            if (encrypt) {
-                ConsoleLogger.stage(reqId, ConsoleLogger.TAG_STORAGE, "Encrypted file persisted (" + timings.tStorage + " ms)");
-            } else {
-                ConsoleLogger.stage(reqId, ConsoleLogger.TAG_STORAGE, "Unencrypted file persisted (" + timings.tStorage + " ms)");
+
+            long storageStart =
+                    System.currentTimeMillis();
+
+            if (!Files.exists(storagePath)) {
+                throw new IllegalStateException(
+                        "Stored file was not created"
+                );
             }
 
-            // Stage 8: Quota Update
+            timings.tStorage =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - storageStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_STORAGE,
+                    encrypt
+                            ? "Encrypted file persisted ("
+                            + timings.tStorage
+                            + " ms)"
+                            : "Unencrypted file persisted ("
+                            + timings.tStorage
+                            + " ms)"
+            );
+
+            // Stage 8: Atomically reserve the user's storage quota.
             failedStage = "QUOTA";
-            long sQuota = System.currentTimeMillis();
-            int rowsUpdated = userRepository.incrementStorageUsedAtomic(user.getId(), fileSize);
+
+            long quotaStart =
+                    System.currentTimeMillis();
+
+            int rowsUpdated =
+                    userRepository.incrementStorageUsedAtomic(
+                            user.getId(),
+                            fileSize
+                    );
+
             if (rowsUpdated == 0) {
-                if (storagePath != null) Files.deleteIfExists(storagePath);
-                if (previewPath != null) Files.deleteIfExists(previewPath);
-                throw new StorageQuotaExceededException("Storage quota exceeded");
+                Files.deleteIfExists(storagePath);
+
+                if (previewPath != null) {
+                    Files.deleteIfExists(previewPath);
+                }
+
+                throw new StorageQuotaExceededException(
+                        "Storage quota exceeded"
+                );
             }
+
             quotaIncremented = true;
-            user.setUsedStorage(user.getUsedStorage() + fileSize);
-            timings.tQuota = Math.max(1, System.currentTimeMillis() - sQuota);
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_QUOTA, "Quota atomic update complete (" + timings.tQuota + " ms)");
 
-            // Stage 9: Database Persistence
+            user.setUsedStorage(
+                    (user.getUsedStorage() != null
+                            ? user.getUsedStorage()
+                            : 0L)
+                            + fileSize
+            );
+
+            timings.tQuota =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - quotaStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_QUOTA,
+                    "Quota atomic update complete ("
+                            + timings.tQuota
+                            + " ms)"
+            );
+
+            // Stage 9: Persist the StoredFile and extracted metadata.
             failedStage = "DATABASE";
-            long sDb = System.currentTimeMillis();
-            StoredFile storedFile = new StoredFile();
-            storedFile.setOriginalFilename(originalFilename);
-            storedFile.setStoredFilename(storedFilename);
-            storedFile.setFileSize(fileSize);
-            storedFile.setContentType(file.getContentType() != null ? file.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE);
-            storedFile.setSha256Hash(sha256Hash);
 
-            String relativeStoragePath = (encrypt ? "encrypted/" : "uploads/") + storedFilename;
-            storedFile.setStoragePath(relativeStoragePath);
-            storedFile.setEncrypted(encrypt);
-            storedFile.setUser(user);
-            if (previewPath != null && previewFilename != null) {
+            long databaseStart =
+                    System.currentTimeMillis();
+
+            StoredFile storedFile =
+                    new StoredFile();
+
+            storedFile.setOriginalFilename(
+                    originalFilename
+            );
+
+            storedFile.setStoredFilename(
+                    storedFilename
+            );
+
+            storedFile.setFileSize(fileSize);
+
+            storedFile.setContentType(
+                    file.getContentType() != null
+                            ? file.getContentType()
+                            : MediaType.APPLICATION_OCTET_STREAM_VALUE
+            );
+
+            storedFile.setSha256Hash(
+                    sha256Hash
+            );
+
+            String relativeStoragePath =
+                    (encrypt
+                            ? "encrypted/"
+                            : "uploads/")
+                            + storedFilename;
+
+            storedFile.setStoragePath(
+                    relativeStoragePath
+            );
+
+            storedFile.setEncrypted(
+                    encrypt
+            );
+
+            storedFile.setUser(
+                    user
+            );
+
+            if (previewPath != null
+                    && previewFilename != null) {
+
                 storedFile.setHasPreview(true);
-                storedFile.setPreviewPath("previews/" + previewFilename);
-                storedFile.setPreviewMimeType("image/jpeg");
+
+                storedFile.setPreviewPath(
+                        "previews/" + previewFilename
+                );
+
+                storedFile.setPreviewMimeType(
+                        MediaType.IMAGE_JPEG_VALUE
+                );
+
             } else {
                 storedFile.setHasPreview(false);
             }
 
-            StoredFile savedFile = fileRepository.save(storedFile);
+            StoredFile savedFile =
+                    fileRepository.save(storedFile);
 
-            if (fileMetadata != null && fileMetadataRepository != null) {
+            if (fileMetadata != null
+                    && fileMetadataRepository != null) {
+
                 try {
                     fileMetadata.setFile(savedFile);
-                    fileMetadataRepository.save(fileMetadata);
-                    savedFile.setMetadata(fileMetadata);
+
+                    fileMetadataRepository.save(
+                            fileMetadata
+                    );
+
+                    savedFile.setMetadata(
+                            fileMetadata
+                    );
+
                 } catch (Exception e) {
-                    log.warn("Failed saving metadata for file ID {}: {}", savedFile.getId(), e.getMessage());
+                    log.warn(
+                            "Failed saving metadata for file ID {}: {}",
+                            savedFile.getId(),
+                            e.getMessage()
+                    );
                 }
             }
-            timings.tDatabase = Math.max(1, System.currentTimeMillis() - sDb);
-            timings.tTotal = Math.max(1, System.currentTimeMillis() - uploadStart);
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_DB, "StoredFile persisted with ID=" + savedFile.getId() + " (" + timings.tDatabase + " ms)");
+
+            timings.tDatabase =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - databaseStart
+                    );
+
+            timings.tTotal =
+                    Math.max(
+                            1,
+                            System.currentTimeMillis()
+                                    - uploadStart
+                    );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_DB,
+                    "StoredFile persisted with ID="
+                            + savedFile.getId()
+                            + " ("
+                            + timings.tDatabase
+                            + " ms)"
+            );
 
             ConsoleLogger.logFileUploadTrace(
                     reqId,
@@ -276,13 +624,24 @@ public class FileStorageService {
                     originalFilename,
                     fileSize,
                     file.getContentType(),
-                    fileCategoryService != null ? fileCategoryService.determineCategory(originalFilename, file.getContentType()) : "Other",
+                    fileCategoryService != null
+                            ? fileCategoryService.determineCategory(
+                                    originalFilename,
+                                    file.getContentType()
+                            )
+                            : "Other",
                     sha256Hash,
                     previewPath != null,
-                    previewPath != null ? "IMAGE" : "NONE",
+                    previewPath != null
+                            ? "IMAGE"
+                            : "NONE",
                     fileMetadata != null,
-                    fileMetadata != null ? fileMetadata.getCameraMake() : null,
-                    fileMetadata != null ? fileMetadata.getResolution() : null,
+                    fileMetadata != null
+                            ? fileMetadata.getCameraMake()
+                            : null,
+                    fileMetadata != null
+                            ? fileMetadata.getResolution()
+                            : null,
                     encrypt,
                     quotaBefore,
                     user.getStorageLimit(),
@@ -291,182 +650,429 @@ public class FileStorageService {
 
             return savedFile;
 
-        } catch (DuplicateFileException | StorageQuotaExceededException e) {
-            cleanupFailure(storagePath, previewPath, quotaIncremented, user, fileSize);
+        } catch (DuplicateFileException
+                 | StorageQuotaExceededException e) {
+
+            cleanupFailure(
+                    storagePath,
+                    previewPath,
+                    quotaIncremented,
+                    user,
+                    fileSize
+            );
+
             throw e;
+
         } catch (Exception e) {
-            log.error("File upload failed: {}", e.getMessage(), e);
-            boolean tempCleaned = cleanupFailure(storagePath, previewPath, quotaIncremented, user, fileSize);
+            log.error(
+                    "File upload failed: {}",
+                    e.getMessage(),
+                    e
+            );
+
+            boolean tempCleaned =
+                    cleanupFailure(
+                            storagePath,
+                            previewPath,
+                            quotaIncremented,
+                            user,
+                            fileSize
+                    );
+
             ConsoleLogger.logErrorTrace(
                     reqId,
                     "File upload",
-                    originalFilename != null ? originalFilename : (file != null ? file.getOriginalFilename() : "unknown"),
-                    user != null ? user.getId() : null,
+                    originalFilename != null
+                            ? originalFilename
+                            : file != null
+                            ? file.getOriginalFilename()
+                            : "unknown",
+                    user != null
+                            ? user.getId()
+                            : null,
                     failedStage,
                     e,
                     tempCleaned,
                     quotaIncremented
             );
+
             throw e;
+
         } finally {
             if (tempSourceFile != null) {
                 try {
-                    Files.deleteIfExists(tempSourceFile);
-                    log.debug("Temporary source file cleaned.");
-                } catch (Exception ignored) {}
+                    Files.deleteIfExists(
+                            tempSourceFile
+                    );
+                    log.debug(
+                            "Temporary source file cleaned."
+                    );
+                } catch (Exception ignored) {
+                    // Cleanup failure must not hide the original upload result.
+                }
             }
         }
     }
 
-    private boolean cleanupFailure(Path storagePath, Path previewPath, boolean quotaIncremented, User user, long fileSize) {
+    private boolean cleanupFailure(
+            Path storagePath,
+            Path previewPath,
+            boolean quotaIncremented,
+            User user,
+            long fileSize) {
+
         boolean cleaned = false;
+
         if (storagePath != null) {
-            try { Files.deleteIfExists(storagePath); cleaned = true; } catch (Exception ignored) {}
-        }
-        if (previewPath != null) {
-            try { Files.deleteIfExists(previewPath); } catch (Exception ignored) {}
-        }
-        if (quotaIncremented && user != null) {
             try {
-                userRepository.decrementStorageUsedAtomic(user.getId(), fileSize);
-            } catch (Exception ex) {
-                log.error("Failed to roll back quota for user {}: {}", user.getId(), ex.getMessage());
+                Files.deleteIfExists(storagePath);
+                cleaned = true;
+            } catch (Exception e) {
+                log.warn(
+                        "Failed to clean up stored file: {}",
+                        e.getMessage()
+                );
             }
         }
+
+        if (previewPath != null) {
+            try {
+                Files.deleteIfExists(previewPath);
+            } catch (Exception e) {
+                log.warn(
+                        "Failed to clean up preview file: {}",
+                        e.getMessage()
+                );
+            }
+        }
+
+        if (quotaIncremented && user != null) {
+            try {
+                userRepository.decrementStorageUsedAtomic(
+                        user.getId(),
+                        fileSize
+                );
+            } catch (Exception e) {
+                log.error(
+                        "Failed to roll back quota for user {}: {}",
+                        user.getId(),
+                        e.getMessage()
+                );
+            }
+        }
+
         return cleaned;
     }
 
     /**
      * Resolve download parameters and streaming response body for a stored file.
      */
-    public DownloadPayload prepareDownload(User user, Long fileId, boolean decrypt) throws Exception {
-        String reqId = RequestContext.getRequestId();
-        long sDownload = System.currentTimeMillis();
+    public DownloadPayload prepareDownload(
+            User user,
+            Long fileId,
+            boolean decrypt) throws Exception {
 
-        StoredFile storedFile = fileRepository.findByIdAndUser(fileId, user).orElse(null);
+        String reqId =
+                RequestContext.getRequestId();
+
+        long downloadStart =
+                System.currentTimeMillis();
+
+        StoredFile storedFile =
+                fileRepository
+                        .findByIdAndUser(fileId, user)
+                        .orElse(null);
+
         if (storedFile == null) {
-            log.warn("File not found or user does not own file ID: {}", fileId);
+            log.warn(
+                    "File not found or user does not own file ID: {}",
+                    fileId
+            );
+
             return null;
         }
 
-        Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-        Path filePath = FileStorageConfig.resolvePath(storedFile.getStoragePath());
+        Path storageRoot =
+                FileStorageConfig.STORAGE_ROOT
+                        .toAbsolutePath()
+                        .normalize();
 
-        if (filePath == null || !filePath.startsWith(storageRoot)) {
-            log.error("Invalid file storage path: {}", storedFile.getStoragePath());
-            throw new SecurityException("Invalid storage path");
+        Path filePath =
+                FileStorageConfig.resolvePath(
+                        storedFile.getStoragePath()
+                );
+
+        if (filePath == null
+                || !filePath.startsWith(storageRoot)) {
+
+            log.error(
+                    "Invalid file storage path: {}",
+                    storedFile.getStoragePath()
+            );
+
+            throw new SecurityException(
+                    "Invalid storage path"
+            );
         }
 
         if (!Files.exists(filePath)) {
-            log.error("Physical file does not exist on disk: {}", filePath);
-            throw new FileNotFoundException("Physical file not found on disk");
+            log.error(
+                    "Physical file does not exist on disk: {}",
+                    filePath
+            );
+
+            throw new FileNotFoundException(
+                    "Physical file not found on disk"
+            );
         }
 
-        String downloadFilename = storedFile.getOriginalFilename();
-        boolean shouldDecrypt = storedFile.isEncrypted() && decrypt;
-        SecretKey userKey = shouldDecrypt && keyManagementService != null
-                ? keyManagementService.getOrGenerateUserKey(user)
-                : null;
+        String downloadFilename =
+                storedFile.getOriginalFilename();
 
-        ConsoleLogger.stage(reqId, ConsoleLogger.TAG_FILE, "Download initialization: " + downloadFilename + " (ID=" + fileId + ")");
+        boolean shouldDecrypt =
+                storedFile.isEncrypted()
+                        && decrypt;
+
+        SecretKey userKey =
+                shouldDecrypt
+                        ? keyManagementService
+                        .getOrGenerateUserKey(user)
+                        : null;
+
+        ConsoleLogger.stage(
+                reqId,
+                ConsoleLogger.TAG_FILE,
+                "Download initialization: "
+                        + downloadFilename
+                        + " (ID="
+                        + fileId
+                        + ")"
+        );
+
         if (shouldDecrypt) {
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_CRYPTO, "AES-256-GCM streaming decryption ready");
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_CRYPTO,
+                    "AES-256-GCM streaming decryption ready"
+            );
+
         } else if (storedFile.isEncrypted()) {
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_CRYPTO, "Raw ciphertext requested (decryption bypassed)");
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_CRYPTO,
+                    "Raw ciphertext requested (decryption bypassed)"
+            );
+
         } else {
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_CRYPTO, "Unencrypted file download (decryption not required)");
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_CRYPTO,
+                    "Unencrypted file download (decryption not required)"
+            );
         }
 
-        long contentLength = shouldDecrypt ? (storedFile.getFileSize() != null ? storedFile.getFileSize() : 0L) : Files.size(filePath);
+        long contentLength =
+                shouldDecrypt
+                        ? storedFile.getFileSize() != null
+                        ? storedFile.getFileSize()
+                        : 0L
+                        : Files.size(filePath);
 
-        StreamingResponseBody body = outputStream -> {
-            try (InputStream fis = Files.newInputStream(filePath)) {
-                if (shouldDecrypt) {
-                    encryptionService.decryptStream(fis, outputStream, userKey);
-                } else {
-                    byte[] buffer = new byte[16384];
-                    int bytesRead;
-                    while ((bytesRead = fis.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, bytesRead);
+        StreamingResponseBody body =
+                outputStream -> {
+
+                    try (InputStream input =
+                                 Files.newInputStream(filePath)) {
+
+                        if (shouldDecrypt) {
+                            encryptionService.decryptStream(
+                                    input,
+                                    outputStream,
+                                    userKey
+                            );
+                        } else {
+                            byte[] buffer =
+                                    new byte[BUFFER_SIZE];
+
+                            int bytesRead;
+
+                            while ((bytesRead =
+                                    input.read(buffer)) != -1) {
+
+                                outputStream.write(
+                                        buffer,
+                                        0,
+                                        bytesRead
+                                );
+                            }
+
+                            outputStream.flush();
+                        }
+
+                        long duration =
+                                Math.max(
+                                        1,
+                                        System.currentTimeMillis()
+                                                - downloadStart
+                                );
+
+                        ConsoleLogger.logFileDownloadTrace(
+                                reqId,
+                                fileId,
+                                downloadFilename,
+                                user.getId(),
+                                decrypt,
+                                storedFile.isEncrypted(),
+                                shouldDecrypt,
+                                storedFile.getFileSize() != null
+                                        ? storedFile.getFileSize()
+                                        : 0L,
+                                storedFile.getSha256Hash(),
+                                storedFile.getContentType(),
+                                duration
+                        );
+
+                    } catch (Exception e) {
+                        log.error(
+                                "Streaming error during file download for ID {}: {}",
+                                fileId,
+                                e.getMessage(),
+                                e
+                        );
+
+                        throw new RuntimeException(e);
                     }
-                    outputStream.flush();
-                }
-                long duration = Math.max(1, System.currentTimeMillis() - sDownload);
-                ConsoleLogger.logFileDownloadTrace(
-                        reqId,
-                        fileId,
-                        downloadFilename,
-                        user.getId(),
-                        decrypt,
-                        storedFile.isEncrypted(),
-                        shouldDecrypt,
-                        storedFile.getFileSize() != null ? storedFile.getFileSize() : 0L,
-                        storedFile.getSha256Hash(),
-                        storedFile.getContentType(),
-                        duration
-                );
-            } catch (Exception e) {
-                log.error("Streaming error during file download for ID {}: {}", fileId, e.getMessage());
-                throw new RuntimeException(e);
-            }
-        };
+                };
 
-        return new DownloadPayload(storedFile, body, contentLength, storedFile.getContentType(), downloadFilename, storedFile.getSha256Hash(), storedFile.isEncrypted());
+        return new DownloadPayload(
+                body,
+                contentLength,
+                storedFile.getContentType(),
+                downloadFilename,
+                storedFile.getSha256Hash(),
+                storedFile.isEncrypted()
+        );
     }
 
     /**
-     * Delete stored file, reclaim storage quota atomically, and remove physical files.
+     * Delete stored file, reclaim storage quota atomically,
+     * and remove physical files.
      */
     @Transactional
-    public boolean deleteFile(User user, Long fileId) {
-        String reqId = RequestContext.getRequestId();
+    public boolean deleteFile(
+            User user,
+            Long fileId) {
 
-        StoredFile storedFile = fileRepository.findByIdAndUser(fileId, user).orElse(null);
+        String reqId =
+                RequestContext.getRequestId();
+
+        StoredFile storedFile =
+                fileRepository
+                        .findByIdAndUser(fileId, user)
+                        .orElse(null);
+
         if (storedFile == null) {
-            log.warn("File not found or user does not own file ID: {}", fileId);
+            log.warn(
+                    "File not found or user does not own file ID: {}",
+                    fileId
+            );
+
             return false;
         }
 
         try {
-            long fileSize = storedFile.getFileSize() != null ? storedFile.getFileSize() : 0L;
-            String storagePathStr = storedFile.getStoragePath();
-            String previewPathStr = storedFile.getPreviewPath();
-            String originalFilename = storedFile.getOriginalFilename();
+            long fileSize =
+                    storedFile.getFileSize() != null
+                            ? storedFile.getFileSize()
+                            : 0L;
 
-            // 1. Decrement quota atomically in the database
-            userRepository.decrementStorageUsedAtomic(user.getId(), fileSize);
-            user.setUsedStorage(Math.max(0L, user.getUsedStorage() - fileSize));
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_QUOTA, "Quota decremented by " + ConsoleLogger.formatSize(fileSize));
+            String storagePath =
+                    storedFile.getStoragePath();
 
-            // 2. Delete database records (StoredFile and cascaded FileMetadata)
-            fileRepository.delete(storedFile);
-            fileRepository.flush();
-            ConsoleLogger.stage(reqId, ConsoleLogger.TAG_DB, "StoredFile & FileMetadata deleted (ID=" + fileId + ")");
+            String previewPath =
+                    storedFile.getPreviewPath();
 
-            // 3. Physical file cleanup on disk
-            boolean fileDeleted = false;
+            String originalFilename =
+                    storedFile.getOriginalFilename();
+
+            // 1. Remove the encrypted or unencrypted physical file first.
             try {
-                Path filePath = FileStorageConfig.resolvePath(storagePathStr);
-                if (filePath != null && Files.exists(filePath)) {
+                Path filePath = FileStorageConfig.resolvePath(storagePath);
+                if (filePath != null) {
                     Files.deleteIfExists(filePath);
-                    fileDeleted = true;
                 }
             } catch (Exception e) {
-                log.warn("Physical file deletion warning for ID {}: {}", fileId, e.getMessage());
+                log.warn(
+                        "Physical file deletion failed for ID {}: {}",
+                        fileId,
+                        e.getMessage()
+                );
+                // Throw exception to trigger 500 error and rollback if I/O fails
+                throw new RuntimeException("Failed to delete physical file", e);
             }
 
+            // 2. Remove the preview file, but don't fail the whole process if this fails.
             boolean previewDeleted = false;
-            if (previewPathStr != null) {
+            if (previewPath != null) {
                 try {
-                    Path previewPath = FileStorageConfig.resolvePath(previewPathStr);
-                    if (previewPath != null && Files.exists(previewPath)) {
-                        Files.deleteIfExists(previewPath);
+                    Path previewFile =
+                            FileStorageConfig.resolvePath(
+                                    previewPath
+                            );
+
+                    if (previewFile != null
+                            && Files.exists(previewFile)) {
+
+                        Files.deleteIfExists(
+                                previewFile
+                        );
                         previewDeleted = true;
                     }
                 } catch (Exception e) {
-                    log.warn("Preview file deletion warning for ID {}: {}", fileId, e.getMessage());
+                    log.warn(
+                            "Preview file deletion warning for ID {}: {}",
+                            fileId,
+                            e.getMessage()
+                    );
                 }
             }
+
+            // 3. Release the user's storage quota now that physical deletion succeeded.
+            userRepository.decrementStorageUsedAtomic(
+                    user.getId(),
+                    fileSize
+            );
+
+            long currentUsedStorage =
+                    user.getUsedStorage() != null
+                            ? user.getUsedStorage()
+                            : 0L;
+
+            user.setUsedStorage(
+                    Math.max(
+                            0L,
+                            currentUsedStorage - fileSize
+                    )
+            );
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_QUOTA,
+                    "Quota decremented by "
+                            + ConsoleLogger.formatSize(fileSize)
+            );
+
+            // 4. Delete the database record and associated metadata.
+            fileRepository.delete(storedFile);
+            fileRepository.flush();
+
+            ConsoleLogger.stage(
+                    reqId,
+                    ConsoleLogger.TAG_DB,
+                    "StoredFile & FileMetadata deleted (ID="
+                            + fileId
+                            + ")"
+            );
 
             ConsoleLogger.logFileDeleteTrace(
                     reqId,
@@ -474,128 +1080,289 @@ public class FileStorageService {
                     originalFilename,
                     user.getId(),
                     fileSize,
-                    previewDeleted || previewPathStr != null
+                    previewDeleted
+                            || previewPath != null
             );
 
             return true;
+
         } catch (Exception e) {
-            log.error("Failed to delete file ID: {} - {}", fileId, e.getMessage());
-            throw new RuntimeException("Failed to delete file", e);
+            log.error(
+                    "Failed to delete file ID: {} - {}",
+                    fileId,
+                    e.getMessage(),
+                    e
+            );
+
+            throw new RuntimeException(
+                    "Failed to delete file",
+                    e
+            );
         }
     }
 
     /**
      * Retrieve preview bytes from disk.
      */
-    public byte[] getPreviewBytes(User user, Long fileId) throws Exception {
-        String reqId = RequestContext.getRequestId();
-        long sPrev = System.currentTimeMillis();
+    public byte[] getPreviewBytes(StoredFile storedFile) throws Exception {
 
-        StoredFile storedFile = fileRepository.findByIdAndUser(fileId, user).orElse(null);
-        if (storedFile == null || !storedFile.isHasPreview() || storedFile.getPreviewPath() == null) {
+        String reqId =
+                RequestContext.getRequestId();
+
+        long previewStart =
+                System.currentTimeMillis();
+
+        if (storedFile == null
+                || !storedFile.isHasPreview()
+                || storedFile.getPreviewPath() == null) {
+
             return null;
         }
 
-        Path storageRoot = FileStorageConfig.STORAGE_ROOT.toAbsolutePath().normalize();
-        Path previewPath = FileStorageConfig.resolvePath(storedFile.getPreviewPath());
+        Path storageRoot =
+                FileStorageConfig.STORAGE_ROOT
+                        .toAbsolutePath()
+                        .normalize();
 
-        if (previewPath == null || !previewPath.startsWith(storageRoot) || !Files.exists(previewPath)) {
-            log.warn("Preview file missing or invalid path: {}", storedFile.getPreviewPath());
+        Path previewPath =
+                FileStorageConfig.resolvePath(
+                        storedFile.getPreviewPath()
+                );
+
+        if (previewPath == null
+                || !previewPath.startsWith(storageRoot)
+                || !Files.exists(previewPath)) {
+
+            log.warn(
+                    "Preview file missing or invalid path: {}",
+                    storedFile.getPreviewPath()
+            );
+
             return null;
         }
 
-        byte[] previewData = Files.readAllBytes(previewPath);
-        long duration = Math.max(1, System.currentTimeMillis() - sPrev);
-        ConsoleLogger.logPreviewTrace(reqId, fileId, storedFile.getPreviewMimeType(), "DiskCache", true, duration);
+        byte[] previewData =
+                Files.readAllBytes(previewPath);
+
+        long duration =
+                Math.max(
+                        1,
+                        System.currentTimeMillis()
+                                - previewStart
+                );
+
+        ConsoleLogger.logPreviewTrace(
+                reqId,
+                storedFile.getId(),
+                storedFile.getPreviewMimeType(),
+                "DiskCache",
+                true,
+                duration
+        );
+
         return previewData;
     }
 
     /**
-     * Regenerate preview from original/decrypted storage file.
+     * Regenerate preview from the original/decrypted storage file.
      */
-    public boolean regeneratePreview(User user, Long fileId) throws Exception {
-        StoredFile storedFile = fileRepository.findByIdAndUser(fileId, user).orElse(null);
+    public boolean regeneratePreview(
+            User user,
+            Long fileId) throws Exception {
+
+        StoredFile storedFile =
+                fileRepository
+                        .findByIdAndUser(fileId, user)
+                        .orElse(null);
+
         if (storedFile == null) {
             return false;
         }
 
-        Path filePath = FileStorageConfig.resolvePath(storedFile.getStoragePath());
-        if (filePath == null || !Files.exists(filePath)) {
+        Path filePath =
+                FileStorageConfig.resolvePath(
+                        storedFile.getStoragePath()
+                );
+
+        if (filePath == null
+                || !Files.exists(filePath)) {
+
             return false;
         }
 
         Path sourceToRead = null;
         Path tempDecrypted = null;
+
         try {
             if (storedFile.isEncrypted()) {
-                SecretKey userKey = keyManagementService != null ? keyManagementService.getOrGenerateUserKey(user) : null;
-                tempDecrypted = Files.createTempFile("cv_regen_prev_", ".tmp");
-                try (InputStream fis = Files.newInputStream(filePath);
-                     OutputStream fos = Files.newOutputStream(tempDecrypted)) {
-                    encryptionService.decryptStream(fis, fos, userKey);
+                SecretKey userKey =
+                        keyManagementService
+                                .getOrGenerateUserKey(user);
+
+                tempDecrypted =
+                        Files.createTempFile(
+                                "cv_regen_prev_",
+                                ".tmp"
+                        );
+
+                try (InputStream input =
+                             Files.newInputStream(filePath);
+                     OutputStream output =
+                             Files.newOutputStream(tempDecrypted)) {
+
+                    encryptionService.decryptStream(
+                            input,
+                            output,
+                            userKey
+                    );
                 }
+
                 sourceToRead = tempDecrypted;
+
             } else {
                 sourceToRead = filePath;
             }
 
-            byte[] previewData = mediaPreviewService != null
-                    ? mediaPreviewService.generatePreview(sourceToRead, storedFile.getOriginalFilename(), storedFile.getContentType())
-                    : null;
+            byte[] previewData =
+                    mediaPreviewService != null
+                            ? mediaPreviewService.generatePreview(
+                                    sourceToRead,
+                                    storedFile.getOriginalFilename(),
+                                    storedFile.getContentType()
+                            )
+                            : null;
 
-            if (previewData != null && previewData.length > 0) {
-                if (storedFile.getPreviewPath() != null) {
-                    try {
-                        Path oldPrev = FileStorageConfig.resolvePath(storedFile.getPreviewPath());
-                        if (oldPrev != null) Files.deleteIfExists(oldPrev);
-                    } catch (Exception ignored) {}
-                }
+            if (previewData == null
+                    || previewData.length == 0) {
 
-                String previewFilename = "preview-" + UUID.randomUUID() + ".jpg";
-                Path candidatePreviewPath = FileStorageConfig.PREVIEW_STORAGE.toAbsolutePath().normalize().resolve(previewFilename).normalize();
-                Files.createDirectories(FileStorageConfig.PREVIEW_STORAGE);
-                Files.write(candidatePreviewPath, previewData);
-
-                storedFile.setHasPreview(true);
-                storedFile.setPreviewPath("previews/" + previewFilename);
-                storedFile.setPreviewMimeType("image/jpeg");
-                fileRepository.save(storedFile);
-                return true;
+                return false;
             }
-            return false;
+
+            if (storedFile.getPreviewPath() != null) {
+                try {
+                    Path oldPreview =
+                            FileStorageConfig.resolvePath(
+                                    storedFile.getPreviewPath()
+                            );
+
+                    if (oldPreview != null) {
+                        Files.deleteIfExists(oldPreview);
+                    }
+
+                } catch (Exception e) {
+                    log.warn(
+                            "Failed to remove old preview for file ID {}: {}",
+                            fileId,
+                            e.getMessage()
+                    );
+                }
+            }
+
+            String previewFilename =
+                    "preview-" + UUID.randomUUID() + ".jpg";
+
+            Path storageRoot =
+                    FileStorageConfig.STORAGE_ROOT
+                            .toAbsolutePath()
+                            .normalize();
+
+            Path candidatePreviewPath =
+                    FileStorageConfig.PREVIEW_STORAGE
+                            .toAbsolutePath()
+                            .normalize()
+                            .resolve(previewFilename)
+                            .normalize();
+
+            if (!candidatePreviewPath.startsWith(storageRoot)) {
+                throw new SecurityException(
+                        "Invalid preview storage path"
+                );
+            }
+
+            Files.createDirectories(
+                    FileStorageConfig.PREVIEW_STORAGE
+            );
+
+            Files.write(
+                    candidatePreviewPath,
+                    previewData
+            );
+
+            storedFile.setHasPreview(true);
+
+            storedFile.setPreviewPath(
+                    "previews/" + previewFilename
+            );
+
+            storedFile.setPreviewMimeType(
+                    MediaType.IMAGE_JPEG_VALUE
+            );
+
+            fileRepository.save(storedFile);
+
+            return true;
+
         } finally {
             if (tempDecrypted != null) {
-                try { Files.deleteIfExists(tempDecrypted); } catch (Exception ignored) {}
+                try {
+                    Files.deleteIfExists(
+                            tempDecrypted
+                    );
+                } catch (Exception e) {
+                    log.warn(
+                            "Failed to clean temporary decrypted preview source: {}",
+                            e.getMessage()
+                    );
+                }
             }
         }
     }
 
     private String calculateSha256(Path file) {
-        try (InputStream is = Files.newInputStream(file)) {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] buffer = new byte[16384];
+        try (InputStream input =
+                     Files.newInputStream(file)) {
+
+            MessageDigest digest =
+                    MessageDigest.getInstance("SHA-256");
+
+            byte[] buffer =
+                    new byte[BUFFER_SIZE];
+
             int read;
-            while ((read = is.read(buffer)) != -1) {
-                digest.update(buffer, 0, read);
+
+            while ((read = input.read(buffer)) != -1) {
+                digest.update(
+                        buffer,
+                        0,
+                        read
+                );
             }
-            byte[] hash = digest.digest();
-            StringBuilder result = new StringBuilder();
-            for (byte b : hash) {
-                result.append(String.format("%02x", b));
-            }
-            return result.toString();
+
+            return HexFormat
+                    .of()
+                    .formatHex(
+                            digest.digest()
+                    );
+
         } catch (Exception e) {
-            throw new RuntimeException("SHA-256 calculation failed.", e);
+            throw new RuntimeException(
+                    "SHA-256 calculation failed.",
+                    e
+            );
         }
     }
 
     private String getExtension(String filename) {
-        int lastDot = filename.lastIndexOf('.');
-        return lastDot == -1 ? "" : filename.substring(lastDot);
+        int lastDot =
+                filename.lastIndexOf('.');
+
+        return lastDot == -1
+                ? ""
+                : filename.substring(lastDot);
     }
 
     public static class DownloadPayload {
-        private final StoredFile storedFile;
+
         private final StreamingResponseBody body;
         private final long contentLength;
         private final String contentType;
@@ -603,9 +1370,14 @@ public class FileStorageService {
         private final String sha256;
         private final boolean encrypted;
 
-        public DownloadPayload(StoredFile storedFile, StreamingResponseBody body, long contentLength,
-                               String contentType, String filename, String sha256, boolean encrypted) {
-            this.storedFile = storedFile;
+        public DownloadPayload(
+                StreamingResponseBody body,
+                long contentLength,
+                String contentType,
+                String filename,
+                String sha256,
+                boolean encrypted) {
+
             this.body = body;
             this.contentLength = contentLength;
             this.contentType = contentType;
@@ -614,13 +1386,28 @@ public class FileStorageService {
             this.encrypted = encrypted;
         }
 
-        public StoredFile getStoredFile() { return storedFile; }
-        public StreamingResponseBody getBody() { return body; }
-        public long contentLength() { return contentLength; }
-        public long getContentLength() { return contentLength; }
-        public String getContentType() { return contentType; }
-        public String getFilename() { return filename; }
-        public String getSha256() { return sha256; }
-        public boolean isEncrypted() { return encrypted; }
+        public StreamingResponseBody getBody() {
+            return body;
+        }
+
+        public long getContentLength() {
+            return contentLength;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public String getFilename() {
+            return filename;
+        }
+
+        public String getSha256() {
+            return sha256;
+        }
+
+        public boolean isEncrypted() {
+            return encrypted;
+        }
     }
 }

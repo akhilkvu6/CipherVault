@@ -1,11 +1,22 @@
 package com.ciphervault.ciphervault.user;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
+
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
 public class User {
+
+    private static final long DEFAULT_STORAGE_LIMIT = 1024L * 1024L * 1024L;
+    private static final long DEFAULT_USED_STORAGE = 0L;
+    private static final int DEFAULT_TOKEN_VERSION = 1;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,16 +32,16 @@ public class User {
     private String password;
 
     @Column(nullable = false)
-    private Long storageLimit = 1073741824L;
+    private Long storageLimit = DEFAULT_STORAGE_LIMIT;
 
     @Column(nullable = false)
-    private Long usedStorage = 0L;
+    private Long usedStorage = DEFAULT_USED_STORAGE;
 
     @Column(name = "user_key")
     private String userKey;
 
     @Column(name = "token_version", nullable = false)
-    private Integer tokenVersion = 1;
+    private Integer tokenVersion = DEFAULT_TOKEN_VERSION;
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
@@ -97,7 +108,7 @@ public class User {
     }
 
     public Integer getTokenVersion() {
-        return tokenVersion != null ? tokenVersion : 1;
+        return tokenVersion != null ? tokenVersion : DEFAULT_TOKEN_VERSION;
     }
 
     public void setTokenVersion(Integer tokenVersion) {

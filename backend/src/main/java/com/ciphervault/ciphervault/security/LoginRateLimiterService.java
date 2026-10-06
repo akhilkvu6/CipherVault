@@ -4,82 +4,124 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Production-appropriate in-memory login rate limiter.
- * Protects against brute-force attacks by limiting consecutive failed login attempts
- * per (client IP + email) pair.
+ * In-memory login rate limiter that protects against brute-force attacks
+ * by limiting consecutive failed login attempts per client IP and email pair.
  */
 @Service
 public class LoginRateLimiterService {
 
-    private static final Logger log = LoggerFactory.getLogger(LoginRateLimiterService.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(LoginRateLimiterService.class);
 
     public static final int MAX_FAILED_ATTEMPTS = 5;
-    public static final long LOCKOUT_DURATION_MS = TimeUnit.MINUTES.toMillis(15); // 15 minutes
+
+    public static final long LOCKOUT_DURATION_MS =
+            TimeUnit.MINUTES.toMillis(15);
 
     private static class AttemptTracker {
         int failedAttempts;
-        long lastAttemptTimestamp;
         long lockoutUntilTimestamp;
-
-        AttemptTracker() {
-            this.failedAttempts = 0;
-            this.lastAttemptTimestamp = System.currentTimeMillis();
-            this.lockoutUntilTimestamp = 0L;
-        }
+        long lastAttemptTimestamp;
     }
 
-    private final ConcurrentHashMap<String, AttemptTracker> attemptsMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AttemptTracker> attemptsMap =
+            new ConcurrentHashMap<>();
 
     private String buildKey(String clientIp, String email) {
-        String safeIp = (clientIp != null && !clientIp.isBlank()) ? clientIp.trim() : "unknown-ip";
-        String safeEmail = (email != null && !email.isBlank()) ? email.trim().toLowerCase() : "unknown-user";
+        String safeIp =
+                clientIp != null && !clientIp.isBlank()
+                        ? clientIp.trim()
+                        : "unknown-ip";
+
+        String safeEmail =
+                email != null && !email.isBlank()
+                        ? email.trim().toLowerCase(Locale.ROOT)
+                        : "unknown-user";
+
         return safeIp + ":" + safeEmail;
     }
 
+    private boolean isStale(AttemptTracker tracker, long now) {
+        if (tracker == null) {
+            return true;
+        }
+
+        if (tracker.lockoutUntilTimestamp != 0L) {
+            return tracker.lockoutUntilTimestamp <= now;
+        }
+
+        return (now - tracker.lastAttemptTimestamp) >= LOCKOUT_DURATION_MS;
+    }
+
     /**
-     * Checks if the given IP/email combination is currently locked out.
+     * Purges expired lockout entries and inactive failed attempt records.
+     */
+    public void cleanupStaleEntries() {
+        long now = System.currentTimeMillis();
+        attemptsMap.entrySet().removeIf(entry -> isStale(entry.getValue(), now));
+    }
+
+    /**
+     * Returns the number of currently tracked rate-limit keys.
+     */
+    public int getTrackedCount() {
+        return attemptsMap.size();
+    }
+
+    /**
+     * Checks whether the given IP and email combination is currently locked out.
      */
     public boolean isBlocked(String clientIp, String email) {
         String key = buildKey(clientIp, email);
         AttemptTracker tracker = attemptsMap.get(key);
+
         if (tracker == null) {
             return false;
         }
 
         long now = System.currentTimeMillis();
+
         if (tracker.lockoutUntilTimestamp > now) {
-            log.warn("Login attempt blocked by rate limiter for key: {}. Locked out for another {}s",
-                    key, (tracker.lockoutUntilTimestamp - now) / 1000);
+            log.warn(
+                    "Login attempt blocked by rate limiter for key: {}. "
+                            + "Locked out for another {}s",
+                    key,
+                    (tracker.lockoutUntilTimestamp - now) / 1000
+            );
+
             return true;
         }
 
-        // Lockout expired; reset tracker
-        if (tracker.lockoutUntilTimestamp != 0L && tracker.lockoutUntilTimestamp <= now) {
-            attemptsMap.remove(key);
+        if (isStale(tracker, now)) {
+            attemptsMap.remove(key, tracker);
         }
 
         return false;
     }
 
     /**
-     * Records a failed login attempt. If failed attempts reach MAX_FAILED_ATTEMPTS,
-     * triggers a 15-minute lockout.
+     * Records a failed login attempt and starts a lockout after the limit is reached.
      */
     public void recordFailedAttempt(String clientIp, String email) {
-        String key = buildKey(clientIp, email);
         long now = System.currentTimeMillis();
+
+        if (attemptsMap.size() >= 500) {
+            cleanupStaleEntries();
+        }
+
+        String key = buildKey(clientIp, email);
 
         attemptsMap.compute(key, (k, tracker) -> {
             if (tracker == null) {
                 tracker = new AttemptTracker();
             }
 
-            // If previously expired, reset
-            if (tracker.lockoutUntilTimestamp != 0L && tracker.lockoutUntilTimestamp <= now) {
+            if (isStale(tracker, now)) {
                 tracker.failedAttempts = 0;
                 tracker.lockoutUntilTimestamp = 0L;
             }
@@ -88,9 +130,15 @@ public class LoginRateLimiterService {
             tracker.lastAttemptTimestamp = now;
 
             if (tracker.failedAttempts >= MAX_FAILED_ATTEMPTS) {
-                tracker.lockoutUntilTimestamp = now + LOCKOUT_DURATION_MS;
-                log.warn("Rate limit triggered: Lockout initiated for key {} ({} failed attempts).",
-                        key, tracker.failedAttempts);
+                tracker.lockoutUntilTimestamp =
+                        now + LOCKOUT_DURATION_MS;
+
+                log.warn(
+                        "Rate limit triggered: Lockout initiated for key {} "
+                                + "({} failed attempts).",
+                        key,
+                        tracker.failedAttempts
+                );
             }
 
             return tracker;
@@ -98,7 +146,7 @@ public class LoginRateLimiterService {
     }
 
     /**
-     * Clears failed attempt counters upon successful authentication.
+     * Clears failed login attempts after successful authentication.
      */
     public void recordSuccessfulLogin(String clientIp, String email) {
         String key = buildKey(clientIp, email);
@@ -106,21 +154,25 @@ public class LoginRateLimiterService {
     }
 
     /**
-     * Returns remaining lockout seconds, or 0 if not locked out.
+     * Returns the remaining lockout duration in seconds, or zero when unlocked.
      */
-    public long getRemainingLockoutSeconds(String clientIp, String email) {
+    public long getRemainingLockoutSeconds(
+            String clientIp,
+            String email) {
+
         String key = buildKey(clientIp, email);
         AttemptTracker tracker = attemptsMap.get(key);
-        if (tracker == null || tracker.lockoutUntilTimestamp <= System.currentTimeMillis()) {
+
+        if (tracker == null) {
             return 0L;
         }
-        return (tracker.lockoutUntilTimestamp - System.currentTimeMillis()) / 1000;
-    }
 
-    /**
-     * Visible for testing.
-     */
-    public void reset() {
-        attemptsMap.clear();
+        long remainingMs =
+                tracker.lockoutUntilTimestamp
+                        - System.currentTimeMillis();
+
+        return remainingMs > 0
+                ? remainingMs / 1000
+                : 0L;
     }
 }

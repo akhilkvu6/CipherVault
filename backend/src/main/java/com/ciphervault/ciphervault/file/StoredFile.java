@@ -1,20 +1,36 @@
 package com.ciphervault.ciphervault.file;
 
 import com.ciphervault.ciphervault.user.User;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(
-        name = "stored_files",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uq_stored_files_user_sha256", columnNames = {"user_id", "sha256_hash"})
-        },
-        indexes = {
-                @Index(name = "idx_stored_files_user_created", columnList = "user_id, created_at DESC"),
-                @Index(name = "idx_stored_files_user_filename", columnList = "user_id, original_filename")
-        }
+    name = "stored_files",
+    indexes = {
+        @Index(
+            name = "idx_user_hash",
+            columnList = "user_id, sha256_hash",
+            unique = true
+        ),
+        @Index(
+            name = "idx_user_created",
+            columnList = "user_id, created_at"
+        )
+    }
 )
 public class StoredFile {
 
@@ -52,7 +68,12 @@ public class StoredFile {
     @Column(name = "preview_mime_type")
     private String previewMimeType;
 
-    @OneToOne(mappedBy = "file", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToOne(
+            mappedBy = "file",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
     private FileMetadata metadata;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

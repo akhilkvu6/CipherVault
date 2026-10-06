@@ -1,7 +1,17 @@
 package com.ciphervault.ciphervault.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "file_metadata", indexes = {
@@ -113,7 +123,7 @@ public class FileMetadata {
     private String docModifiedDate;
 
     @Lob
-    @Column(name = "raw_metadata_json", columnDefinition = "TEXT")
+    @Column(name = "raw_metadata_json", columnDefinition = "LONGTEXT")
     private String rawMetadataJson;
 
     public FileMetadata() {
@@ -121,10 +131,6 @@ public class FileMetadata {
 
     public Long getId() {
         return id;
-    }
-
-    public StoredFile getFile() {
-        return file;
     }
 
     public void setFile(StoredFile file) {

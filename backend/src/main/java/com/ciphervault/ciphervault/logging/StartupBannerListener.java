@@ -16,6 +16,7 @@ import java.sql.DatabaseMetaData;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Listens for ApplicationReadyEvent and prints the structured ASCII CipherVault startup console banner.
@@ -38,9 +39,7 @@ public class StartupBannerListener {
     @Value("${ciphervault.security.pbkdf2.salt:}")
     private String pbkdf2Salt;
 
-    public StartupBannerListener(
-            @org.springframework.beans.factory.annotation.Autowired(required = false) DataSource dataSource,
-            Environment environment) {
+    public StartupBannerListener(DataSource dataSource, Environment environment) {
         this.dataSource = dataSource;
         this.environment = environment;
     }
@@ -48,13 +47,17 @@ public class StartupBannerListener {
     @EventListener(ApplicationReadyEvent.class)
     public void onApplicationReady() {
         int port = 8080;
+
         try {
-            String portProp = environment.getProperty("local.server.port");
-            if (portProp == null) {
-                portProp = environment.getProperty("server.port", "8080");
+            String portProperty = environment.getProperty("local.server.port");
+
+            if (portProperty == null) {
+                portProperty = environment.getProperty("server.port", "8080");
             }
-            port = Integer.parseInt(portProp);
+
+            port = Integer.parseInt(portProperty);
         } catch (Exception ignored) {
+            // Keep the default port when the configured value is unavailable or invalid.
         }
 
         String host = resolveHostIp();
@@ -66,36 +69,45 @@ public class StartupBannerListener {
         String dbVersion = "";
         String dbCatalog = "ciphervault";
 
-        if (dataSource != null) {
-            try (Connection conn = dataSource.getConnection()) {
-                dbConnected = true;
-                DatabaseMetaData meta = conn.getMetaData();
-                dbEngine = meta.getDatabaseProductName();
-                dbVersion = meta.getDatabaseProductVersion();
-                String catalog = conn.getCatalog();
-                if (catalog != null && !catalog.isBlank()) {
-                    dbCatalog = catalog;
-                }
-            } catch (Exception e) {
-                dbConnected = false;
+        try (Connection connection = dataSource.getConnection()) {
+            dbConnected = true;
+
+            DatabaseMetaData metadata = connection.getMetaData();
+            dbEngine = metadata.getDatabaseProductName();
+            dbVersion = metadata.getDatabaseProductVersion();
+
+            String catalog = connection.getCatalog();
+            if (catalog != null && !catalog.isBlank()) {
+                dbCatalog = catalog;
             }
+        } catch (Exception ignored) {
+            // Database status remains disconnected when the connection check fails.
         }
 
         List<String> warnings = new ArrayList<>();
+
         if (jwtSecret == null || jwtSecret.isBlank()) {
-            warnings.add("Development JWT fallback is active. Configure CIPHERVAULT_JWT_SECRET for production.");
+            warnings.add(
+                    "Development JWT fallback is active. Configure CIPHERVAULT_JWT_SECRET for production."
+            );
         }
+
         if (masterKey == null || masterKey.isBlank()) {
-            warnings.add("Development master key fallback is active. Configure CIPHERVAULT_MASTER_KEY for production.");
+            warnings.add(
+                    "Development master key fallback is active. Configure CIPHERVAULT_MASTER_KEY for production."
+            );
         }
+
         if (pbkdf2Salt == null || pbkdf2Salt.isBlank()) {
-            warnings.add("Development PBKDF2 salt fallback is active. Configure CIPHERVAULT_PBKDF2_SALT for production.");
+            warnings.add(
+                    "Development PBKDF2 salt fallback is active. Configure CIPHERVAULT_PBKDF2_SALT for production."
+            );
         }
 
         ConsoleLogger.printStartupBanner(
                 host,
                 port,
-                envMode != null ? envMode.toUpperCase() : "DEVELOPMENT",
+                envMode.toUpperCase(Locale.ROOT),
                 javaVersion,
                 springBootVersion,
                 dbEngine,
@@ -108,24 +120,57 @@ public class StartupBannerListener {
 
     private String resolveHostIp() {
         try {
-            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            Enumeration<NetworkInterface> interfaces =
+                    NetworkInterface.getNetworkInterfaces();
+
+            String fallbackIp = null;
+
             while (interfaces.hasMoreElements()) {
-                NetworkInterface iface = interfaces.nextElement();
-                if (iface.isLoopback() || !iface.isUp()) continue;
-                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                NetworkInterface networkInterface = interfaces.nextElement();
+
+                if (networkInterface.isLoopback() || !networkInterface.isUp()) {
+                    continue;
+                }
+
+                String interfaceName =
+                        networkInterface.getDisplayName().toLowerCase(Locale.ROOT);
+
+                if (interfaceName.contains("wsl")
+                        || interfaceName.contains("virtual")
+                        || interfaceName.contains("hyper-v")) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> addresses =
+                        networkInterface.getInetAddresses();
+
                 while (addresses.hasMoreElements()) {
-                    InetAddress addr = addresses.nextElement();
-                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()) {
-                        String ip = addr.getHostAddress();
-                        if (ip.startsWith("192.168.") || ip.startsWith("10.") || ip.startsWith("172.")) {
+                    InetAddress address = addresses.nextElement();
+
+                    if (address instanceof Inet4Address
+                            && !address.isLoopbackAddress()) {
+
+                        String ip = address.getHostAddress();
+
+                        if (ip.startsWith("192.168.")
+                                || ip.startsWith("10.")) {
                             return ip;
+                        }
+
+                        if (fallbackIp == null) {
+                            fallbackIp = ip;
                         }
                     }
                 }
             }
+
+            if (fallbackIp != null) {
+                return fallbackIp;
+            }
+
             return InetAddress.getLocalHost().getHostAddress();
-        } catch (Exception e) {
-            return "192.168.1.38";
+        } catch (Exception ignored) {
+            return "127.0.0.1";
         }
     }
 }

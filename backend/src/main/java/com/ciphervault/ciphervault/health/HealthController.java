@@ -12,7 +12,11 @@ public class HealthController {
     @GetMapping("/api/health")
     public ResponseEntity<HealthResponse> health() {
         return ResponseEntity.ok(
-                new HealthResponse("UP", "CipherVault Backend", Instant.now().toString())
+                new HealthResponse(
+                        "UP",
+                        "CipherVault Backend",
+                        Instant.now().toString()
+                )
         );
     }
 }

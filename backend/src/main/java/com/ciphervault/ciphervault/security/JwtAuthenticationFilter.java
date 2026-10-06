@@ -1,5 +1,7 @@
 package com.ciphervault.ciphervault.security;
 
+import com.ciphervault.ciphervault.logging.ConsoleLogger;
+import com.ciphervault.ciphervault.logging.RequestContext;
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -23,7 +25,8 @@ import java.util.List;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
@@ -49,12 +52,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String requestPath = request.getRequestURI();
         String authorizationHeader = request.getHeader("Authorization");
 
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+        if (authorizationHeader == null
+                || !authorizationHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
         String token = authorizationHeader.substring(7).trim();
+
         if (token.isEmpty()) {
             filterChain.doFilter(request, response);
             return;
@@ -63,40 +68,69 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String email = jwtService.extractEmail(token);
 
-            if (email != null && !email.isBlank() && SecurityContextHolder.getContext().getAuthentication() == null) {
-                User user = userRepository.findByEmail(email).orElse(null);
-
-                if (user != null && jwtService.isTokenValid(token, email)) {
-                    Integer tokenVersion = jwtService.extractTokenVersion(token);
-                    int expectedVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 1;
-                    if (tokenVersion != null && !tokenVersion.equals(expectedVersion)) {
-                        log.warn("JWT rejected for {}: tokenVersion ({}) does not match current user version ({})",
-                                email, tokenVersion, expectedVersion);
-                        filterChain.doFilter(request, response);
-                        return;
-                    }
-
-                    UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(
-                                    email,
-                                    null,
-                                    List.of(new SimpleGrantedAuthority("ROLE_USER"))
-                            );
-
-                    SecurityContext context = SecurityContextHolder.createEmptyContext();
-                    context.setAuthentication(authentication);
-                    SecurityContextHolder.setContext(context);
-                    securityContextRepository.saveContext(context, request, response);
-                    com.ciphervault.ciphervault.logging.RequestContext.setUser(email, user.getId());
-                    com.ciphervault.ciphervault.logging.ConsoleLogger.stage(
-                            com.ciphervault.ciphervault.logging.RequestContext.getRequestId(),
-                            com.ciphervault.ciphervault.logging.ConsoleLogger.TAG_AUTH,
-                            "JWT validated (User ID=" + user.getId() + " | " + email + ")"
-                    );
-                }
+            if (email == null
+                    || email.isBlank()
+                    || SecurityContextHolder.getContext().getAuthentication() != null) {
+                filterChain.doFilter(request, response);
+                return;
             }
+
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null || !jwtService.isTokenValid(token, email)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            Integer tokenVersion = jwtService.extractTokenVersion(token);
+            int expectedVersion =
+                    user.getTokenVersion() != null
+                            ? user.getTokenVersion()
+                            : 1;
+
+            if (tokenVersion == null
+                    || !tokenVersion.equals(expectedVersion)) {
+                log.warn(
+                        "JWT rejected for {}: tokenVersion ({}) does not match current user version ({}) or is missing",
+                        email,
+                        tokenVersion,
+                        expectedVersion
+                );
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(
+                            email,
+                            null,
+                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                    );
+
+            SecurityContext context =
+                    SecurityContextHolder.createEmptyContext();
+
+            context.setAuthentication(authentication);
+            SecurityContextHolder.setContext(context);
+
+            securityContextRepository.saveContext(
+                    context,
+                    request,
+                    response
+            );
+
+            ConsoleLogger.stage(
+                    RequestContext.getRequestId(),
+                    ConsoleLogger.TAG_AUTH,
+                    "JWT validated (User ID=" + user.getId() + " | " + email + ")"
+            );
+
         } catch (Exception e) {
-            log.warn("JWT authentication processing error for {}: {}", requestPath, e.getMessage());
+            log.warn(
+                    "JWT authentication processing error for {}: {}",
+                    requestPath,
+                    e.getMessage()
+            );
         }
 
         filterChain.doFilter(request, response);

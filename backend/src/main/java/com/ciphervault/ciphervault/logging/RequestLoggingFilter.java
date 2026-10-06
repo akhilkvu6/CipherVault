@@ -35,46 +35,68 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         String uri = request.getRequestURI();
         String queryString = request.getQueryString();
+
         String fullPath = (queryString != null && !queryString.isBlank())
                 ? uri + "?" + queryString
                 : uri;
 
-        RequestContext.RequestInfo reqInfo = RequestContext.init(method, fullPath);
+        RequestContext.RequestInfo reqInfo = RequestContext.init();
         String reqId = reqInfo.getRequestId();
 
-        boolean isDetailedFlow = uri.contains("/upload") || uri.contains("/download") || uri.contains("/login") || uri.contains("/register") || uri.contains("/search") || "DELETE".equalsIgnoreCase(method);
+        boolean isDetailedFlow =
+                uri.contains("/upload")
+                        || uri.contains("/download")
+                        || uri.contains("/login")
+                        || uri.contains("/register")
+                        || uri.contains("/search")
+                        || "DELETE".equalsIgnoreCase(method);
 
         if (isDetailedFlow) {
-            ConsoleLogger.logHttpRequestStart(reqId, method, fullPath, null);
+            ConsoleLogger.logHttpRequestStart(
+                    reqId,
+                    method,
+                    fullPath,
+                    null
+            );
         }
 
         try {
             filterChain.doFilter(request, response);
         } finally {
-            long durationMs = System.currentTimeMillis() - reqInfo.getStartTime();
+            long durationMs =
+                    System.currentTimeMillis() - reqInfo.getStartTime();
+
             int status = response.getStatus();
 
             String statusPhrase;
             try {
                 statusPhrase = HttpStatus.valueOf(status).getReasonPhrase();
-            } catch (Exception e) {
+            } catch (Exception ignored) {
                 statusPhrase = "";
             }
 
             Long contentSize = null;
+
             if ("POST".equalsIgnoreCase(method) && uri.contains("/upload")) {
-                long reqLen = request.getContentLengthLong();
-                if (reqLen > 0) contentSize = reqLen;
+                long requestLength = request.getContentLengthLong();
+
+                if (requestLength > 0) {
+                    contentSize = requestLength;
+                }
             } else if ("GET".equalsIgnoreCase(method) && uri.contains("/download")) {
-                String respLen = response.getHeader("Content-Length");
-                if (respLen != null) {
+                String responseLength = response.getHeader("Content-Length");
+
+                if (responseLength != null) {
                     try {
-                        contentSize = Long.parseLong(respLen);
-                    } catch (Exception ignored) {}
+                        contentSize = Long.parseLong(responseLength);
+                    } catch (NumberFormatException ignored) {
+                        // Ignore invalid Content-Length values.
+                    }
                 }
             }
 
             String note = null;
+
             if (status == 404) {
                 note = "Endpoint or resource not found";
             } else if (status == 401) {
@@ -86,11 +108,26 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             }
 
             if (isDetailedFlow) {
-                ConsoleLogger.logHttpResponse(reqId, method, fullPath, status, statusPhrase, contentSize, durationMs, note);
+                ConsoleLogger.logHttpResponse(
+                        reqId,
+                        method,
+                        fullPath,
+                        status,
+                        statusPhrase,
+                        contentSize,
+                        durationMs,
+                        note
+                );
             } else {
-                // Compact single-line output for lightweight concurrent requests (like GET /api/files)
-                String tag = (status >= 200 && status < 400) ? ConsoleLogger.TAG_OK : ConsoleLogger.TAG_ERROR;
-                String sizeStr = contentSize != null && contentSize > 0 ? " | " + ConsoleLogger.formatSize(contentSize) : "";
+                String tag = (status >= 200 && status < 400)
+                        ? ConsoleLogger.TAG_OK
+                        : ConsoleLogger.TAG_ERROR;
+
+                String sizeStr =
+                        contentSize != null && contentSize > 0
+                                ? " | " + ConsoleLogger.formatSize(contentSize)
+                                : "";
+
                 System.out.println("[" + ConsoleLogger.BOLD + reqId + ConsoleLogger.RESET + "] " + ConsoleLogger.TAG_HTTP + " " + method + " " + fullPath + " | " + tag + " " + status + sizeStr + " | " + durationMs + " ms");
             }
 

@@ -23,41 +23,76 @@ public class UserController {
     private final FileRepository fileRepository;
     private final FileCategoryService fileCategoryService;
 
-    public UserController(UserRepository userRepository, FileRepository fileRepository, FileCategoryService fileCategoryService) {
+    public UserController(
+            UserRepository userRepository,
+            FileRepository fileRepository,
+            FileCategoryService fileCategoryService) {
+
         this.userRepository = userRepository;
         this.fileRepository = fileRepository;
         this.fileCategoryService = fileCategoryService;
     }
 
     @GetMapping("/profile")
-    public ResponseEntity<UserProfileResponse> getUserProfile(Authentication authentication) {
+    public ResponseEntity<UserProfileResponse> getUserProfile(
+            Authentication authentication) {
+
         if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
         }
 
-        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElse(null);
+
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .build();
         }
 
-        List<StoredFile> userFiles = fileRepository.findByUser(user);
+        List<Object[]> userFiles = fileRepository.findFileStatsByUser(user);
+
         long fileCount = userFiles.size();
-        long encryptedCount = userFiles.stream().filter(StoredFile::isEncrypted).count();
+        long encryptedCount = 0;
 
         Map<String, Long> categoryBytes = new LinkedHashMap<>();
         Map<String, Long> categoryCounts = new LinkedHashMap<>();
 
-        // Initialize standard categories
-        for (String cat : fileCategoryService.getStandardCategories()) {
-            categoryBytes.put(cat, 0L);
-            categoryCounts.put(cat, 0L);
+        // Initialize all standard categories so empty categories are included.
+        for (String category : fileCategoryService.getStandardCategories()) {
+            categoryBytes.put(category, 0L);
+            categoryCounts.put(category, 0L);
         }
 
-        for (StoredFile file : userFiles) {
-            String category = fileCategoryService.determineCategory(file.getOriginalFilename(), file.getContentType());
-            long size = file.getFileSize() != null ? file.getFileSize() : 0L;
-            categoryBytes.put(category, categoryBytes.getOrDefault(category, 0L) + size);
-            categoryCounts.put(category, categoryCounts.getOrDefault(category, 0L) + 1L);
+        for (Object[] row : userFiles) {
+            String originalFilename = (String) row[0];
+            String contentType = (String) row[1];
+            Long fileSize = (Long) row[2];
+            Boolean encrypted = (Boolean) row[3];
+            
+            if (Boolean.TRUE.equals(encrypted)) {
+                encryptedCount++;
+            }
+
+            String category = fileCategoryService.determineCategory(
+                    originalFilename,
+                    contentType
+            );
+
+            long size = fileSize != null ? fileSize : 0L;
+
+            categoryBytes.put(
+                    category,
+                    categoryBytes.getOrDefault(category, 0L) + size
+            );
+
+            categoryCounts.put(
+                    category,
+                    categoryCounts.getOrDefault(category, 0L) + 1L
+            );
         }
 
         UserProfileResponse response = new UserProfileResponse(
@@ -77,6 +112,7 @@ public class UserController {
     }
 
     public static class UserProfileResponse {
+
         private Long id;
         private String username;
         private String email;
@@ -88,12 +124,21 @@ public class UserController {
         private Map<String, Long> categoryBytes;
         private Map<String, Long> categoryCounts;
 
-        public UserProfileResponse() {}
+        public UserProfileResponse() {
+        }
 
-        public UserProfileResponse(Long id, String username, String email, Long storageLimit,
-                                   Long usedStorage, Long fileCount, Long encryptedCount,
-                                   LocalDateTime createdAt, Map<String, Long> categoryBytes,
-                                   Map<String, Long> categoryCounts) {
+        public UserProfileResponse(
+                Long id,
+                String username,
+                String email,
+                Long storageLimit,
+                Long usedStorage,
+                Long fileCount,
+                Long encryptedCount,
+                LocalDateTime createdAt,
+                Map<String, Long> categoryBytes,
+                Map<String, Long> categoryCounts) {
+
             this.id = id;
             this.username = username;
             this.email = email;
@@ -106,15 +151,44 @@ public class UserController {
             this.categoryCounts = categoryCounts;
         }
 
-        public Long getId() { return id; }
-        public String getUsername() { return username; }
-        public String getEmail() { return email; }
-        public Long getStorageLimit() { return storageLimit; }
-        public Long getUsedStorage() { return usedStorage; }
-        public Long getFileCount() { return fileCount; }
-        public Long getEncryptedCount() { return encryptedCount; }
-        public LocalDateTime getCreatedAt() { return createdAt; }
-        public Map<String, Long> getCategoryBytes() { return categoryBytes; }
-        public Map<String, Long> getCategoryCounts() { return categoryCounts; }
+        public Long getId() {
+            return id;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public Long getStorageLimit() {
+            return storageLimit;
+        }
+
+        public Long getUsedStorage() {
+            return usedStorage;
+        }
+
+        public Long getFileCount() {
+            return fileCount;
+        }
+
+        public Long getEncryptedCount() {
+            return encryptedCount;
+        }
+
+        public LocalDateTime getCreatedAt() {
+            return createdAt;
+        }
+
+        public Map<String, Long> getCategoryBytes() {
+            return categoryBytes;
+        }
+
+        public Map<String, Long> getCategoryCounts() {
+            return categoryCounts;
+        }
     }
 }

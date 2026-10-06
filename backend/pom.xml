@@ -21,6 +21,10 @@
 
     <properties>
         <java.version>21</java.version>
+
+        <jjwt.version>0.12.6</jjwt.version>
+        <pdfbox.version>3.0.3</pdfbox.version>
+        <jcodec.version>0.2.5</jcodec.version>
     </properties>
 
     <dependencies>
@@ -50,26 +54,24 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- JWT API -->
+        <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.12.6</version>
+            <version>${jjwt.version}</version>
         </dependency>
 
-        <!-- JWT Implementation -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.12.6</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- JWT Jackson JSON Support -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.12.6</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -79,23 +81,24 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- Apache PDFBox for PDF Thumbnail Rendering -->
+        <!-- Apache PDFBox for PDF preview generation -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>
-            <version>3.0.3</version>
+            <version>${pdfbox.version}</version>
         </dependency>
 
-        <!-- JCodec for pure Java MP4 / Video Frame Extraction -->
+        <!-- JCodec for pure Java video frame extraction -->
         <dependency>
             <groupId>org.jcodec</groupId>
             <artifactId>jcodec</artifactId>
-            <version>0.2.5</version>
+            <version>${jcodec.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.jcodec</groupId>
             <artifactId>jcodec-javase</artifactId>
-            <version>0.2.5</version>
+            <version>${jcodec.version}</version>
         </dependency>
 
         <!-- Testing -->

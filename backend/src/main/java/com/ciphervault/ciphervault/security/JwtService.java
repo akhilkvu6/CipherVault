@@ -17,19 +17,26 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(JwtService.class);
 
     private static final String DEFAULT_SECRET_KEY =
             "CipherVaultSecretKeyForJWTAuthentication2026SecureKey123456";
 
     private static final long DEFAULT_EXPIRATION_TIME =
-            24 * 60 * 60 * 1000L; // 24 hours
+            24 * 60 * 60 * 1000L;
 
     private final SecretKey secretKey;
     private final long expirationTime;
 
+    // Provide development defaults for direct unit-test construction.
     public JwtService() {
-        this(DEFAULT_SECRET_KEY, DEFAULT_EXPIRATION_TIME, "development", true);
+        this(
+                DEFAULT_SECRET_KEY,
+                DEFAULT_EXPIRATION_TIME,
+                "development",
+                true
+        );
     }
 
     @Autowired
@@ -38,30 +45,62 @@ public class JwtService {
             @Value("${ciphervault.jwt.expiration-ms:86400000}") long expirationTime,
             @Value("${ciphervault.environment:development}") String environment,
             @Value("${ciphervault.security.dev-defaults-enabled:true}") boolean devDefaultsEnabled) {
-        log.debug("Initializing JWT service (environment: {})...", environment);
+
+        log.debug(
+                "Initializing JWT service (environment: {})...",
+                environment
+        );
+
         this.expirationTime = expirationTime;
 
-        boolean isProd = "production".equalsIgnoreCase(environment) || !devDefaultsEnabled;
-        if (secretKeyString == null || secretKeyString.trim().isEmpty() || (isProd && DEFAULT_SECRET_KEY.equals(secretKeyString))) {
-            if (isProd) {
-                throw new IllegalStateException("CRITICAL SECURITY ERROR: Required JWT secret is missing or insecure in production environment. " +
-                        "Configure CIPHERVAULT_JWT_SECRET environment variable.");
+        boolean productionMode =
+                "production".equalsIgnoreCase(environment)
+                        || !devDefaultsEnabled;
+
+        if (secretKeyString == null
+                || secretKeyString.trim().isEmpty()
+                || (productionMode
+                && DEFAULT_SECRET_KEY.equals(secretKeyString))) {
+
+            if (productionMode) {
+                throw new IllegalStateException(
+                        "CRITICAL SECURITY ERROR: Required JWT secret is missing "
+                                + "or insecure in production environment. "
+                                + "Configure CIPHERVAULT_JWT_SECRET environment variable."
+                );
             }
-            log.warn("SECURITY WARNING: CIPHERVAULT_JWT_SECRET is unset. Running with development JWT secret fallback.");
+
+            log.warn(
+                    "SECURITY WARNING: CIPHERVAULT_JWT_SECRET is unset. "
+                            + "Running with development JWT secret fallback."
+            );
+
             secretKeyString = DEFAULT_SECRET_KEY;
         }
 
-        this.secretKey = Keys.hmacShaKeyFor(secretKeyString.getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(
+                secretKeyString.getBytes(StandardCharsets.UTF_8)
+        );
+
         log.debug("JWT service initialized successfully.");
     }
 
     public String generateToken(String email, int tokenVersion) {
-        log.debug("Generating JWT token for: {} (version: {})", email, tokenVersion);
+        log.debug(
+                "Generating JWT token for: {} (version: {})",
+                email,
+                tokenVersion
+        );
+
         return Jwts.builder()
                 .subject(email)
                 .claim("tokenVersion", tokenVersion)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationTime))
+                .expiration(
+                        new Date(
+                                System.currentTimeMillis() + expirationTime
+                        )
+                )
                 .signWith(secretKey)
                 .compact();
     }
@@ -72,7 +111,10 @@ public class JwtService {
 
     public Integer extractTokenVersion(String token) {
         try {
-            return extractClaim(token, claims -> claims.get("tokenVersion", Integer.class));
+            return extractClaim(
+                    token,
+                    claims -> claims.get("tokenVersion", Integer.class)
+            );
         } catch (Exception e) {
             return null;
         }
@@ -86,7 +128,10 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+    public <T> T extractClaim(
+            String token,
+            Function<Claims, T> claimsResolver) {
+
         Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
@@ -102,7 +147,10 @@ public class JwtService {
     public boolean isTokenValid(String token, String email) {
         try {
             String extractedEmail = extractEmail(token);
-            return extractedEmail.equals(email) && !isTokenExpired(token);
+
+            return extractedEmail.equals(email)
+                    && !isTokenExpired(token);
+
         } catch (Exception e) {
             log.warn("JWT validation failed: {}", e.getMessage());
             return false;

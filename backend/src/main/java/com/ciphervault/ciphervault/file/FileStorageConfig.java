@@ -7,16 +7,21 @@ import org.springframework.context.annotation.Configuration;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 
 @Configuration
 public class FileStorageConfig {
 
-    private static final Logger log = LoggerFactory.getLogger(FileStorageConfig.class);
+    private static final Logger log =
+            LoggerFactory.getLogger(FileStorageConfig.class);
 
     public static final Path STORAGE_ROOT = Paths.get("storage");
-    public static final Path ENCRYPTED_STORAGE = STORAGE_ROOT.resolve("encrypted");
-    public static final Path NORMAL_STORAGE = STORAGE_ROOT.resolve("uploads");
-    public static final Path PREVIEW_STORAGE = STORAGE_ROOT.resolve("previews");
+    public static final Path ENCRYPTED_STORAGE =
+            STORAGE_ROOT.resolve("encrypted");
+    public static final Path NORMAL_STORAGE =
+            STORAGE_ROOT.resolve("uploads");
+    public static final Path PREVIEW_STORAGE =
+            STORAGE_ROOT.resolve("previews");
 
     public FileStorageConfig() {
         log.debug("Initializing file storage configuration...");
@@ -25,16 +30,24 @@ public class FileStorageConfig {
             Files.createDirectories(ENCRYPTED_STORAGE);
             Files.createDirectories(NORMAL_STORAGE);
             Files.createDirectories(PREVIEW_STORAGE);
+
             log.debug("File storage directories initialized successfully.");
         } catch (Exception e) {
-            log.error("Failed to initialize file storage directories: {}", e.getMessage(), e);
-            throw new RuntimeException("Could not initialize file storage directories.", e);
+            log.error(
+                    "Failed to initialize file storage directories: {}",
+                    e.getMessage(),
+                    e
+            );
+            throw new RuntimeException(
+                    "Could not initialize file storage directories.",
+                    e
+            );
         }
     }
 
     /**
      * Resolves a stored file or preview path safely, supporting:
-     * 1. Relative paths relative to STORAGE_ROOT (e.g. "encrypted/abc.mp4", "previews/preview-abc.jpg")
+     * 1. Relative paths relative to STORAGE_ROOT
      * 2. Legacy absolute paths stored in the database on Windows/Linux
      * 3. Cross-platform path separators (\ and /)
      *
@@ -46,42 +59,85 @@ public class FileStorageConfig {
         }
 
         Path root = STORAGE_ROOT.toAbsolutePath().normalize();
-        String normalizedInput = pathStr.replace('\\', '/').trim();
 
-        // Check if path contains "storage/" prefix (common in relative or absolute paths)
-        int storageIdx = normalizedInput.indexOf("storage/");
-        if (storageIdx != -1) {
-            String relativeToRoot = normalizedInput.substring(storageIdx + "storage/".length());
-            Path resolved = root.resolve(relativeToRoot).normalize();
-            if (resolved.startsWith(root) && Files.exists(resolved)) {
-                return resolved;
-            }
+        String normalizedInput =
+                pathStr.trim().replace('\\', '/');
+
+        String lowerInput =
+                normalizedInput.toLowerCase(Locale.ROOT);
+
+        // Check if path contains a "storage/" directory segment.
+        int storageIndex = findStorageSegment(lowerInput);
+
+        if (storageIndex >= 0) {
+            String relativeToRoot =
+                    normalizedInput.substring(
+                            storageIndex + "storage/".length()
+                    );
+
+            Path resolved =
+                    root.resolve(relativeToRoot).normalize();
+
+            return validatePath(resolved, root);
         }
 
-        // Direct candidate (e.g. legacy absolute path that exists on disk)
-        Path candidate = Paths.get(pathStr);
-        if (candidate.isAbsolute()) {
-            Path norm = candidate.normalize();
-            if (Files.exists(norm)) {
-                return norm;
-            }
+        Path candidate =
+                Paths.get(pathStr).toAbsolutePath().normalize();
+
+        // Accept legacy absolute paths only when they remain inside STORAGE_ROOT.
+        if (Paths.get(pathStr).isAbsolute()) {
+            return validatePath(candidate, root);
         }
 
-        // If path begins with "storage/", strip it to prevent duplicate nesting
         if (normalizedInput.startsWith("storage/")) {
-            normalizedInput = normalizedInput.substring("storage/".length());
+            normalizedInput =
+                    normalizedInput.substring("storage/".length());
         }
 
-        Path resolved = root.resolve(normalizedInput).normalize();
-        if (resolved.startsWith(root)) {
-            return resolved;
+        Path resolved =
+                root.resolve(normalizedInput).normalize();
+
+        return validatePath(resolved, root);
+    }
+
+    private static int findStorageSegment(String path) {
+        if (path.startsWith("storage/")) {
+            return 0;
         }
 
-        // Fallback for absolute path that is inside root
-        if (candidate.isAbsolute() && candidate.normalize().startsWith(root)) {
-            return candidate.normalize();
+        int index = path.indexOf("/storage/");
+        return index >= 0 ? index + 1 : -1;
+    }
+
+    private static Path validatePath(Path path, Path root) {
+        if (!path.startsWith(root)) {
+            throw new SecurityException(
+                    "Potential path traversal attempt: " + path
+            );
         }
 
-        throw new SecurityException("Potential path traversal attempt: " + pathStr);
+        if (!Files.exists(path)) {
+            return path;
+        }
+
+        try {
+            Path realRoot = root.toRealPath();
+            Path realPath = path.toRealPath();
+
+            if (!realPath.startsWith(realRoot)) {
+                throw new SecurityException(
+                        "Resolved path is outside storage root: " + path
+                );
+            }
+
+            return realPath;
+        } catch (SecurityException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Unable to validate storage path: " + path,
+                    e
+            );
+        }
     }
 }
