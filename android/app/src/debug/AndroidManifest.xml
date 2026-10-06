@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Permits cleartext HTTP for local Wi-Fi / custom IP debugging in debug builds -->
-    <application
-        android:usesCleartextTraffic="true"
-        android:networkSecurityConfig="@xml/network_security_config" />
-</manifest>
