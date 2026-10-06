@@ -213,7 +213,7 @@ class FileControllerTest {
         });
 
         ResponseEntity<FileController.FileUploadResponse> response =
-                fileController.uploadFile(multipartFile, true, authentication);
+                fileController.uploadFile(multipartFile, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -349,5 +349,51 @@ class FileControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(false, response.getBody().get("isDuplicate"));
         verify(fileRepository, times(1)).findByUserAndSha256Hash(alice, "cross_user_hash");
+    }
+
+    @Test
+    void listFilesShouldUseDefaultPaginationWhenParametersOmitted() {
+        User alice = new User();
+        alice.setEmail("alice@example.com");
+
+        StoredFile file = new StoredFile();
+        file.setOriginalFilename("test.pdf");
+        file.setContentType("application/pdf");
+        file.setFileSize(100L);
+
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(alice));
+        org.springframework.data.domain.Page<StoredFile> page =
+                new org.springframework.data.domain.PageImpl<>(List.of(file), org.springframework.data.domain.PageRequest.of(0, 50), 1);
+        when(fileRepository.findByUserOrderByCreatedAtDesc(eq(alice), eq(org.springframework.data.domain.PageRequest.of(0, 50))))
+                .thenReturn(page);
+
+        ResponseEntity<List<FileController.FileResponse>> response = fileController.listFiles(null, null, authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+        assertEquals("test.pdf", response.getBody().get(0).getFilename());
+        assertEquals("1", response.getHeaders().getFirst("X-Total-Count"));
+        assertEquals("0", response.getHeaders().getFirst("X-Current-Page"));
+        assertEquals("50", response.getHeaders().getFirst("X-Page-Size"));
+
+        verify(fileRepository, times(1)).findByUserOrderByCreatedAtDesc(alice, org.springframework.data.domain.PageRequest.of(0, 50));
+    }
+
+    @Test
+    void listFilesShouldRespectExplicitPaginationAndCapMaxPageSize() {
+        User alice = new User();
+        alice.setEmail("alice@example.com");
+
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(alice));
+        org.springframework.data.domain.Page<StoredFile> emptyPage =
+                new org.springframework.data.domain.PageImpl<>(List.of(), org.springframework.data.domain.PageRequest.of(2, 100), 0);
+        when(fileRepository.findByUserOrderByCreatedAtDesc(eq(alice), eq(org.springframework.data.domain.PageRequest.of(2, 100))))
+                .thenReturn(emptyPage);
+
+        ResponseEntity<List<FileController.FileResponse>> response = fileController.listFiles(2, 500, authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(fileRepository, times(1)).findByUserOrderByCreatedAtDesc(alice, org.springframework.data.domain.PageRequest.of(2, 100));
     }
 }

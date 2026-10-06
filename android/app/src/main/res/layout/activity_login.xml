@@ -13,14 +13,13 @@
         android:orientation="vertical"
         android:gravity="center_horizontal"
         android:paddingHorizontal="24dp"
-        android:paddingTop="36dp"
+        android:paddingTop="24dp"
         android:paddingBottom="24dp">
 
-        <!-- Server Connection Action -->
+        <!-- Server Settings - Top Right -->
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp">
+            android:layout_height="wrap_content">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnServerConfig"
@@ -28,41 +27,22 @@
                 android:layout_width="wrap_content"
                 android:layout_height="48dp"
                 android:layout_gravity="end"
+                android:minWidth="0dp"
                 android:text="Server Settings"
                 android:textAllCaps="false"
-                android:textSize="12sp"
-                app:icon="@drawable/ic_nav_settings"
-                app:iconSize="16dp"
-                app:iconTint="?attr/colorPrimary"
-                android:textColor="?attr/colorPrimary" />
+                android:textColor="?attr/colorPrimary"
+                android:textSize="12sp" />
+
         </FrameLayout>
 
-        <!-- Vault Icon Badge Container -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="68dp"
-            android:layout_height="68dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp"
-            app:cardBackgroundColor="?attr/colorSecondaryContainer">
-
-            <ImageView
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_gravity="center"
-                android:contentDescription="Vault Access"
-                android:src="@drawable/ic_nav_files"
-                app:tint="?attr/colorOnSecondaryContainer" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Brand Header -->
+        <!-- Brand -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="20dp"
             android:text="CipherVault"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="28sp"
+            android:textSize="30sp"
             android:fontFamily="sans-serif-medium"
             android:textStyle="bold"
             android:letterSpacing="0.02" />
@@ -70,21 +50,21 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:text="Private Encrypted Cloud"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp" />
 
-        <!-- Form Card Container -->
+        <!-- Login Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="32dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
             app:cardCornerRadius="22dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
             app:strokeColor="?attr/colorOutlineVariant"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerLow">
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -92,37 +72,36 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
+                <!-- Heading -->
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Sign In"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="17sp"
+                    android:textSize="18sp"
                     android:fontFamily="sans-serif-medium"
                     android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Authenticate to access your encrypted files."
+                    android:layout_marginTop="5dp"
+                    android:text="Sign in to access your encrypted files."
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="12sp"
                     android:lineSpacingExtra="2dp" />
 
-                <!-- Email Input -->
+                <!-- Email -->
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="18dp"
                     android:hint="Email Address"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:startIconDrawable="@drawable/ic_nav_profile"
-                    app:startIconTint="?attr/colorOnSurfaceVariant">
+                    app:boxCornerRadiusBottomEnd="16dp">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/emailInput"
@@ -132,21 +111,20 @@
                         android:singleLine="true"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp" />
+
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Password Input -->
+                <!-- Password -->
                 <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:hint="Password"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
                     app:boxCornerRadiusBottomEnd="16dp"
-                    app:startIconDrawable="@drawable/ic_nav_files"
-                    app:startIconTint="?attr/colorOnSurfaceVariant"
                     app:endIconMode="password_toggle">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -157,9 +135,10 @@
                         android:singleLine="true"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="14sp" />
+
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <!-- Sign In Action Button -->
+                <!-- Sign In -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/loginButton"
                     android:layout_width="match_parent"
@@ -174,6 +153,7 @@
                     app:cornerRadius="25dp" />
 
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Divider -->
@@ -183,22 +163,22 @@
             android:layout_marginTop="28dp"
             app:dividerColor="?attr/colorOutlineVariant" />
 
-        <!-- Navigation Link -->
+        <!-- Sign Up -->
         <TextView
             android:id="@+id/registerLink"
             android:layout_width="wrap_content"
             android:layout_height="48dp"
-            android:layout_marginTop="14dp"
-            android:gravity="center"
+            android:layout_marginTop="12dp"
             android:clickable="true"
             android:focusable="true"
+            android:gravity="center"
             android:text="Don't have an account? Sign Up"
             android:textColor="?attr/colorPrimary"
             android:textSize="13sp"
             android:fontFamily="sans-serif-medium"
             android:textStyle="bold" />
 
-        <!-- Bottom Caption -->
+        <!-- Security Caption -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -210,4 +190,5 @@
             android:letterSpacing="0.03" />
 
     </LinearLayout>
+
 </ScrollView>

@@ -136,14 +136,11 @@ class MetadataSearchTest {
 
     @Test
     void getSuggestionsShouldReturnTopSuggestionsForUser() {
-        when(fileMetadataRepository.findDistinctCameraMakesByUser(alice)).thenReturn(List.of("Samsung", "Sony"));
-        when(fileMetadataRepository.findDistinctCameraModelsByUser(alice)).thenReturn(List.of("Galaxy S24 Ultra", "Alpha 7"));
-        when(fileMetadataRepository.findDistinctResolutionsByUser(alice)).thenReturn(List.of("3840x2160", "1920x1080"));
-        when(fileMetadataRepository.findDistinctVideoCodecsByUser(alice)).thenReturn(List.of("HEVC", "H.264"));
-        when(fileMetadataRepository.findDistinctArtistsByUser(alice)).thenReturn(List.of("Arijit Singh"));
-        when(fileMetadataRepository.findDistinctAuthorsByUser(alice)).thenReturn(List.of("CipherVault"));
-        when(fileMetadataRepository.findDistinctAlbumsByUser(alice)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctGenresByUser(alice)).thenReturn(List.of("Acoustic"));
+        List<Object[]> mockRows = List.<Object[]>of(
+            new Object[]{"Samsung", "Galaxy S24 Ultra", "3840x2160", "HEVC", "Arijit Singh", "CipherVault", null, "Acoustic", null},
+            new Object[]{"Sony", "Alpha 7", "1920x1080", "H.264", null, null, null, null, null}
+        );
+        when(fileMetadataRepository.findSuggestions(alice, "")).thenReturn(mockRows);
 
         ResponseEntity<List<String>> response = fileController.getSuggestions(null, authentication);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -156,14 +153,10 @@ class MetadataSearchTest {
 
     @Test
     void getSuggestionsShouldFilterByPrefixForAutocomplete() {
-        when(fileMetadataRepository.findDistinctCameraMakesByUser(alice)).thenReturn(List.of("Samsung", "Sony"));
-        when(fileMetadataRepository.findDistinctCameraModelsByUser(alice)).thenReturn(List.of("Galaxy S24 Ultra", "Alpha 7"));
-        when(fileMetadataRepository.findDistinctResolutionsByUser(alice)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctVideoCodecsByUser(alice)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctArtistsByUser(alice)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctAuthorsByUser(alice)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctAlbumsByUser(alice)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctGenresByUser(alice)).thenReturn(List.of());
+        List<Object[]> mockRows = List.<Object[]>of(
+            new Object[]{"Samsung", null, null, null, null, null, null, null, null}
+        );
+        when(fileMetadataRepository.findSuggestions(alice, "sam")).thenReturn(mockRows);
 
         ResponseEntity<List<String>> response = fileController.getSuggestions("Sam", authentication);
         assertEquals(HttpStatus.OK, response.getStatusCode());

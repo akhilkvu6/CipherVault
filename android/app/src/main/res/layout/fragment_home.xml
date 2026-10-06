@@ -16,80 +16,49 @@
         android:paddingTop="24dp"
         android:paddingBottom="100dp">
 
-        <!-- Top Header & Brand -->
-        <LinearLayout
+        <!-- Home Header -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_height="48dp">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="CIPHERVAULT"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.12"
-                    android:textColor="?attr/colorPrimary" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="@string/welcome_back"
-                    android:textSize="13sp"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:id="@+id/tvHomeUsername"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    tools:text="Akhil Krishna"
-                    android:textSize="26sp"
-                    android:textStyle="bold"
-                    android:textColor="?attr/colorOnSurface" />
-            </LinearLayout>
-
-            <!-- Security Badge -->
+            <!-- Welcome Pill -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
+                android:layout_gravity="center_vertical|start"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
                 app:strokeColor="?attr/colorOutlineVariant"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvHomeUsername"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="10dp">
+                    android:paddingHorizontal="12dp"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="?attr/colorOnSurface"
+                    tools:text="Welcome back, Akhil" />
 
-                    <View
-                        android:layout_width="6dp"
-                        android:layout_height="6dp"
-                        android:background="@drawable/bg_pill_active"
-                        android:backgroundTint="@color/status_connected" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="6dp"
-                        android:text="AES-256"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
-                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
+
+            <!-- Centered Brand -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="CIPHERVAULT"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.08"
+                android:textColor="?attr/colorPrimary" />
+
+        </FrameLayout>
 
         <!-- Layered Storage Surface -->
         <com.google.android.material.card.MaterialCardView
@@ -159,7 +128,6 @@
                     app:trackColor="?attr/colorSurfaceContainerHigh"
                     app:indicatorColor="?attr/colorPrimary" />
 
-                <!-- Inline Vault Metrics Row -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -248,10 +216,11 @@
                     android:layout_width="0dp"
                     android:layout_height="0dp"
                     android:visibility="gone" />
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Quick Actions Row -->
+        <!-- Quick Actions -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -336,7 +305,7 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
-        <!-- Recent Uploads Section Header -->
+        <!-- Recent -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -354,14 +323,13 @@
             android:layout_marginBottom="8dp"
             android:background="?attr/colorOutlineVariant" />
 
-        <!-- Recent Uploads List -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvRecentUploads"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false" />
 
-        <!-- Empty State Container -->
+        <!-- Empty State -->
         <LinearLayout
             android:id="@+id/layoutHomeEmpty"
             android:layout_width="match_parent"
@@ -398,7 +366,9 @@
                 android:textAllCaps="false"
                 android:textSize="13sp"
                 app:cornerRadius="14dp" />
+
         </LinearLayout>
 
     </LinearLayout>
+
 </androidx.core.widget.NestedScrollView>

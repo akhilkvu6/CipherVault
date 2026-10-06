@@ -48,10 +48,4 @@
     <color name="cv_light_text_muted">#8D8378</color>
     <color name="cv_light_outline">#C9BDAF</color>
     <color name="cv_light_outline_variant">#DDD3C5</color>
-
-    <!-- Navigation Dock Colors -->
-    <color name="cv_nav_dock_dark">#211B15</color>
-    <color name="cv_nav_dock_light">#EAE1D5</color>
-    <color name="cv_nav_active_dark">#382F24</color>
-    <color name="cv_nav_active_light">#FFFDF9</color>
 </resources>

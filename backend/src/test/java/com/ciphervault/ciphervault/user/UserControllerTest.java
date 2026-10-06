@@ -55,7 +55,12 @@ class UserControllerTest {
         f2.setEncrypted(false);
 
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(fileRepository.findByUser(user)).thenReturn(List.of(f1, f2));
+        
+        List<Object[]> mockStats = List.of(
+            new Object[]{"photo.jpg", "image/jpeg", 20000L, true},
+            new Object[]{"doc.pdf", "application/pdf", 15000L, false}
+        );
+        when(fileRepository.findFileStatsByUser(user)).thenReturn(mockStats);
 
         ResponseEntity<UserController.UserProfileResponse> response = userController.getUserProfile(authentication);
 

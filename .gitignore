@@ -1,23 +1,40 @@
-# Environment and secrets
+# ==============================================================================
+# CipherVault Root .gitignore
+# ==============================================================================
+
+# Environment & Secrets
 .env
 .env.local
 .env.*
-!.env.example
 
-# IDE and Editor files
+# Build Artifacts & Runtime Storage
+backend/target/
+backend/storage/
+android/app/build/
+android/build/
+.gradle/
+*.class
+
+# IDE & Editor Configuration
 .idea/
 *.iml
 *.iws
 *.ipr
 .vscode/
 
-# Build artifacts
-backend/target/
-android/app/build/
-android/build/
-.gradle/
+# Android Local Configuration
+local.properties
+android/local.properties
+android/.idea/
+android/.gradle/
 
-# Temporary and log files
+# Logs, Dumps & Scratch Files
 *.log
+*.tmp
+backend/scratch/
 scratch/
 tunnel.log
+
+# OS Metadata
+.DS_Store
+Thumbs.db

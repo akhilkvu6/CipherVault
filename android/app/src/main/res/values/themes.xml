@@ -81,28 +81,4 @@
         <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.BottomSheet</item>
         <item name="backgroundTint">@color/cv_light_surface</item>
     </style>
-
-    <!-- Sleek Rounded Navigation Indicator -->
-    <style name="CipherVaultActiveIndicator">
-        <item name="android:color">?attr/colorPrimaryContainer</item>
-        <item name="android:width">48dp</item>
-        <item name="android:height">28dp</item>
-        <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.Indicator</item>
-    </style>
-
-    <style name="ShapeAppearance.CipherVault.Indicator" parent="ShapeAppearance.Material3.Corner.Small">
-        <item name="cornerSize">14dp</item>
-    </style>
-
-    <!-- Typography Styles for Navigation Bar Labels -->
-    <style name="CipherVaultNavTextActive" parent="TextAppearance.Material3.LabelMedium">
-        <item name="android:textSize">11sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">?attr/colorPrimary</item>
-    </style>
-
-    <style name="CipherVaultNavTextInactive" parent="TextAppearance.Material3.LabelMedium">
-        <item name="android:textSize">10sp</item>
-        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
-    </style>
 </resources>

@@ -210,7 +210,7 @@ class AuthControllerTest {
 
         assertEquals(400, response.getStatusCode().value());
         Map<?, ?> body = (Map<?, ?>) response.getBody();
-        assertEquals("New password must be at least 6 characters", body.get("message"));
+        assertEquals("Password must be at least 6 characters", body.get("message"));
         verify(userRepository, never()).save(any());
     }
 

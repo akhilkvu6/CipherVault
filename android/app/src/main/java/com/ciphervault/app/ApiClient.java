@@ -18,13 +18,6 @@ public class ApiClient {
      */
     public static final String DEFAULT_DEV_URL = "http://127.0.0.1:8080/";
 
-    /**
-     * Clear production server URL configuration.
-     * When accessing CipherVault across the internet via Cloudflare Tunnel,
-     * traffic must always travel over secure HTTPS.
-     */
-    public static final String DEFAULT_PROD_URL = "https://vault.ciphervault.local/";
-
     private static final String DEFAULT_URL = DEFAULT_DEV_URL;
 
     private static Retrofit retrofit;
@@ -35,14 +28,13 @@ public class ApiClient {
         String trimmed = rawUrl.trim();
         if (trimmed.isEmpty()) return DEFAULT_URL;
 
-        if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-            // Automatically select HTTPS for internet domains (e.g., trycloudflare.com or custom domain)
-            if (trimmed.startsWith("127.0.0.1") || trimmed.startsWith("localhost") || 
-                trimmed.startsWith("10.0.") || trimmed.startsWith("192.168.")) {
-                trimmed = "http://" + trimmed;
-            } else {
-                trimmed = "https://" + trimmed;
-            }
+        // Force HTTP for local development loopback and private IP addresses
+        if (trimmed.startsWith("https://127.0.0.1") || trimmed.startsWith("https://localhost")
+                || trimmed.startsWith("https://10.") || trimmed.startsWith("https://192.168.")
+                || trimmed.startsWith("https://172.")) {
+            trimmed = "http://" + trimmed.substring(8);
+        } else if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+            trimmed = "http://" + trimmed;
         }
         if (!trimmed.endsWith("/")) {
             trimmed = trimmed + "/";

@@ -62,15 +62,10 @@ class FileSearchServiceTest {
 
     @Test
     void getSuggestionsShouldAggregateDistinctAttributes() {
-        when(fileMetadataRepository.findDistinctTitlesByUser(testUser)).thenReturn(List.of("Sunset"));
-        when(fileMetadataRepository.findDistinctCameraModelsByUser(testUser)).thenReturn(List.of("EOS R5"));
-        when(fileMetadataRepository.findDistinctCameraMakesByUser(testUser)).thenReturn(List.of("Canon"));
-        when(fileMetadataRepository.findDistinctResolutionsByUser(testUser)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctVideoCodecsByUser(testUser)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctArtistsByUser(testUser)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctAuthorsByUser(testUser)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctAlbumsByUser(testUser)).thenReturn(List.of());
-        when(fileMetadataRepository.findDistinctGenresByUser(testUser)).thenReturn(List.of());
+        List<Object[]> mockRows = List.<Object[]>of(
+            new Object[]{"Canon", "EOS R5", null, null, null, null, null, null, "Sunset"}
+        );
+        when(fileMetadataRepository.findSuggestions(testUser, "can")).thenReturn(mockRows);
 
         List<String> suggestions = searchService.getSuggestions(testUser, "can");
         assertEquals(1, suggestions.size());
