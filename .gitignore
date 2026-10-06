@@ -40,3 +40,21 @@ tunnel.log
 Thumbs.db
 backend/storage/
 backend/storage/
+
+# Android / Android Studio
+.gradle/
+**/build/
+local.properties
+.idea/
+*.iml
+.externalNativeBuild/
+.cxx/
+captures/
+
+# Local signing / secrets
+*.jks
+*.keystore
+
+# OS files
+.DS_Store
+Thumbs.db
