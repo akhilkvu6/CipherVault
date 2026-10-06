@@ -54,4 +54,9 @@ public interface FileRepository
             User user,
             String sha256Hash
     );
+
+    long countByUser(User user);
+    
+    @EntityGraph(attributePaths = {"metadata"})
+    List<StoredFile> findByUserOrderByFileSizeDesc(User user, Pageable pageable);
 }
