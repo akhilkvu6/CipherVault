@@ -1,0 +1,12 @@
+{
+  "theme": "light",
+  "backend_port": 8080,
+  "health_interval": 3,
+  "auto_start_backend": true,
+  "auto_enable_adb_reverse": false,
+  "show_wifi": true,
+  "show_ethernet": true,
+  "show_adb": true,
+  "show_emulator": true,
+  "preferred_connection": "USB / ADB"
+}

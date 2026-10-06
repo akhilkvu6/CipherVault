@@ -89,19 +89,55 @@ public class MainActivity extends AppCompatActivity {
             // Transition to Onboarding
             Intent intent = new Intent(this, OnboardingActivity.class);
             startActivity(intent);
-            
-            if (android.os.Build.VERSION.SDK_INT >= 34) {
-                overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, android.R.anim.fade_in, android.R.anim.fade_out);
-            } else {
-                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
-            }
+            applyTransition();
             finish();
         } else {
-            // Future Batch: If no session, route to AuthActivity. 
-            // If valid session, route to MainActivity Home structure.
-            // Since Batch 2 is not implemented yet, handle this state cleanly by exiting.
-            Toast.makeText(this, "Batch 2 (Auth/Connect) is not implemented yet.", Toast.LENGTH_SHORT).show();
+            com.ciphervault.app.core.preferences.ConnectionPreferences prefs = new com.ciphervault.app.core.preferences.ConnectionPreferences(this);
+            if (prefs.getServerUrl() == null) {
+                routeToActivity(com.ciphervault.app.auth.ui.ConnectActivity.class);
+            } else {
+                com.ciphervault.app.auth.data.AuthRepository repo = new com.ciphervault.app.auth.data.AuthRepository(this);
+                repo.checkHealth(new com.ciphervault.app.auth.data.AuthRepository.RepoCallback<com.ciphervault.app.auth.model.HealthResponse>() {
+                    @Override
+                    public void onSuccess(com.ciphervault.app.auth.model.HealthResponse result) {
+                        if ("UP".equals(result.getStatus())) {
+                            routeBasedOnSession();
+                        } else {
+                            routeToActivity(com.ciphervault.app.auth.ui.ConnectActivity.class);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        routeToActivity(com.ciphervault.app.auth.ui.ConnectActivity.class);
+                    }
+                });
+            }
+        }
+    }
+
+    private void routeBasedOnSession() {
+        com.ciphervault.app.core.session.AuthSessionManager sessionManager = new com.ciphervault.app.core.session.AuthSessionManager(this);
+        if (sessionManager.hasValidSession()) {
+            Toast.makeText(this, "Valid session found. Batch 3 (Home) not implemented.", Toast.LENGTH_LONG).show();
             finishAffinity();
+        } else {
+            routeToActivity(com.ciphervault.app.auth.ui.SignInActivity.class);
+        }
+    }
+
+    private void routeToActivity(Class<?> activityClass) {
+        Intent intent = new Intent(this, activityClass);
+        startActivity(intent);
+        applyTransition();
+        finish();
+    }
+
+    private void applyTransition() {
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, android.R.anim.fade_in, android.R.anim.fade_out);
+        } else {
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         }
     }
 }
