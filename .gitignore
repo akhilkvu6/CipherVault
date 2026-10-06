@@ -38,3 +38,4 @@ tunnel.log
 # OS Metadata
 .DS_Store
 Thumbs.db
+backend/storage/
