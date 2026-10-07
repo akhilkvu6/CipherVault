@@ -1,5 +1,7 @@
 package com.ciphervault.ciphervault.file;
 
+import com.ciphervault.ciphervault.activity.ActivityService;
+import com.ciphervault.ciphervault.activity.EventType;
 import com.ciphervault.ciphervault.logging.ConsoleLogger;
 import com.ciphervault.ciphervault.logging.RequestContext;
 import com.ciphervault.ciphervault.security.KeyManagementService;
@@ -41,6 +43,7 @@ public class FileStorageService {
     private final MetadataExtractionService metadataExtractionService;
     private final FileMetadataRepository fileMetadataRepository;
     private final FileCategoryService fileCategoryService;
+    private final ActivityService activityService;
 
     public FileStorageService(
             FileRepository fileRepository,
@@ -50,7 +53,8 @@ public class FileStorageService {
             KeyManagementService keyManagementService,
             MetadataExtractionService metadataExtractionService,
             FileMetadataRepository fileMetadataRepository,
-            FileCategoryService fileCategoryService) {
+            FileCategoryService fileCategoryService,
+            ActivityService activityService) {
 
         this.fileRepository = fileRepository;
         this.userRepository = userRepository;
@@ -60,6 +64,7 @@ public class FileStorageService {
         this.metadataExtractionService = metadataExtractionService;
         this.fileMetadataRepository = fileMetadataRepository;
         this.fileCategoryService = fileCategoryService;
+        this.activityService = activityService;
     }
 
     /**
@@ -648,6 +653,21 @@ public class FileStorageService {
                     timings
             );
 
+            // Log upload activity
+            if (activityService != null) {
+                try {
+                    activityService.logEvent(
+                            user,
+                            EventType.UPLOAD,
+                            "Uploaded " + savedFile.getOriginalFilename(),
+                            1,
+                            savedFile.getFileSize(),
+                            savedFile.getOriginalFilename(),
+                            "SUCCESS",
+                            null);
+                } catch (Exception ignored) { /* don't fail upload if logging fails */ }
+            }
+
             return savedFile;
 
         } catch (DuplicateFileException
@@ -1083,6 +1103,21 @@ public class FileStorageService {
                     previewDeleted
                             || previewPath != null
             );
+
+            // Log delete activity
+            if (activityService != null) {
+                try {
+                    activityService.logEvent(
+                            user,
+                            EventType.DELETE,
+                            "Deleted " + originalFilename,
+                            1,
+                            fileSize,
+                            originalFilename,
+                            "SUCCESS",
+                            null);
+                } catch (Exception ignored) { /* don't fail delete if logging fails */ }
+            }
 
             return true;
 

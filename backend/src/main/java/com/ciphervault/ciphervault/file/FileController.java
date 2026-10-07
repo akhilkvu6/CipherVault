@@ -49,6 +49,9 @@ public class FileController {
     private final FileCategoryService fileCategoryService;
     private final FileSearchService fileSearchService;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.ciphervault.ciphervault.transfer.TransferRepository transferRepository;
+
     @org.springframework.beans.factory.annotation.Autowired
     public FileController(
             FileStorageService fileStorageService,
@@ -85,7 +88,8 @@ public class FileController {
                         keyManagementService,
                         metadataExtractionService,
                         fileMetadataRepository,
-                        fileCategoryService),
+                        fileCategoryService,
+                        null),
                 fileRepository,
                 userRepository,
                 fileCategoryService,
@@ -144,6 +148,24 @@ public class FileController {
         try {
             StoredFile savedFile =
                     fileStorageService.storeFile(user, file);
+
+            if (transferRepository != null) {
+                try {
+                    com.ciphervault.ciphervault.transfer.Transfer t = new com.ciphervault.ciphervault.transfer.Transfer();
+                    t.setUser(user);
+                    t.setTransferType(com.ciphervault.ciphervault.transfer.TransferType.UPLOAD);
+                    t.setStatus(com.ciphervault.ciphervault.transfer.TransferStatus.COMPLETED);
+                    t.setTotalBytes(savedFile.getFileSize() != null ? savedFile.getFileSize() : 0L);
+                    t.setTransferredBytes(savedFile.getFileSize() != null ? savedFile.getFileSize() : 0L);
+                    t.setFileNames(savedFile.getOriginalFilename());
+                    t.setFileIds(String.valueOf(savedFile.getId()));
+                    t.setStartedAt(LocalDateTime.now().minusSeconds(1));
+                    t.setCompletedAt(LocalDateTime.now());
+                    transferRepository.save(t);
+                } catch (Exception ex) {
+                    log.warn("Failed to record upload transfer", ex);
+                }
+            }
 
             return ResponseEntity.ok(
                     new FileUploadResponse(
@@ -206,6 +228,7 @@ public class FileController {
     public ResponseEntity<List<FileResponse>> listFiles(
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size,
+            @RequestParam(value = "sort", required = false) String sort,
             Authentication authentication) {
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -236,10 +259,19 @@ public class FileController {
                 ? Math.min(100, Math.max(1, size))
                 : 50;
 
-        Page<StoredFile> pageResult =
-                fileRepository.findByUserOrderByCreatedAtDesc(
-                        user,
-                        PageRequest.of(pageNum, pageSize));
+        Page<StoredFile> pageResult;
+        
+        if ("largest".equalsIgnoreCase(sort)) {
+            pageResult = fileRepository.findByUserOrderByFileSizeDesc(user, PageRequest.of(pageNum, pageSize));
+        } else if ("smallest".equalsIgnoreCase(sort)) {
+            pageResult = fileRepository.findAll((root, query, cb) -> cb.equal(root.get("user"), user), PageRequest.of(pageNum, pageSize, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "fileSize")));
+        } else if ("oldest".equalsIgnoreCase(sort)) {
+            pageResult = fileRepository.findAll((root, query, cb) -> cb.equal(root.get("user"), user), PageRequest.of(pageNum, pageSize, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "createdAt")));
+        } else if ("name".equalsIgnoreCase(sort)) {
+            pageResult = fileRepository.findAll((root, query, cb) -> cb.equal(root.get("user"), user), PageRequest.of(pageNum, pageSize, org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "originalFilename")));
+        } else {
+            pageResult = fileRepository.findByUserOrderByCreatedAtDesc(user, PageRequest.of(pageNum, pageSize));
+        }
 
         files = pageResult.getContent()
                 .stream()
@@ -604,6 +636,24 @@ public class FileController {
             headers.set(
                     "X-Encrypted",
                     String.valueOf(payload.isEncrypted()));
+
+            if (transferRepository != null) {
+                try {
+                    com.ciphervault.ciphervault.transfer.Transfer t = new com.ciphervault.ciphervault.transfer.Transfer();
+                    t.setUser(user);
+                    t.setTransferType(com.ciphervault.ciphervault.transfer.TransferType.DOWNLOAD);
+                    t.setStatus(com.ciphervault.ciphervault.transfer.TransferStatus.COMPLETED);
+                    t.setTotalBytes(payload.getContentLength());
+                    t.setTransferredBytes(payload.getContentLength());
+                    t.setFileNames(payload.getFilename());
+                    t.setFileIds(String.valueOf(id));
+                    t.setStartedAt(LocalDateTime.now().minusSeconds(1));
+                    t.setCompletedAt(LocalDateTime.now());
+                    transferRepository.save(t);
+                } catch (Exception ex) {
+                    log.warn("Failed to record download transfer", ex);
+                }
+            }
 
             return ResponseEntity
                     .ok()

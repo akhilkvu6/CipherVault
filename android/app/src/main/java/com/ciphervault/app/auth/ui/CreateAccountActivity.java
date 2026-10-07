@@ -115,13 +115,34 @@ public class CreateAccountActivity extends AppCompatActivity {
                     setLoadingState(true);
                     break;
                 case SUCCESS:
-                    setLoadingState(false);
-                    Toast.makeText(this, "Account created successfully. Please sign in.", Toast.LENGTH_LONG).show();
-                    finish(); // Registration does not return a token. Go back to SignIn.
+                    // Auto-login using credentials
+                    String email = String.valueOf(etEmail.getText()).trim();
+                    String password = String.valueOf(etPassword.getText());
+                    viewModel.login(email, password);
                     break;
                 case ERROR:
                     setLoadingState(false);
                     tvErrorBanner.setText(resource.message);
+                    tvErrorBanner.setVisibility(View.VISIBLE);
+                    break;
+            }
+        });
+
+        viewModel.getLoginState().observe(this, resource -> {
+            switch (resource.status) {
+                case LOADING:
+                    setLoadingState(true);
+                    break;
+                case SUCCESS:
+                    setLoadingState(false);
+                    Toast.makeText(this, "Welcome " + resource.data.getUsername() + "!", Toast.LENGTH_SHORT).show();
+                    android.content.Intent intent = new android.content.Intent(CreateAccountActivity.this, com.ciphervault.app.main.ui.MainAppActivity.class);
+                    startActivity(intent);
+                    finishAffinity();
+                    break;
+                case ERROR:
+                    setLoadingState(false);
+                    tvErrorBanner.setText("Login failed: " + resource.message);
                     tvErrorBanner.setVisibility(View.VISIBLE);
                     break;
             }

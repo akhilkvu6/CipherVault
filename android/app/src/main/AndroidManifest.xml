@@ -4,8 +4,10 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
+        android:name=".CipherVaultApp"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -36,7 +38,12 @@
         <activity android:name=".auth.ui.ConnectActivity" android:exported="true" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".auth.ui.SignInActivity" android:exported="true" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".auth.ui.CreateAccountActivity" android:exported="true" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".main.ui.MainAppActivity" android:exported="true" android:windowSoftInputMode="adjustResize" />
 
+        <activity android:name=".main.ui.UploadActivity" android:exported="false" />
+        <activity android:name=".main.ui.FilePreviewActivity" android:exported="false" />
+        <activity android:name=".main.ui.ManageStorageActivity" android:exported="false" />
+        <activity android:name=".main.ui.LargeFilesActivity" android:exported="false" />
     </application>
 
 </manifest>

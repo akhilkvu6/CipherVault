@@ -102,11 +102,9 @@ public class SignInActivity extends AppCompatActivity {
                     break;
                 case SUCCESS:
                     setLoadingState(false);
-                    // Route to Main App Shell. Since Main App isn't implemented in Batch 2, 
-                    // we simulate it via a Toast and exiting, or we could route to a placeholder.
-                    // The prompt allows a simple Toast + exit, but we should clear backstack.
                     Toast.makeText(this, "Welcome " + resource.data.getUsername() + "!", Toast.LENGTH_SHORT).show();
-                    // Just finish for now to simulate MainApp entry
+                    Intent intent = new Intent(SignInActivity.this, com.ciphervault.app.main.ui.MainAppActivity.class);
+                    startActivity(intent);
                     finishAffinity();
                     break;
                 case ERROR:

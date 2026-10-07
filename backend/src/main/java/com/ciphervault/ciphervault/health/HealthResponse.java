@@ -5,6 +5,7 @@ public class HealthResponse {
     private String status;
     private String service;
     private String timestamp;
+    private java.util.Map<String, String> components;
 
     public HealthResponse() {
     }
@@ -13,6 +14,13 @@ public class HealthResponse {
         this.status = status;
         this.service = service;
         this.timestamp = timestamp;
+    }
+
+    public HealthResponse(String status, String service, String timestamp, java.util.Map<String, String> components) {
+        this.status = status;
+        this.service = service;
+        this.timestamp = timestamp;
+        this.components = components;
     }
 
     public String getStatus() {
@@ -37,5 +45,13 @@ public class HealthResponse {
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public java.util.Map<String, String> getComponents() {
+        return components;
+    }
+
+    public void setComponents(java.util.Map<String, String> components) {
+        this.components = components;
     }
 }

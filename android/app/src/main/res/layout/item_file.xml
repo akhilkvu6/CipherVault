@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardFileRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/cv_card_background"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/cv_border">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Normal Row -->
+        <LinearLayout
+            android:id="@+id/rowFileMain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="12dp"
+            android:background="?android:attr/selectableItemBackground">
+
+            <CheckBox
+                android:id="@+id/cbSelect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_marginEnd="8dp" />
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivThumbnail"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_thumbnail_rounded"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.CipherVault.RoundedRect"
+                android:scaleType="centerInside"
+                android:contentDescription="File thumbnail"
+                android:src="@drawable/ic_lucide_file"
+                app:tint="@color/cv_primary" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="12dp">
+
+                <TextView
+                    android:id="@+id/tvFilename"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/cv_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:ellipsize="middle"
+                    android:singleLine="true" />
+
+                <TextView
+                    android:id="@+id/tvFileSizeAndType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/cv_text_secondary"
+                    android:textSize="13sp" />
+
+                <TextView
+                    android:id="@+id/tvEncryptionStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <ImageView
+                android:id="@+id/ivExpandChevron"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="8dp"
+                android:src="@drawable/ic_lucide_chevron_right"
+                app:tint="@color/cv_text_tertiary"
+                android:contentDescription="Expand details" />
+        </LinearLayout>
+
+        <!-- Expanded Details Panel (~2x height of two normal rows) -->
+        <LinearLayout
+            android:id="@+id/llExpandedDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="14dp"
+            android:paddingBottom="14dp"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/cv_divider"
+                android:layout_marginBottom="10dp" />
+
+            <!-- Grouped Metadata Surface -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_thumbnail_rounded"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="MIME TYPE"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvDetailMime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="@color/cv_text_primary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="EXACT SIZE"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvDetailByteSize"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="@color/cv_text_primary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="UPLOADED"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvDetailUploaded"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="@color/cv_text_primary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="SHA-256"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_text_tertiary"
+                        android:layout_marginEnd="8dp" />
+                    <TextView
+                        android:id="@+id/tvDetailHash"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:gravity="end"
+                        android:fontFamily="monospace"
+                        android:ellipsize="middle"
+                        android:singleLine="true"
+                        android:textSize="11sp"
+                        android:textColor="@color/cv_text_primary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="SECURITY"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvDetailSecurity"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_security_success" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/llDetailExtraRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="6dp"
+                    android:visibility="gone">
+                    <TextView
+                        android:id="@+id/tvDetailExtraLabel"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="MEDIA METADATA"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/cv_text_tertiary" />
+                    <TextView
+                        android:id="@+id/tvDetailExtra"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="@color/cv_text_primary" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Dedicated Actions: Preview, Download, Delete -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActionPreview"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="44dp"
+                    android:text="Preview"
+                    android:textSize="12sp"
+                    android:textColor="@color/cv_primary"
+                    app:strokeColor="@color/cv_primary"
+                    app:cornerRadius="14dp"
+                    android:paddingHorizontal="4dp"
+                    android:maxLines="1"
+                    android:layout_marginEnd="6dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActionDownload"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="44dp"
+                    android:text="Download"
+                    android:textSize="12sp"
+                    android:textColor="@color/cv_on_primary"
+                    app:backgroundTint="@color/cv_primary"
+                    app:cornerRadius="14dp"
+                    android:paddingHorizontal="4dp"
+                    android:maxLines="1"
+                    android:layout_marginEnd="6dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnActionDelete"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="44dp"
+                    android:text="Delete"
+                    android:textSize="12sp"
+                    android:textColor="#C62828"
+                    app:strokeColor="#C62828"
+                    app:cornerRadius="14dp"
+                    android:paddingHorizontal="4dp"
+                    android:maxLines="1" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

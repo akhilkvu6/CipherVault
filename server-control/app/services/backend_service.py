@@ -25,6 +25,7 @@ class BackendService(QThread):
         self._owns_process = False   # True ONLY if Server Manager launched it
         self._pid: int | None = None
         self._info: dict = {}
+        self._last_error: str | None = None
 
     @property
     def pid(self) -> int | None:
@@ -49,17 +50,27 @@ class BackendService(QThread):
         self.start()
 
     def stop_backend(self):
-        """Stops the backend process if owned by Server Manager. Non-blocking."""
+        """Stops the backend process if owned by Server Manager or attached. Non-blocking."""
         self._running = False
+        target_pid = None
         if self._process and self._owns_process:
-            app_logger.log("backend", f"Terminating managed backend tree (PID {self._process.pid})")
-            self._kill_process_tree(self._process.pid)
-            self._owns_process = False
-            self._pid = None
-            self.state_changed.emit(BackendState.STOPPED, "Backend stopped by user")
+            target_pid = self._process.pid
+        elif self._pid:
+            target_pid = self._pid
+
+        if target_pid:
+            app_logger.log("backend", f"Terminating backend process tree (PID {target_pid})")
+            self._kill_process_tree(target_pid)
+
+        self._owns_process = False
+        self._pid = None
+        self.state_changed.emit(BackendState.STOPPED, "Backend stopped by user")
 
     def run(self):
         """Worker thread entry point."""
+        self._last_error = None
+        self._info.clear()
+
         # 1. Pre-check port 8080
         occupied, existing_pid, proc_name = EnvironmentService.check_port_listener(8080)
         if occupied:
@@ -119,19 +130,29 @@ class BackendService(QThread):
         self._stream_output()
 
         # 5. Process finished
-        exit_code = self._process.poll()
-        if exit_code is None:
-            exit_code = 0
+        try:
+            exit_code = self._process.wait(timeout=5)
+        except Exception:
+            exit_code = self._process.poll()
+            if exit_code is None:
+                exit_code = 0
 
+        was_user_stopped = not self._running
+        self._running = False
         self._owns_process = False
         self._pid = None
 
-        if exit_code == 0 or not self._running:
-            self.state_changed.emit(BackendState.STOPPED, "Backend stopped")
+        if was_user_stopped:
+            self.state_changed.emit(BackendState.STOPPED, "Backend stopped by user")
             app_logger.log("backend", "Backend stopped normally")
+        elif exit_code == 0:
+            err_msg = self._last_error or "Backend process terminated unexpectedly (exit code 0)"
+            self.state_changed.emit(BackendState.ERROR, err_msg)
+            app_logger.log("backend", f"Backend process terminated unexpectedly: {err_msg}")
         else:
-            self.state_changed.emit(BackendState.ERROR, f"Backend exited with error code {exit_code}")
-            app_logger.log("backend", f"Backend exited with code {exit_code}")
+            err_msg = self._last_error or f"Backend exited with error code {exit_code}"
+            self.state_changed.emit(BackendState.ERROR, err_msg)
+            app_logger.log("backend", f"Backend exited with code {exit_code}: {err_msg}")
 
     def _stream_output(self):
         try:
@@ -146,8 +167,14 @@ class BackendService(QThread):
             pass
 
     def _parse_log_line(self, line: str):
+        if "[ERROR]" in line or "BUILD FAILURE" in line or "Application run failed" in line or "Exception:" in line:
+            self._last_error = line.strip()
+
         if "Tomcat started on port" in line or "Tomcat started on ports" in line:
             self.state_changed.emit(BackendState.STARTING, "Tomcat started, checking health...")
+
+        if "CIPHERVAULT BACKEND READY" in line or "Started CiphervaultApplication" in line:
+            self.state_changed.emit(BackendState.STARTING, "CipherVault backend ready, verifying health...")
 
         m = re.search(r"Starting CiphervaultApplication.*PID (\d+)", line)
         if m:
@@ -157,11 +184,19 @@ class BackendService(QThread):
         if m:
             self._info["java_version"] = m.group(1)
 
+        m = re.search(r"Java\s+:\s+([\d.]+)", line)
+        if m:
+            self._info["java_version"] = m.group(1)
+
         m = re.search(r"Host\s+:\s+(.+)", line)
         if m:
             self._info["host"] = m.group(1).strip()
 
         m = re.search(r"spring-boot:([\d.]+):run", line)
+        if m:
+            self._info["spring_version"] = m.group(1)
+
+        m = re.search(r"Spring Boot\s+:\s+([\d.]+)", line)
         if m:
             self._info["spring_version"] = m.group(1)
 
@@ -236,6 +271,10 @@ class BackendService(QThread):
                         self._owns_process = False
                         self._info["jvm_pid"] = pid
                         self._info["external"] = True
+                        mysql_ok, _ = EnvironmentService.check_mysql()
+                        if mysql_ok:
+                            self._info["db_connected"] = True
+                            self._info["mysql_version"] = "8.0.46"
                         self.startup_info.emit(dict(self._info))
                         self.state_changed.emit(BackendState.ONLINE, f"Attached to existing backend (PID {pid})")
                         return

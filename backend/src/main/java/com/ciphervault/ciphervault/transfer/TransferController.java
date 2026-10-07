@@ -105,18 +105,22 @@ public class TransferController {
                 }
             }
         }
-        return Map.of(
-                "id", t.getId(),
-                "type", t.getTransferType(),
-                "status", t.getStatus(),
-                "totalBytes", t.getTotalBytes() != null ? t.getTotalBytes() : 0,
-                "transferredBytes", t.getTransferredBytes() != null ? t.getTransferredBytes() : 0,
-                "progressPercentage", progress,
-                "speedBytesPerSecond", speed,
-                "estimatedRemainingSeconds", eta,
-                "startedAt", t.getStartedAt(),
-                "updatedAt", t.getUpdatedAt() != null ? t.getUpdatedAt() : t.getStartedAt()
-        );
+        java.util.Map<String, Object> map = new java.util.LinkedHashMap<>();
+        map.put("id", t.getId());
+        map.put("filename", t.getFileNames() != null ? t.getFileNames() : "File transfer");
+        map.put("fileNames", t.getFileNames() != null ? t.getFileNames() : "File transfer");
+        map.put("type", t.getTransferType() != null ? t.getTransferType().name() : "DOWNLOAD");
+        map.put("transferType", t.getTransferType() != null ? t.getTransferType().name() : "DOWNLOAD");
+        map.put("status", t.getStatus() != null ? t.getStatus().name() : "COMPLETED");
+        map.put("totalBytes", t.getTotalBytes() != null ? t.getTotalBytes() : 0L);
+        map.put("bytesTransferred", t.getTransferredBytes() != null ? t.getTransferredBytes() : 0L);
+        map.put("transferredBytes", t.getTransferredBytes() != null ? t.getTransferredBytes() : 0L);
+        map.put("progressPercentage", progress);
+        map.put("speedBytesPerSecond", speed);
+        map.put("estimatedRemainingSeconds", eta);
+        map.put("startedAt", t.getStartedAt() != null ? t.getStartedAt().toString() : "");
+        map.put("updatedAt", t.getUpdatedAt() != null ? t.getUpdatedAt().toString() : "");
+        return map;
     }
 }
 

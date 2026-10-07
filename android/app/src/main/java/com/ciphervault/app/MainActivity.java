@@ -119,8 +119,7 @@ public class MainActivity extends AppCompatActivity {
     private void routeBasedOnSession() {
         com.ciphervault.app.core.session.AuthSessionManager sessionManager = new com.ciphervault.app.core.session.AuthSessionManager(this);
         if (sessionManager.hasValidSession()) {
-            Toast.makeText(this, "Valid session found. Batch 3 (Home) not implemented.", Toast.LENGTH_LONG).show();
-            finishAffinity();
+            routeToActivity(com.ciphervault.app.main.ui.MainAppActivity.class);
         } else {
             routeToActivity(com.ciphervault.app.auth.ui.SignInActivity.class);
         }

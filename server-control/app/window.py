@@ -809,6 +809,11 @@ class MainWindow(QMainWindow):
     def _do_start(self):
         if self._backend_svc.isRunning():
             return
+        if self._backend_svc.isFinished():
+            self._backend_svc = BackendService()
+            self._backend_svc.log_line.connect(self._on_log_line)
+            self._backend_svc.state_changed.connect(self._on_backend_state)
+            self._backend_svc.startup_info.connect(self._on_startup_info)
         app_logger.log("action", "Starting backend server")
         self._health_poller.set_state(BackendState.STARTING, "Starting Spring Boot...")
         self._update_server_status_ui(BackendState.STARTING, "Launching backend process...")
@@ -1065,6 +1070,8 @@ class MainWindow(QMainWindow):
                 self._uptime_timer.start()
             self._health_poller.poll_now()
             self._refresh_connections_and_adb()
+        elif state == BackendState.STARTING:
+            self._health_poller.poll_now()
         elif state in (BackendState.STOPPED, BackendState.ERROR, BackendState.FOREIGN_SERVICE):
             self._uptime_timer.stop()
 
@@ -1181,6 +1188,8 @@ class MainWindow(QMainWindow):
 
             self._sys_backend_val.setText("○ Stopped")
             self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #757575;')
+            self._sys_db_val.setText("○ Waiting for backend")
+            self._sys_db_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #757575;')
 
         else:  # OFFLINE / ERROR
             self._status_dot.setStyleSheet("font-size: 13px; color: #D32F2F;")
@@ -1199,6 +1208,8 @@ class MainWindow(QMainWindow):
 
             self._sys_backend_val.setText("○ Offline")
             self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #D32F2F;')
+            self._sys_db_val.setText("○ Offline")
+            self._sys_db_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #757575;')
 
         self._update_metadata_line()
 

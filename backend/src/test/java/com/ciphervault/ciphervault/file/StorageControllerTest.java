@@ -18,6 +18,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 class StorageControllerTest {
@@ -31,7 +32,7 @@ class StorageControllerTest {
     void setUp() {
         userRepository = Mockito.mock(UserRepository.class);
         fileRepository = Mockito.mock(FileRepository.class);
-        storageController = new StorageController(userRepository, fileRepository);
+        storageController = new StorageController(userRepository, fileRepository, new FileCategoryService());
         
         authentication = Mockito.mock(Authentication.class);
         when(authentication.isAuthenticated()).thenReturn(true);
@@ -87,7 +88,7 @@ class StorageControllerTest {
         when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
         
         StoredFile f1 = new StoredFile(); f1.setOriginalFilename("large.bin"); f1.setFileSize(500000L);
-        when(fileRepository.findByUserOrderByFileSizeDesc(any(), any())).thenReturn(List.of(f1));
+        when(fileRepository.findByUserAndFileSizeGreaterThanEqualOrderByFileSizeDesc(any(), anyLong(), any())).thenReturn(new PageImpl<>(List.of(f1)));
         
         ResponseEntity<List<Map<String, Object>>> response = storageController.getLargeFiles(authentication);
         

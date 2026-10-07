@@ -367,7 +367,7 @@ class FileControllerTest {
         when(fileRepository.findByUserOrderByCreatedAtDesc(eq(alice), eq(org.springframework.data.domain.PageRequest.of(0, 50))))
                 .thenReturn(page);
 
-        ResponseEntity<List<FileController.FileResponse>> response = fileController.listFiles(null, null, authentication);
+        ResponseEntity<List<FileController.FileResponse>> response = fileController.listFiles(null, null, null, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -391,7 +391,7 @@ class FileControllerTest {
         when(fileRepository.findByUserOrderByCreatedAtDesc(eq(alice), eq(org.springframework.data.domain.PageRequest.of(2, 100))))
                 .thenReturn(emptyPage);
 
-        ResponseEntity<List<FileController.FileResponse>> response = fileController.listFiles(2, 500, authentication);
+        ResponseEntity<List<FileController.FileResponse>> response = fileController.listFiles(2, 500, null, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(fileRepository, times(1)).findByUserOrderByCreatedAtDesc(alice, org.springframework.data.domain.PageRequest.of(2, 100));

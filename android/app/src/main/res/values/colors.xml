@@ -31,6 +31,9 @@
     <color name="cv_badge_background">#EFE7DE</color>
     <color name="cv_badge_text">#664321</color>
     <color name="cv_security_success">#2E7D32</color>
+    <color name="cv_status_success">#2E7D32</color>
+    <color name="cv_status_error">#D32F2F</color>
+    <color name="cv_nav_indicator">#F5EBE1</color>
 
     <!-- Common Base Colors -->
     <color name="black">#FF000000</color>

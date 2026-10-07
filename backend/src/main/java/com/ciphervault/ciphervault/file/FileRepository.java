@@ -58,5 +58,8 @@ public interface FileRepository
     long countByUser(User user);
     
     @EntityGraph(attributePaths = {"metadata"})
-    List<StoredFile> findByUserOrderByFileSizeDesc(User user, Pageable pageable);
+    Page<StoredFile> findByUserOrderByFileSizeDesc(User user, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"metadata"})
+    Page<StoredFile> findByUserAndFileSizeGreaterThanEqualOrderByFileSizeDesc(User user, long size, Pageable pageable);
 }

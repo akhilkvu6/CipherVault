@@ -15,4 +15,7 @@ public interface AuthApi {
 
     @POST("api/auth/login")
     Call<LoginResponse> login(@Body LoginRequest request);
+
+    @POST("api/auth/change-password")
+    Call<java.util.Map<String, Object>> changePassword(@Body java.util.Map<String, String> request);
 }

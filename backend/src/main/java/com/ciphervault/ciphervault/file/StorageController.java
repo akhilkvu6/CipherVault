@@ -22,10 +22,12 @@ public class StorageController {
 
     private final UserRepository userRepository;
     private final FileRepository fileRepository;
+    private final FileCategoryService fileCategoryService;
 
-    public StorageController(UserRepository userRepository, FileRepository fileRepository) {
+    public StorageController(UserRepository userRepository, FileRepository fileRepository, FileCategoryService fileCategoryService) {
         this.userRepository = userRepository;
         this.fileRepository = fileRepository;
+        this.fileCategoryService = fileCategoryService;
     }
 
     private User getAuthenticatedUser(Authentication authentication) {
@@ -45,14 +47,17 @@ public class StorageController {
         
         long fileCount = fileRepository.countByUser(user);
 
-        return ResponseEntity.ok(Map.of(
-                "totalBytes", totalBytes,
-                "usedBytes", usedBytes,
-                "availableBytes", availableBytes,
-                "usagePercentage", percentage,
-                "fileCount", fileCount
-        ));
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalBytes", totalBytes);
+        response.put("usedBytes", usedBytes);
+        response.put("availableBytes", availableBytes);
+        response.put("usagePercentage", percentage);
+        response.put("percentage", percentage);
+        response.put("fileCount", fileCount);
+
+        return ResponseEntity.ok(response);
     }
+
 
     @GetMapping("/categories")
     public ResponseEntity<List<Map<String, Object>>> getCategories(Authentication authentication) {
@@ -64,8 +69,6 @@ public class StorageController {
         Map<String, Long> categoryCounts = new HashMap<>();
         
         long totalBytes = 0;
-        
-        FileCategoryService fileCategoryService = new FileCategoryService();
 
         for (Object[] row : stats) {
             String originalFilename = (String) row[0];
@@ -114,14 +117,22 @@ public class StorageController {
         User user = getAuthenticatedUser(authentication);
         if (user == null) throw new com.ciphervault.ciphervault.exception.ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication required");
 
-        List<StoredFile> largeFiles = fileRepository.findByUserOrderByFileSizeDesc(user, PageRequest.of(0, 50));
+        long minSizeBytes = 100L * 1024L * 1024L; // 100 MB
+        List<StoredFile> largeFiles = fileRepository.findByUserAndFileSizeGreaterThanEqualOrderByFileSizeDesc(user, minSizeBytes, PageRequest.of(0, 100)).getContent();
         List<Map<String, Object>> result = largeFiles.stream().map(f -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", f.getId());
             map.put("filename", f.getOriginalFilename());
+            map.put("fileSize", f.getFileSize());
             map.put("size", f.getFileSize());
+            map.put("contentType", f.getContentType());
             map.put("mimeType", f.getContentType());
-            map.put("uploadedAt", f.getCreatedAt());
+            map.put("encrypted", f.isEncrypted());
+            map.put("sha256Hash", f.getSha256Hash());
+            map.put("createdAt", f.getCreatedAt() != null ? f.getCreatedAt().toString() : null);
+            map.put("uploadedAt", f.getCreatedAt() != null ? f.getCreatedAt().toString() : null);
+            map.put("hasPreview", f.isHasPreview());
+            map.put("category", fileCategoryService.determineCategory(f.getOriginalFilename(), f.getContentType()));
             return map;
         }).collect(Collectors.toList());
 
