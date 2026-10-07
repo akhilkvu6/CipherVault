@@ -8,6 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.List;
@@ -25,7 +28,10 @@ public interface ActivityEventRepository extends JpaRepository<ActivityEvent, Lo
     
     Optional<ActivityEvent> findByIdAndUser(Long id, User user);
     
-    void deleteByUser(User user);
+    @Transactional
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM ActivityEvent a WHERE a.user = :user")
+    void deleteByUser(@Param("user") User user);
 
     // Analytics queries
     @Query("SELECT COUNT(a) FROM ActivityEvent a WHERE a.user = :user AND a.eventType = :eventType AND a.timestamp >= :since")

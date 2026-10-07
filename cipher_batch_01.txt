@@ -1,0 +1,2298 @@
+
+
+========================================
+FILE: java\com\ciphervault\app\MainActivity.java
+========================================
+
+package com.ciphervault.app;
+
+import android.animation.ValueAnimator;
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.LinearLayout;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.splashscreen.SplashScreen;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import com.ciphervault.app.onboarding.OnboardingActivity;
+import com.ciphervault.app.onboarding.OnboardingPreferences;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
+
+public class MainActivity extends AppCompatActivity {
+
+    private static final int SPLASH_DURATION_MS = 3000;
+    private static final int FADE_DURATION_MS = 500;
+
+    private LinearLayout splashContainer;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        super.onCreate(savedInstanceState);
+
+        // Instantly dismiss native splash so our custom layout takes over
+        splashScreen.setKeepOnScreenCondition(() -> false);
+
+        EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_main);
+        
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
+
+        splashContainer = findViewById(R.id.splashContainer);
+        startBrandedSplashExperience();
+    }
+
+    private void startBrandedSplashExperience() {
+        LinearProgressIndicator pbSplashProgress = findViewById(R.id.pbSplashProgress);
+
+        // Initial state
+        splashContainer.setAlpha(0f);
+        splashContainer.setScaleX(0.94f);
+        splashContainer.setScaleY(0.94f);
+
+        // 1. Fade & Scale Logo
+        splashContainer.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(FADE_DURATION_MS)
+                .setInterpolator(new DecelerateInterpolator())
+                .start();
+
+        // 2. Progress Bar Animation
+        ValueAnimator progressAnimator = ValueAnimator.ofInt(0, 100);
+        progressAnimator.setDuration(SPLASH_DURATION_MS);
+        progressAnimator.setInterpolator(new DecelerateInterpolator(1.5f));
+        progressAnimator.addUpdateListener(animation -> {
+            int progress = (int) animation.getAnimatedValue();
+            pbSplashProgress.setProgress(progress);
+        });
+        progressAnimator.start();
+
+        // 3. Routing after 3 seconds
+        new Handler(Looper.getMainLooper()).postDelayed(this::routeToNextDestination, SPLASH_DURATION_MS);
+    }
+
+    private void routeToNextDestination() {
+        if (isFinishing()) return;
+
+        OnboardingPreferences preferences = new OnboardingPreferences(this);
+        boolean onboardingCompleted = preferences.isOnboardingCompleted();
+
+        if (!onboardingCompleted) {
+            // Transition to Onboarding
+            Intent intent = new Intent(this, OnboardingActivity.class);
+            startActivity(intent);
+            applyTransition();
+            finish();
+        } else {
+            com.ciphervault.app.core.preferences.ConnectionPreferences prefs = new com.ciphervault.app.core.preferences.ConnectionPreferences(this);
+            if (prefs.getServerUrl() == null) {
+                routeToActivity(com.ciphervault.app.auth.ui.ConnectActivity.class);
+            } else {
+                com.ciphervault.app.auth.data.AuthRepository repo = new com.ciphervault.app.auth.data.AuthRepository(this);
+                repo.checkHealth(new com.ciphervault.app.auth.data.AuthRepository.RepoCallback<com.ciphervault.app.auth.model.HealthResponse>() {
+                    @Override
+                    public void onSuccess(com.ciphervault.app.auth.model.HealthResponse result) {
+                        if ("UP".equals(result.getStatus())) {
+                            routeBasedOnSession();
+                        } else {
+                            routeToActivity(com.ciphervault.app.auth.ui.ConnectActivity.class);
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        routeToActivity(com.ciphervault.app.auth.ui.ConnectActivity.class);
+                    }
+                });
+            }
+        }
+    }
+
+    private void routeBasedOnSession() {
+        com.ciphervault.app.core.session.AuthSessionManager sessionManager = new com.ciphervault.app.core.session.AuthSessionManager(this);
+        if (sessionManager.hasValidSession()) {
+            routeToActivity(com.ciphervault.app.main.ui.MainAppActivity.class);
+        } else {
+            routeToActivity(com.ciphervault.app.auth.ui.SignInActivity.class);
+        }
+    }
+
+    private void routeToActivity(Class<?> activityClass) {
+        Intent intent = new Intent(this, activityClass);
+        startActivity(intent);
+        applyTransition();
+        finish();
+    }
+
+    private void applyTransition() {
+        if (android.os.Build.VERSION.SDK_INT >= 34) {
+            overrideActivityTransition(OVERRIDE_TRANSITION_OPEN, android.R.anim.fade_in, android.R.anim.fade_out);
+        } else {
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        }
+    }
+}
+
+
+========================================
+FILE: java\com\ciphervault\app\CipherVaultApp.java
+========================================
+
+package com.ciphervault.app;
+
+import android.app.Application;
+
+import com.ciphervault.app.core.preferences.ThemeManager;
+
+public class CipherVaultApp extends Application {
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        // Authoritative application-wide theme initialization
+        ThemeManager.applyTheme(this);
+    }
+}
+
+
+
+========================================
+FILE: java\com\ciphervault\app\main\ui\MainAppActivity.java
+========================================
+
+package com.ciphervault.app.main.ui;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.View;
+import android.view.ViewGroup;
+
+import androidx.activity.EdgeToEdge;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.fragment.app.Fragment;
+
+import com.ciphervault.app.R;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+public class MainAppActivity extends AppCompatActivity {
+    private BottomNavigationView bottomNav;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
+        super.onCreate(savedInstanceState);
+
+        com.ciphervault.app.core.session.AuthSessionManager sessionManager = new com.ciphervault.app.core.session.AuthSessionManager(this);
+        if (!sessionManager.hasValidSession()) {
+            Intent loginIntent = new Intent(this, com.ciphervault.app.auth.ui.SignInActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+            finish();
+            return;
+        }
+
+        setContentView(R.layout.activity_main_app);
+
+        View mainAppRoot = findViewById(R.id.mainAppRoot);
+        bottomNav = findViewById(R.id.bottomNavigation);
+
+        ViewCompat.setOnApplyWindowInsetsListener(mainAppRoot, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            int extraTop = (int) (10 * getResources().getDisplayMetrics().density);
+            v.setPadding(systemBars.left, systemBars.top + extraTop, systemBars.right, 0);
+
+            if (bottomNav != null) {
+                ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) bottomNav.getLayoutParams();
+                int baseMargin = (int) (20 * getResources().getDisplayMetrics().density);
+                lp.bottomMargin = systemBars.bottom + baseMargin;
+                bottomNav.setLayoutParams(lp);
+            }
+            return insets;
+        });
+
+        bottomNav.setOnItemSelectedListener(item -> {
+            clearBackStack();
+            Fragment selected = null;
+            int id = item.getItemId();
+            if (id == R.id.nav_home) selected = new HomeFragment();
+            else if (id == R.id.nav_files) selected = new FilesFragment();
+            else if (id == R.id.nav_transfers) selected = new TransfersFragment();
+            else if (id == R.id.nav_settings) selected = new SettingsFragment();
+            
+            if (selected != null) {
+                getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragmentContainer, selected)
+                    .commit();
+                return true;
+            }
+            return false;
+        });
+        
+        getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+                    getSupportFragmentManager().popBackStack();
+                } else if (getIntent().getBooleanExtra("FROM_MANAGE_STORAGE", false)) {
+                    finish();
+                } else if (bottomNav.getSelectedItemId() != R.id.nav_home) {
+                    bottomNav.setSelectedItemId(R.id.nav_home);
+                } else {
+                    finish();
+                }
+            }
+        });
+
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            int count = getSupportFragmentManager().getBackStackEntryCount();
+            showBottomNav(count == 0);
+        });
+
+        if (savedInstanceState == null) {
+            String startTab = getIntent().getStringExtra("START_TAB");
+            if ("FILES".equals(startTab)) {
+                bottomNav.setSelectedItemId(R.id.nav_files);
+            } else {
+                bottomNav.setSelectedItemId(R.id.nav_home);
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        com.ciphervault.app.core.session.AuthSessionManager sessionManager = new com.ciphervault.app.core.session.AuthSessionManager(this);
+        if (!sessionManager.hasValidSession()) {
+            Intent loginIntent = new Intent(this, com.ciphervault.app.auth.ui.SignInActivity.class);
+            loginIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(loginIntent);
+            finish();
+        }
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        String startTab = intent.getStringExtra("START_TAB");
+        if ("FILES".equals(startTab)) {
+            bottomNav.setSelectedItemId(R.id.nav_files);
+            Fragment current = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
+            if (current instanceof FilesFragment) {
+                ((FilesFragment) current).setCategory(intent.getStringExtra("FILTER_CATEGORY"));
+            }
+        }
+    }
+
+    public String getFilterCategory() {
+        return getIntent().getStringExtra("FILTER_CATEGORY");
+    }
+
+    public void navigateToFiles() {
+        bottomNav.setSelectedItemId(R.id.nav_files);
+    }
+
+    public void navigateToTransfers() {
+        bottomNav.setSelectedItemId(R.id.nav_transfers);
+    }
+    
+    private long lastNavigationTime = 0;
+
+    public void addFragment(Fragment fragment) {
+        if (fragment == null) return;
+        long now = System.currentTimeMillis();
+        if (now - lastNavigationTime < 350) {
+            return;
+        }
+        lastNavigationTime = now;
+
+        androidx.fragment.app.FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        com.ciphervault.app.core.ui.NavigationMotionHelper.applyFragmentTransaction(transaction, this);
+        transaction.replace(R.id.fragmentContainer, fragment)
+            .addToBackStack(null)
+            .commit();
+    }
+    
+    public void clearBackStack() {
+        getSupportFragmentManager().popBackStackImmediate(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE);
+    }
+    
+    public void showBottomNav(boolean show) {
+        bottomNav.setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+}
+
+
+
+========================================
+FILE: java\com\ciphervault\app\main\ui\HomeFragment.java
+========================================
+
+package com.ciphervault.app.main.ui;
+
+import android.app.DownloadManager;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+
+import android.os.Bundle;
+import android.os.Environment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+
+import com.ciphervault.app.R;
+import com.ciphervault.app.auth.data.AuthRepository;
+import com.ciphervault.app.auth.model.HealthResponse;
+import com.ciphervault.app.core.network.ApiClient;
+import com.ciphervault.app.core.network.ApiErrorUtils;
+import com.ciphervault.app.core.network.NetworkMonitoringHelper;
+import com.ciphervault.app.core.preferences.ConnectionPreferences;
+import com.ciphervault.app.core.session.AuthSessionManager;
+import com.ciphervault.app.main.api.ActivityApi;
+import com.ciphervault.app.main.api.FileApi;
+import com.ciphervault.app.main.api.StorageApi;
+import com.ciphervault.app.main.api.UserApi;
+import com.ciphervault.app.main.model.ActivityEvent;
+import com.ciphervault.app.main.model.FileResponse;
+import com.ciphervault.app.main.model.PageResponse;
+import com.ciphervault.app.main.model.StorageSummaryResponse;
+import com.ciphervault.app.main.model.UserProfileResponse;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
+
+import java.util.Calendar;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+public class HomeFragment extends Fragment implements FileAdapter.OnFileActionListener {
+    private BroadcastReceiver dataSyncReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (DataSyncHelper.ACTION_DATA_MUTATION.equals(intent.getAction())) {
+                loadData();
+            }
+        }
+    };
+
+
+    private SwipeRefreshLayout swipeRefresh;
+    private View llErrorBanner;
+    private TextView tvGreeting;
+    private TextView tvProfileAvatar;
+    private TextView tvStorageUsed;
+    private TextView tvStorageTotal;
+    private TextView tvStoragePercentage;
+    private TextView tvStorageUsedDetail;
+    private TextView tvStorageAvailable;
+    private TextView tvStorageFileCount;
+    private CircularProgressIndicator cpStorageRing;
+    private LinearProgressIndicator pbStorage;
+
+    private RecyclerView rvRecentFiles;
+    private View llEmptyFiles;
+    private FileAdapter recentAdapter;
+
+    private RecyclerView rvRecentActivity;
+    private TextView tvEmptyActivity;
+    private RecentActivityAdapter activityAdapter;
+
+    private View dotHealthServer;
+    private TextView tvHealthServerStatus;
+    private View btnConnectServer;
+    private View dotHealthEncryption;
+    private TextView tvHealthEncryptionStatus;
+    private View dotHealthAuth;
+    private TextView tvHealthAuthStatus;
+
+    private UserApi userApi;
+    private StorageApi storageApi;
+    private FileApi fileApi;
+    private ActivityApi activityApi;
+    private AuthSessionManager sessionManager;
+    private ConnectionPreferences connectionPrefs;
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.fragment_home, container, false);
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        swipeRefresh = view.findViewById(R.id.swipeRefresh);
+        llErrorBanner = view.findViewById(R.id.llErrorBanner);
+        tvGreeting = view.findViewById(R.id.tvGreeting);
+        tvProfileAvatar = view.findViewById(R.id.tvProfileAvatar);
+        tvStorageUsed = view.findViewById(R.id.tvStorageUsed);
+        tvStorageTotal = view.findViewById(R.id.tvStorageTotal);
+        tvStoragePercentage = view.findViewById(R.id.tvStoragePercentage);
+        tvStorageUsedDetail = view.findViewById(R.id.tvStorageUsedDetail);
+        tvStorageAvailable = view.findViewById(R.id.tvStorageAvailable);
+        tvStorageFileCount = view.findViewById(R.id.tvStorageFileCount);
+        cpStorageRing = view.findViewById(R.id.cpStorageRing);
+        pbStorage = view.findViewById(R.id.pbStorage);
+
+        rvRecentFiles = view.findViewById(R.id.rvRecentFiles);
+        llEmptyFiles = view.findViewById(R.id.llEmptyFiles);
+        rvRecentActivity = view.findViewById(R.id.rvRecentActivity);
+        tvEmptyActivity = view.findViewById(R.id.tvEmptyActivity);
+
+        dotHealthServer = view.findViewById(R.id.dotHealthServer);
+        tvHealthServerStatus = view.findViewById(R.id.tvHealthServerStatus);
+        btnConnectServer = view.findViewById(R.id.btnConnectServer);
+        dotHealthEncryption = view.findViewById(R.id.dotHealthEncryption);
+        tvHealthEncryptionStatus = view.findViewById(R.id.tvHealthEncryptionStatus);
+        dotHealthAuth = view.findViewById(R.id.dotHealthAuth);
+        tvHealthAuthStatus = view.findViewById(R.id.tvHealthAuthStatus);
+
+        sessionManager = new AuthSessionManager(requireContext());
+        connectionPrefs = new ConnectionPreferences(requireContext());
+
+        // Setup Adapters
+        rvRecentFiles.setLayoutManager(new LinearLayoutManager(getContext()));
+        recentAdapter = new FileAdapter(this);
+        rvRecentFiles.setAdapter(recentAdapter);
+
+        rvRecentActivity.setLayoutManager(new LinearLayoutManager(getContext()));
+        activityAdapter = new RecentActivityAdapter();
+        activityAdapter.setMaxItems(3);
+        activityAdapter.setOnActivityClickListener(event -> {
+            ActivityDetailsBottomSheet sheet = ActivityDetailsBottomSheet.newInstance(event);
+            sheet.show(getParentFragmentManager(), "ActivityDetails");
+        });
+        rvRecentActivity.setAdapter(activityAdapter);
+
+        // Header - Profile letter avatar
+        if (tvProfileAvatar != null) {
+            tvProfileAvatar.setOnClickListener(v -> {
+                if (getActivity() instanceof MainAppActivity) {
+                    ((MainAppActivity) getActivity()).addFragment(new ProfileFragment());
+                }
+            });
+        }
+
+        // Storage Overview Click -> Manage Storage
+        view.findViewById(R.id.cvStorage).setOnClickListener(v -> {
+            startActivity(new Intent(getContext(), ManageStorageActivity.class));
+            if (getActivity() != null) com.ciphervault.app.core.ui.NavigationMotionHelper.applyActivityForward(getActivity());
+        });
+        view.findViewById(R.id.btnQuickManage).setOnClickListener(v -> {
+            startActivity(new Intent(getContext(), ManageStorageActivity.class));
+            if (getActivity() != null) com.ciphervault.app.core.ui.NavigationMotionHelper.applyActivityForward(getActivity());
+        });
+
+        // Quick Actions
+        view.findViewById(R.id.btnQuickUpload).setOnClickListener(v -> openFilePicker());
+        view.findViewById(R.id.btnQuickFiles).setOnClickListener(v -> {
+            if (getActivity() instanceof MainAppActivity) {
+                ((MainAppActivity) getActivity()).navigateToFiles();
+            }
+        });
+        view.findViewById(R.id.btnQuickSearch).setOnClickListener(v -> {
+            if (getActivity() instanceof MainAppActivity) {
+                ((MainAppActivity) getActivity()).addFragment(new SearchFragment());
+            }
+        });
+        view.findViewById(R.id.btnQuickTransfers).setOnClickListener(v -> {
+            if (getActivity() instanceof MainAppActivity) {
+                ((MainAppActivity) getActivity()).navigateToTransfers();
+            }
+        });
+
+        // Recent Files Actions
+        view.findViewById(R.id.tvSeeAllRecent).setOnClickListener(v -> {
+            if (getActivity() instanceof MainAppActivity) {
+                ((MainAppActivity) getActivity()).navigateToFiles();
+            }
+        });
+        view.findViewById(R.id.btnEmptyUpload).setOnClickListener(v -> openFilePicker());
+
+        // Recent Activity Actions
+        View.OnClickListener goToActivityListener = v -> {
+            if (getActivity() instanceof MainAppActivity) {
+                ((MainAppActivity) getActivity()).addFragment(new ActivityHistoryFragment());
+            }
+        };
+        view.findViewById(R.id.tvSeeAllActivity).setOnClickListener(goToActivityListener);
+        view.findViewById(R.id.cardRecentActivity).setOnClickListener(goToActivityListener);
+
+        // Vault Health Connect Button & Card
+        if (btnConnectServer != null) {
+            btnConnectServer.setOnClickListener(v -> openConnectScreen());
+        }
+        view.findViewById(R.id.btnVaultHealthCard).setOnClickListener(v -> {
+            if (btnConnectServer != null && btnConnectServer.getVisibility() == View.VISIBLE) {
+                openConnectScreen();
+            } else if (getActivity() instanceof MainAppActivity) {
+                ((MainAppActivity) getActivity()).addFragment(new HealthFragment());
+            }
+        });
+
+        // Retry & Pull to refresh
+        view.findViewById(R.id.btnRetry).setOnClickListener(v -> loadData());
+        swipeRefresh.setOnRefreshListener(this::loadData);
+        swipeRefresh.setColorSchemeResources(R.color.cv_primary);
+
+        // Initialize APIs
+        userApi = ApiClient.getClient(getContext()).create(UserApi.class);
+        storageApi = ApiClient.getClient(getContext()).create(StorageApi.class);
+        fileApi = ApiClient.getClient(getContext()).create(FileApi.class);
+        activityApi = ApiClient.getClient(getContext()).create(ActivityApi.class);
+
+        loadData();
+    }
+
+    private void openConnectScreen() {
+        Intent intent = new Intent(getContext(), com.ciphervault.app.auth.ui.ConnectActivity.class);
+        startActivity(intent);
+        if (getActivity() != null) com.ciphervault.app.core.ui.NavigationMotionHelper.applyActivityForward(getActivity());
+    }
+
+    private void openFilePicker() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        intent.setType("*/*");
+        startActivityForResult(intent, 1001);
+    }
+
+    private String getTimeOfDayGreeting() {
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        if (hour < 12) return "Good morning";
+        if (hour < 17) return "Good afternoon";
+        return "Good evening";
+    }
+
+    private int pendingRequests = 0;
+
+    private synchronized void onOneRequestCompleted() {
+        if (!isAdded()) return;
+        pendingRequests--;
+        if (pendingRequests <= 0) {
+            pendingRequests = 0;
+            if (swipeRefresh != null) {
+                swipeRefresh.setRefreshing(false);
+            }
+        }
+    }
+
+    private void loadData() {
+        llErrorBanner.setVisibility(View.GONE);
+        if (getContext() != null && !NetworkMonitoringHelper.isOnline(getContext())) {
+            showErrorBanner("You are currently offline. Check your network connection.");
+        }
+        String baseGreeting = getTimeOfDayGreeting();
+        tvGreeting.setText(baseGreeting);
+        pendingRequests = 5;
+
+        // 1. User Profile
+        userApi.getUserProfile().enqueue(new Callback<UserProfileResponse>() {
+            @Override
+            public void onResponse(Call<UserProfileResponse> call, Response<UserProfileResponse> response) {
+                if (isAdded() && response.isSuccessful() && response.body() != null) {
+                    String username = response.body().username;
+                    if (username != null && !username.trim().isEmpty()) {
+                        tvGreeting.setText(baseGreeting + ", " + username);
+                        String firstChar = username.trim().substring(0, 1).toUpperCase();
+                        if (tvProfileAvatar != null) {
+                            tvProfileAvatar.setText(firstChar);
+                        }
+                    }
+                }
+                onOneRequestCompleted();
+            }
+            @Override
+            public void onFailure(Call<UserProfileResponse> call, Throwable t) {
+                onOneRequestCompleted();
+            }
+        });
+
+        // 2. Storage Overview
+        storageApi.getStorageSummary().enqueue(new Callback<StorageSummaryResponse>() {
+            @Override
+            public void onResponse(Call<StorageSummaryResponse> call, Response<StorageSummaryResponse> response) {
+                if (isAdded()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        StorageSummaryResponse summary = response.body();
+                        long usedBytes = summary.getSafeUsedBytes();
+                        long totalBytes = summary.getSafeTotalBytes();
+                        long availableBytes = summary.getSafeAvailableBytes();
+                        long fileCount = summary.getSafeFileCount();
+
+                        tvStorageUsed.setText(formatStorage(usedBytes));
+                        tvStorageTotal.setText("of " + formatStorage(totalBytes) + " total");
+
+                        double effectivePercentage = summary.getEffectivePercentage();
+                        tvStoragePercentage.setText(String.format(java.util.Locale.US, "%.0f%%", effectivePercentage));
+                        int progress = (int) Math.round(effectivePercentage);
+                        if (usedBytes > 0 && progress == 0) {
+                            progress = 1; // Show at least a minimal sliver if non-zero used
+                        }
+                        progress = Math.max(0, Math.min(100, progress));
+
+                        cpStorageRing.setProgressCompat(progress, true);
+                        pbStorage.setProgressCompat(progress, true);
+
+                        tvStorageUsedDetail.setText("Used: " + formatStorage(usedBytes));
+                        tvStorageAvailable.setText("Free: " + formatStorage(availableBytes));
+                        tvStorageFileCount.setText(fileCount + (fileCount == 1 ? " file" : " files"));
+                    } else {
+                        showErrorBanner("Could not load storage summary.");
+                    }
+                }
+                onOneRequestCompleted();
+            }
+
+            @Override
+            public void onFailure(Call<StorageSummaryResponse> call, Throwable t) {
+                if (isAdded()) {
+                    showErrorBanner("Couldn't connect to CipherVault. Check connection and try again.");
+                }
+                onOneRequestCompleted();
+            }
+        });
+
+        // 3. Recent Files
+        fileApi.listFiles(0, 5, "newest").enqueue(new Callback<List<FileResponse>>() {
+            @Override
+            public void onResponse(Call<List<FileResponse>> call, Response<List<FileResponse>> response) {
+                if (isAdded()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        List<FileResponse> files = response.body();
+                        if (files.isEmpty()) {
+                            rvRecentFiles.setVisibility(View.GONE);
+                            llEmptyFiles.setVisibility(View.VISIBLE);
+                        } else {
+                            llEmptyFiles.setVisibility(View.GONE);
+                            rvRecentFiles.setVisibility(View.VISIBLE);
+                            recentAdapter.setFiles(files);
+                        }
+                    } else {
+                        rvRecentFiles.setVisibility(View.GONE);
+                        llEmptyFiles.setVisibility(View.VISIBLE);
+                    }
+                }
+                onOneRequestCompleted();
+            }
+
+            @Override
+            public void onFailure(Call<List<FileResponse>> call, Throwable t) {
+                if (isAdded()) {
+                    rvRecentFiles.setVisibility(View.GONE);
+                    llEmptyFiles.setVisibility(View.VISIBLE);
+                }
+                onOneRequestCompleted();
+            }
+        });
+
+        // 4. Recent Activity
+        activityApi.listActivity(0, 3, null, null).enqueue(new Callback<PageResponse<ActivityEvent>>() {
+            @Override
+            public void onResponse(Call<PageResponse<ActivityEvent>> call, Response<PageResponse<ActivityEvent>> response) {
+                if (isAdded()) {
+                    if (response.isSuccessful() && response.body() != null && response.body().content != null) {
+                        List<ActivityEvent> events = response.body().content;
+                        if (events.isEmpty()) {
+                            rvRecentActivity.setVisibility(View.GONE);
+                            tvEmptyActivity.setVisibility(View.VISIBLE);
+                        } else {
+                            tvEmptyActivity.setVisibility(View.GONE);
+                            rvRecentActivity.setVisibility(View.VISIBLE);
+                            activityAdapter.setEvents(events);
+                        }
+                    } else {
+                        tvEmptyActivity.setVisibility(View.VISIBLE);
+                        rvRecentActivity.setVisibility(View.GONE);
+                    }
+                }
+                onOneRequestCompleted();
+            }
+
+            @Override
+            public void onFailure(Call<PageResponse<ActivityEvent>> call, Throwable t) {
+                if (isAdded()) {
+                    tvEmptyActivity.setVisibility(View.VISIBLE);
+                    rvRecentActivity.setVisibility(View.GONE);
+                }
+                onOneRequestCompleted();
+            }
+        });
+
+        // 5. Vault Health
+        String serverUrl = connectionPrefs.getServerUrl();
+        if (serverUrl == null || serverUrl.trim().isEmpty()) {
+            applyHealthDisconnectedState();
+            onOneRequestCompleted();
+            return;
+        }
+
+        AuthRepository repo = new AuthRepository(requireContext());
+        repo.checkHealth(new AuthRepository.RepoCallback<HealthResponse>() {
+            @Override
+            public void onSuccess(HealthResponse result) {
+                if (isAdded()) {
+                    if (result != null && "UP".equalsIgnoreCase(result.getStatus())) {
+                        tvHealthServerStatus.setText("Connected");
+                        tvHealthServerStatus.setTextColor(getResources().getColor(R.color.cv_security_success, null));
+                        if (dotHealthServer != null) {
+                            dotHealthServer.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                                    getResources().getColor(R.color.cv_security_success, null)));
+                        }
+                        if (btnConnectServer != null) {
+                            btnConnectServer.setVisibility(View.GONE);
+                        }
+                    } else {
+                        applyHealthUnavailableState();
+                    }
+                }
+                onOneRequestCompleted();
+            }
+
+            @Override
+            public void onError(String error) {
+                if (isAdded()) {
+                    applyHealthDisconnectedState();
+                }
+                onOneRequestCompleted();
+            }
+        });
+
+        boolean sessionValid = sessionManager.hasValidSession();
+        tvHealthAuthStatus.setText(sessionValid ? "Valid" : "Expired");
+        tvHealthAuthStatus.setTextColor(getResources().getColor(sessionValid ? R.color.cv_security_success : R.color.cv_primary, null));
+        if (dotHealthAuth != null) {
+            dotHealthAuth.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    getResources().getColor(sessionValid ? R.color.cv_security_success : R.color.cv_primary, null)));
+        }
+
+        // Encryption status reflects AES-256 active vault
+        tvHealthEncryptionStatus.setText("AES-256 Active");
+        tvHealthEncryptionStatus.setTextColor(getResources().getColor(R.color.cv_security_success, null));
+        if (dotHealthEncryption != null) {
+            dotHealthEncryption.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    getResources().getColor(R.color.cv_security_success, null)));
+        }
+    }
+
+    private void applyHealthDisconnectedState() {
+        if (!isAdded()) return;
+        tvHealthServerStatus.setText("Not connected");
+        tvHealthServerStatus.setTextColor(getResources().getColor(R.color.cv_text_tertiary, null));
+        if (dotHealthServer != null) {
+            dotHealthServer.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    getResources().getColor(R.color.cv_text_tertiary, null)));
+        }
+        if (btnConnectServer != null) {
+            btnConnectServer.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void applyHealthUnavailableState() {
+        if (!isAdded()) return;
+        tvHealthServerStatus.setText("Unavailable");
+        tvHealthServerStatus.setTextColor(getResources().getColor(R.color.cv_primary, null));
+        if (dotHealthServer != null) {
+            dotHealthServer.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                    getResources().getColor(R.color.cv_primary, null)));
+        }
+        if (btnConnectServer != null) {
+            btnConnectServer.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void showErrorBanner(String message) {
+        TextView tvMsg = getView() != null ? getView().findViewById(R.id.tvErrorMessage) : null;
+        if (tvMsg != null) {
+            tvMsg.setText(message);
+        }
+        llErrorBanner.setVisibility(View.VISIBLE);
+    }
+
+    private String formatStorage(long bytes) {
+        if (bytes <= 0) return "0 GB";
+        double gb = bytes / (1024.0 * 1024.0 * 1024.0);
+        if (gb >= 1.0) {
+            return String.format(java.util.Locale.US, "%.1f GB", gb);
+        }
+        double mb = bytes / (1024.0 * 1024.0);
+        if (mb >= 1.0) {
+            return String.format(java.util.Locale.US, "%.0f MB", mb);
+        }
+        double kb = bytes / 1024.0;
+        return String.format(java.util.Locale.US, "%.0f KB", kb);
+    }
+
+    @Override
+    public void onThumbnailClick(FileResponse file) {
+        onClick(file);
+    }
+
+    @Override
+    public void onDownloadRequested(FileResponse file) {
+        if (file == null || getContext() == null) return;
+        FileDownloadManager.showDownloadDialog(getContext(), file, null);
+    }
+
+    @Override
+    public void onDeleteRequested(FileResponse file) {
+        if (file == null || file.id == null || getContext() == null) return;
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete " + file.filename + "?")
+                .setMessage("Are you sure you want to permanently delete this file from your private vault? This action cannot be undone.")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    fileApi.deleteFile(file.id).enqueue(new Callback<Void>() {
+                        @Override
+                        public void onResponse(Call<Void> call, Response<Void> response) {
+                            if (!isAdded()) return;
+                            if (response.isSuccessful()) {
+                                Toast.makeText(getContext(), "Deleted " + file.filename, Toast.LENGTH_SHORT).show();
+                                loadData();
+                            } else {
+                                Toast.makeText(getContext(), ApiErrorUtils.parseError(response, "Delete failed"), Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<Void> call, Throwable t) {
+                            if (!isAdded()) return;
+                            Toast.makeText(getContext(), "Error deleting file: " + ApiErrorUtils.parseThrowable(t), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    @Override
+    public void onClick(FileResponse file) {
+        if (file == null || getContext() == null) return;
+        Intent intent = new Intent(getContext(), FilePreviewActivity.class);
+        intent.putExtra(FilePreviewActivity.EXTRA_FILE_ID, file.id);
+        intent.putExtra(FilePreviewActivity.EXTRA_FILE_NAME, file.filename);
+        intent.putExtra(FilePreviewActivity.EXTRA_FILE_MIME, file.contentType);
+        startActivity(intent);
+        if (getActivity() != null) com.ciphervault.app.core.ui.NavigationMotionHelper.applyActivityForward(getActivity());
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 1001 && resultCode == android.app.Activity.RESULT_OK && data != null) {
+            Intent uploadIntent = new Intent(getContext(), UploadActivity.class);
+            if (data.getClipData() != null) {
+                uploadIntent.setClipData(data.getClipData());
+            } else if (data.getData() != null) {
+                uploadIntent.setData(data.getData());
+            }
+            startActivity(uploadIntent);
+            if (getActivity() != null) com.ciphervault.app.core.ui.NavigationMotionHelper.applyActivityForward(getActivity());
+        }
+    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        DataSyncHelper.register(getContext(), dataSyncReceiver);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        DataSyncHelper.unregister(getContext(), dataSyncReceiver);
+    }
+}
+
+
+
+========================================
+FILE: java\com\ciphervault\app\core\ui\NavigationMotionHelper.java
+========================================
+
+package com.ciphervault.app.core.ui;
+
+import android.app.Activity;
+import android.content.Context;
+import android.os.Build;
+import android.provider.Settings;
+
+import androidx.fragment.app.FragmentTransaction;
+
+import com.ciphervault.app.R;
+
+/**
+ * Centralized CipherVault motion & transition system.
+ * Implements smooth, subtle, Samsung One UI-inspired transitions
+ * with automatic detection of Reduced Motion accessibility settings.
+ */
+public final class NavigationMotionHelper {
+
+    private NavigationMotionHelper() {}
+
+    /**
+     * Checks if the user or device has enabled Reduced Motion / disabled animations.
+     */
+    public static boolean isReducedMotion(Context context) {
+        if (context == null) return false;
+        try {
+            float durationScale = Settings.Global.getFloat(
+                    context.getContentResolver(),
+                    Settings.Global.ANIMATOR_DURATION_SCALE,
+                    1.0f
+            );
+            float transitionScale = Settings.Global.getFloat(
+                    context.getContentResolver(),
+                    Settings.Global.TRANSITION_ANIMATION_SCALE,
+                    1.0f
+            );
+            return durationScale == 0f || transitionScale == 0f;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Applies standard CipherVault forward animation when launching a new Activity.
+     */
+    public static void applyActivityForward(Activity activity) {
+        if (activity == null) return;
+        if (isReducedMotion(activity)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0);
+            } else {
+                activity.overridePendingTransition(0, 0);
+            }
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            activity.overrideActivityTransition(
+                    Activity.OVERRIDE_TRANSITION_OPEN,
+                    R.anim.cv_slide_enter_forward,
+                    R.anim.cv_slide_exit_forward
+            );
+        } else {
+            activity.overridePendingTransition(
+                    R.anim.cv_slide_enter_forward,
+                    R.anim.cv_slide_exit_forward
+            );
+        }
+    }
+
+    /**
+     * Applies standard CipherVault reverse animation when finishing an Activity.
+     */
+    public static void applyActivityBack(Activity activity) {
+        if (activity == null) return;
+        if (isReducedMotion(activity)) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                activity.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_CLOSE, 0, 0);
+            } else {
+                activity.overridePendingTransition(0, 0);
+            }
+            return;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            activity.overrideActivityTransition(
+                    Activity.OVERRIDE_TRANSITION_CLOSE,
+                    R.anim.cv_slide_enter_pop,
+                    R.anim.cv_slide_exit_pop
+            );
+        } else {
+            activity.overridePendingTransition(
+                    R.anim.cv_slide_enter_pop,
+                    R.anim.cv_slide_exit_pop
+            );
+        }
+    }
+
+    /**
+     * Applies standard CipherVault forward and reverse animation to a FragmentTransaction.
+     */
+    public static FragmentTransaction applyFragmentTransaction(FragmentTransaction transaction, Context context) {
+        if (transaction == null) return null;
+        if (isReducedMotion(context)) {
+            return transaction;
+        }
+        return transaction.setCustomAnimations(
+                R.anim.cv_slide_enter_forward,
+                R.anim.cv_slide_exit_forward,
+                R.anim.cv_slide_enter_pop,
+                R.anim.cv_slide_exit_pop
+        );
+    }
+}
+
+
+
+========================================
+FILE: res\layout\activity_main.xml
+========================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cv_background"
+    tools:context=".MainActivity">
+
+    <!-- Splash Screen UI -->
+    <LinearLayout
+        android:id="@+id/splashContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:alpha="0.0"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.45">
+
+        <ImageView
+            android:id="@+id/ivSplashLogo"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:contentDescription="@null"
+            android:src="@drawable/ic_splash_logo" />
+
+        <TextView
+            android:id="@+id/tvSplashTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/cv_spacing_m"
+            android:fontFamily="@font/source_serif_4"
+            android:text="CipherVault"
+            android:textColor="@color/cv_text_primary"
+            android:textSize="32sp"
+            android:textStyle="normal" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/pbSplashProgress"
+            android:layout_width="140dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/cv_spacing_xl"
+            app:indicatorColor="@color/cv_primary"
+            app:trackColor="@color/cv_divider"
+            app:trackCornerRadius="2dp"
+            app:trackThickness="4dp"
+            android:max="100"
+            android:progress="0" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+========================================
+FILE: res\layout\activity_main_app.xml
+========================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/mainAppRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cv_background">
+
+    <!-- Fragment container spans entire screen; bottom padding handled by fragments -->
+    <FrameLayout
+        android:id="@+id/fragmentContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Floating Pill Bottom Navigation Bar -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottomNavigation"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginBottom="24dp"
+        app:layout_constraintWidth_max="320dp"
+        android:background="@drawable/bg_bottom_nav_pill"
+        android:clipToOutline="true"
+        android:elevation="6dp"
+        app:elevation="6dp"
+        app:backgroundTint="@null"
+        app:labelVisibilityMode="unlabeled"
+        app:itemIconTint="@color/nav_icon_tint"
+        app:itemIconSize="22dp"
+        app:itemActiveIndicatorStyle="@style/Widget.CipherVault.BottomNavigationView.ActiveIndicator"
+        app:itemRippleColor="@color/cv_primary_container"
+        app:itemPaddingTop="0dp"
+        app:itemPaddingBottom="0dp"
+        app:menu="@menu/bottom_nav_menu"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
+
+
+========================================
+FILE: res\layout\fragment_home.xml
+========================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.swiperefreshlayout.widget.SwipeRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/swipeRefresh"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/cv_background">
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/homeScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="110dp"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="@dimen/cv_spacing_xl"
+            android:paddingTop="@dimen/cv_spacing_xxl">
+
+            <!-- Error Banner -->
+            <LinearLayout
+                android:id="@+id/llErrorBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/cv_spacing_m"
+                android:background="@drawable/bg_grouped_card"
+                android:backgroundTint="?attr/colorSurface"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="@dimen/cv_spacing_m"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:src="@drawable/ic_alert_circle"
+                    app:tint="@color/cv_error" />
+
+                <TextView
+                    android:id="@+id/tvErrorMessage"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="@dimen/cv_spacing_s"
+                    android:layout_weight="1"
+                    android:text="Couldn't connect to CipherVault. Check connection."
+                    android:textColor="@color/cv_error"
+                    android:textSize="13sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRetry"
+                    style="@style/Widget.CipherVault.Button.Ghost"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:minWidth="64dp"
+                    android:paddingHorizontal="10dp"
+                    android:text="Retry"
+                    android:textColor="@color/cv_error"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- 1. HEADER (Greeting + User + Profile) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvGreeting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/source_serif_4"
+                        android:text="Good morning"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="28sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvSubtitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Your private vault is secure."
+                        android:textColor="@color/cv_text_secondary"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+                <!-- Profile letter avatar button -->
+                <TextView
+                    android:id="@+id/tvProfileAvatar"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:background="@drawable/bg_icon_circle"
+                    android:backgroundTint="@color/cv_primary_container"
+                    android:clickable="true"
+                    android:contentDescription="Profile"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="U"
+                    android:textColor="@color/cv_primary"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- 2. STORAGE OVERVIEW (Samsung One UI Inspired) -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/cv_spacing_xl"
+                android:layout_marginBottom="@dimen/cv_spacing_xs"
+                android:letterSpacing="0.08"
+                android:text="STORAGE OVERVIEW"
+                android:textColor="@color/cv_text_tertiary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/cvStorage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_grouped_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical"
+                android:padding="@dimen/cv_spacing_l">
+
+                <!-- Top Row: Usage text (Left) + Donut Ring (Right) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvStorageTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="CipherVault Storage"
+                            android:textColor="@color/cv_text_secondary"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvStorageUsed"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="0.0 GB"
+                            android:textColor="@color/cv_text_primary"
+                            android:textSize="30sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvStorageTotal"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="of 10.0 GB total"
+                            android:textColor="@color/cv_text_tertiary"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- Circular Progress Ring -->
+                    <FrameLayout
+                        android:layout_width="76dp"
+                        android:layout_height="76dp">
+
+                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                            android:id="@+id/cpStorageRing"
+                            android:layout_width="76dp"
+                            android:layout_height="76dp"
+                            android:layout_gravity="center"
+                            android:max="100"
+                            android:progress="0"
+                            app:indicatorColor="@color/cv_primary"
+                            app:indicatorSize="76dp"
+                            app:trackColor="@color/cv_divider"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="7dp" />
+
+                        <TextView
+                            android:id="@+id/tvStoragePercentage"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center"
+                            android:textColor="@color/cv_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            tools:text="0%" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                <!-- Linear Bar -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/pbStorage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/cv_spacing_m"
+                    android:max="100"
+                    android:progress="0"
+                    app:indicatorColor="@color/cv_primary"
+                    app:trackColor="@color/cv_divider"
+                    app:trackCornerRadius="3dp"
+                    app:trackThickness="6dp" />
+
+                <!-- Detail Metrics (Monochrome / Consistent) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/cv_spacing_m"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <!-- Used -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_icon_circle"
+                            android:backgroundTint="@color/cv_primary" />
+
+                        <TextView
+                            android:id="@+id/tvStorageUsedDetail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="Used: 0 GB"
+                            android:textColor="@color/cv_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Available -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_icon_circle"
+                            android:backgroundTint="@color/cv_security_success" />
+
+                        <TextView
+                            android:id="@+id/tvStorageAvailable"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="Free: 10 GB"
+                            android:textColor="@color/cv_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Total files -->
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="8dp"
+                            android:background="@drawable/bg_icon_circle"
+                            android:backgroundTint="@color/cv_text_tertiary" />
+
+                        <TextView
+                            android:id="@+id/tvStorageFileCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="0 files"
+                            android:textColor="@color/cv_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Inset Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="@dimen/cv_spacing_m"
+                    android:background="@color/cv_divider" />
+
+                <!-- Manage Storage shortcut row -->
+                <LinearLayout
+                    android:id="@+id/btnQuickManage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_lucide_hard_drive"
+                        app:tint="@color/cv_primary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/cv_spacing_s"
+                        android:layout_weight="1"
+                        android:text="Manage Storage &amp; Analytics"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:src="@drawable/ic_lucide_chevron_right"
+                        app:tint="@color/cv_text_tertiary" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 3. QUICK ACTIONS -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/cv_spacing_xl"
+                android:layout_marginBottom="@dimen/cv_spacing_xs"
+                android:letterSpacing="0.08"
+                android:text="QUICK ACTIONS"
+                android:textColor="@color/cv_text_tertiary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_grouped_card"
+                android:baselineAligned="false"
+                android:orientation="horizontal"
+                android:paddingVertical="@dimen/cv_spacing_m">
+
+                <!-- 1. Upload -->
+                <LinearLayout
+                    android:id="@+id/btnQuickUpload"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/cv_spacing_xs">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_lucide_upload"
+                        app:tint="@color/cv_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Upload"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 2. My Files -->
+                <LinearLayout
+                    android:id="@+id/btnQuickFiles"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/cv_spacing_xs">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_nav_files"
+                        app:tint="@color/cv_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="My Files"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 3. Search -->
+                <LinearLayout
+                    android:id="@+id/btnQuickSearch"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/cv_spacing_xs">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_lucide_search"
+                        app:tint="@color/cv_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Search"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <!-- 4. Transfers -->
+                <LinearLayout
+                    android:id="@+id/btnQuickTransfers"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/cv_spacing_xs">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:padding="12dp"
+                        android:src="@drawable/ic_nav_transfers"
+                        app:tint="@color/cv_primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Transfers"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 4. RECENT FILES -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/cv_spacing_xl"
+                android:layout_marginBottom="@dimen/cv_spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.08"
+                    android:text="RECENT FILES"
+                    android:textColor="@color/cv_text_tertiary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvSeeAllRecent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:text="See all &gt;"
+                    android:textColor="@color/cv_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/cardRecentFiles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_grouped_card"
+                android:orientation="vertical">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRecentFiles"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+
+                <!-- Empty State -->
+                <LinearLayout
+                    android:id="@+id/llEmptyFiles"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/cv_spacing_xl"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/ic_lucide_file"
+                        app:tint="@color/cv_text_tertiary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/cv_spacing_s"
+                        android:text="No files yet"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center"
+                        android:text="Upload your first file to start using your private vault."
+                        android:textColor="@color/cv_text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnEmptyUpload"
+                        style="@style/Widget.CipherVault.Button.Primary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="42dp"
+                        android:layout_marginTop="@dimen/cv_spacing_m"
+                        android:minWidth="130dp"
+                        android:text="Upload file"
+                        android:textSize="14sp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- 5. RECENT ACTIVITY -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/cv_spacing_xl"
+                android:layout_marginBottom="@dimen/cv_spacing_xs"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:letterSpacing="0.08"
+                    android:text="RECENT ACTIVITY"
+                    android:textColor="@color/cv_text_tertiary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvSeeAllActivity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="4dp"
+                    android:text="See all &gt;"
+                    android:textColor="@color/cv_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/cardRecentActivity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_grouped_card"
+                android:orientation="vertical">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRecentActivity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+
+                <!-- Empty state for activity -->
+                <TextView
+                    android:id="@+id/tvEmptyActivity"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/cv_spacing_m"
+                    android:text="No recent vault activity recorded."
+                    android:textColor="@color/cv_text_tertiary"
+                    android:textSize="13sp"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <!-- 6. VAULT HEALTH -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/cv_spacing_xl"
+                android:layout_marginBottom="@dimen/cv_spacing_xs"
+                android:letterSpacing="0.08"
+                android:text="VAULT HEALTH"
+                android:textColor="@color/cv_text_tertiary"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/btnVaultHealthCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_grouped_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:orientation="vertical"
+                android:padding="@dimen/cv_spacing_m">
+
+                <!-- Row 1: Server Connection -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="4dp">
+
+                    <View
+                        android:id="@+id/dotHealthServer"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:backgroundTint="@color/cv_text_tertiary" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Server connection"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHealthServerStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Checking..."
+                        android:textColor="@color/cv_text_tertiary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConnectServer"
+                        style="@style/Widget.CipherVault.Button.Ghost"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginStart="8dp"
+                        android:minWidth="64dp"
+                        android:paddingHorizontal="10dp"
+                        android:text="Connect"
+                        android:textColor="@color/cv_primary"
+                        android:textSize="12sp"
+                        android:visibility="gone"
+                        tools:visibility="visible" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="6dp"
+                    android:background="@color/cv_divider" />
+
+                <!-- Row 2: Encryption -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="4dp">
+
+                    <View
+                        android:id="@+id/dotHealthEncryption"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:backgroundTint="@color/cv_security_success" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Encryption status"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHealthEncryptionStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="AES-256 Active"
+                        android:textColor="@color/cv_security_success"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="6dp"
+                    android:background="@color/cv_divider" />
+
+                <!-- Row 3: Authentication -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="4dp">
+
+                    <View
+                        android:id="@+id/dotHealthAuth"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/bg_icon_circle"
+                        android:backgroundTint="@color/cv_security_success" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:text="Authentication"
+                        android:textColor="@color/cv_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHealthAuthStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Valid"
+                        android:textColor="@color/cv_security_success"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+
+
+========================================
+FILE: res\values\colors.xml
+========================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- CipherVault Warm Neutral Brand Palette (Light) -->
+    <!-- Brand Warm Beige / Clay Accent -->
+    <color name="cv_primary">#9E6A38</color>
+    <color name="cv_primary_variant">#845427</color>
+    <color name="cv_on_primary">#FFFFFF</color>
+    <color name="cv_primary_container">#F5EBE1</color>
+    <color name="cv_on_primary_container">#382410</color>
+
+    <!-- Backgrounds & Grouped Surfaces -->
+    <color name="cv_background">#FAF8F5</color>
+    <color name="cv_surface">#FFFFFF</color>
+    <color name="cv_surface_variant">#F3EFEA</color>
+    <color name="cv_surface_elevated">#FFFFFF</color>
+    <color name="cv_card_background">#FFFFFF</color>
+
+    <!-- Typography / Text Colors -->
+    <color name="cv_text_primary">#1C1917</color>
+    <color name="cv_text_secondary">#686461</color>
+    <color name="cv_text_tertiary">#8C8782</color>
+
+    <!-- Dividers & Borders -->
+    <color name="cv_divider">#EDE8E3</color>
+    <color name="cv_border">#E5DFD7</color>
+    <color name="cv_outline">#E0D9CF</color>
+
+    <!-- Status & Semantic Actions -->
+    <color name="cv_success">#2E7D32</color>
+    <color name="cv_warning">#D97706</color>
+    <color name="cv_error">#C62828</color>
+    <color name="cv_disabled">#D6D1CA</color>
+
+    <!-- Indicator Dots -->
+    <color name="cv_indicator_active">#9E6A38</color>
+    <color name="cv_indicator_inactive">#D1D1D6</color>
+
+    <!-- Status & Badges Compatibility -->
+    <color name="cv_badge_background">#EFE7DE</color>
+    <color name="cv_badge_text">#664321</color>
+    <color name="cv_security_success">#2E7D32</color>
+    <color name="cv_status_success">#2E7D32</color>
+    <color name="cv_status_warning">#E65100</color>
+    <color name="cv_status_error">#C62828</color>
+    <color name="cv_nav_indicator">#F5EBE1</color>
+
+    <!-- Common Base Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+</resources>
+
+
+========================================
+FILE: res\values\dimens.xml
+========================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacings & Margins -->
+    <dimen name="cv_spacing_xxs">4dp</dimen>
+    <dimen name="cv_spacing_xs">8dp</dimen>
+    <dimen name="cv_spacing_s">12dp</dimen>
+    <dimen name="cv_spacing_m">16dp</dimen>
+    <dimen name="cv_spacing_l">20dp</dimen>
+    <dimen name="cv_spacing_xl">24dp</dimen>
+    <dimen name="cv_spacing_xxl">32dp</dimen>
+    <dimen name="cv_spacing_xxxl">40dp</dimen>
+    <dimen name="cv_spacing_huge">48dp</dimen>
+
+    <!-- Corner Radii -->
+    <dimen name="cv_corner_radius_small">12dp</dimen>
+    <dimen name="cv_corner_radius_card">20dp</dimen>
+    <dimen name="cv_corner_radius_button">26dp</dimen>
+    <dimen name="cv_corner_radius_indicator">4dp</dimen>
+
+    <!-- Component Sizes -->
+    <dimen name="cv_button_height">52dp</dimen>
+    <dimen name="cv_button_min_width">120dp</dimen>
+    <dimen name="cv_indicator_height">6dp</dimen>
+    <dimen name="cv_indicator_dot_width">6dp</dimen>
+    <dimen name="cv_indicator_active_width">24dp</dimen>
+    <dimen name="cv_indicator_spacing">6dp</dimen>
+    <dimen name="cv_visual_height">240dp</dimen>
+
+    <!-- Typography Text Sizes -->
+    <dimen name="cv_text_size_title">28sp</dimen>
+    <dimen name="cv_text_size_subtitle">15sp</dimen>
+    <dimen name="cv_text_size_body">14sp</dimen>
+    <dimen name="cv_text_size_caption">12sp</dimen>
+    <dimen name="cv_text_size_badge">11sp</dimen>
+    <dimen name="cv_text_size_button">16sp</dimen>
+</resources>
+
+
+
+========================================
+FILE: res\values\strings.xml
+========================================
+
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CipherVault</string>
+
+    <!-- General Navigation & Actions -->
+    <string name="action_skip">Skip</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_get_started">Get Started</string>
+    <string name="onboarding_page_indicator_format">%1$d of %2$d</string>
+
+    <!-- Screen 1: Welcome -->
+    <string name="onboarding_title_1">Welcome to CipherVault</string>
+    <string name="onboarding_desc_1">Your private cloud storage for securely storing, protecting, and accessing your files.</string>
+    <string name="onboarding_badge_1">Private Cloud Storage</string>
+    <string name="onboarding_pill_1_1">Private storage</string>
+    <string name="onboarding_pill_1_2">Secure encryption</string>
+    <string name="onboarding_pill_1_3">Access your files</string>
+
+    <!-- Screen 2: Encrypted Storage -->
+    <string name="onboarding_title_2">Encrypted Storage</string>
+    <string name="onboarding_desc_2">Your files are protected using AES-256-GCM encryption before they are stored in CipherVault.</string>
+    <string name="onboarding_badge_2">AES-256-GCM</string>
+    <string name="onboarding_expandable_header_2">How it works</string>
+    <string name="onboarding_flow_step_file">Your file</string>
+    <string name="onboarding_flow_step_encrypt">Encryption</string>
+    <string name="onboarding_flow_step_encrypted_data">Encrypted data</string>
+    <string name="onboarding_flow_step_storage">Private storage</string>
+
+    <!-- Screen 3: File Integrity -->
+    <string name="onboarding_title_3">File Integrity &amp; Duplicate Detection</string>
+    <string name="onboarding_desc_3">CipherVault generates a SHA-256 hash for your files to identify identical content and help prevent unnecessary duplicate storage.</string>
+    <string name="onboarding_badge_3">SHA-256</string>
+    <string name="onboarding_expandable_header_3">Why SHA-256?</string>
+    <string name="onboarding_expandable_content_3">A file\'s SHA-256 hash acts like a digital fingerprint for its contents.</string>
+    <string name="onboarding_flow_file_a">File A</string>
+    <string name="onboarding_flow_file_b">File B</string>
+    <string name="onboarding_flow_fingerprint">Fingerprint</string>
+    <string name="onboarding_flow_duplicate">Duplicate detected</string>
+
+    <!-- Screen 4: Everything in One Place -->
+    <string name="onboarding_title_4">Everything in One Place</string>
+    <string name="onboarding_desc_4">Keep your photos, videos, documents, and other important files together in your private storage.</string>
+    <string name="onboarding_badge_4">Universal Storage</string>
+    <string name="category_photos">Photos</string>
+    <string name="category_videos">Videos</string>
+    <string name="category_documents">Documents</string>
+    <string name="category_audio">Audio</string>
+    <string name="category_other">Other files</string>
+
+    <!-- Screen 5: Private Vault -->
+    <string name="onboarding_title_5">Your Private Vault</string>
+    <string name="onboarding_desc_5">A private space for your files, protected by encryption and designed for secure personal storage.</string>
+    <string name="onboarding_badge_5">Zero-Knowledge Design</string>
+    <string name="vault_capacity_title">CipherVault</string>
+    <string name="vault_capacity_value">1 GB</string>
+    <string name="vault_capacity_subtitle">Private Storage</string>
+    <string name="vault_status_secured">Vault is secured and ready</string>
+
+    <!-- Placeholder screen after onboarding -->
+    <string name="placeholder_ready_title">CipherVault Ready</string>
+    <string name="placeholder_ready_subtitle">Phase 1 Onboarding completed successfully.\nServer connection &amp; authentication will be configured in Phase 2.</string>
+    <string name="placeholder_reset_onboarding">Reset Onboarding (Debug)</string>
+
+    <!-- Accessibility descriptions -->
+    <string name="cd_onboarding_visual">Onboarding feature illustration</string>
+    <string name="cd_page_indicator">Onboarding page indicator</string>
+    <string name="cd_btn_skip">Skip onboarding</string>
+    <string name="cd_btn_continue">Continue to next page</string>
+    <string name="cd_btn_get_started">Finish onboarding and get started</string>
+    <string name="cd_expand_section">Toggle explanation details</string>
+</resources>
+
+
+========================================
+FILE: res\values\themes.xml
+========================================
+
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.CipherVault" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/cv_primary</item>
+        <item name="colorOnPrimary">@color/cv_on_primary</item>
+        <item name="colorPrimaryContainer">@color/cv_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/cv_on_primary_container</item>
+
+        <item name="android:windowBackground">@color/cv_background</item>
+        <item name="colorSurface">@color/cv_surface</item>
+        <item name="colorSurfaceVariant">@color/cv_surface_variant</item>
+        <item name="colorOnSurface">@color/cv_text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/cv_text_secondary</item>
+        <item name="colorOutline">@color/cv_outline</item>
+        <item name="colorError">@color/cv_error</item>
+
+        <item name="android:statusBarColor">@color/cv_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/cv_background</item>
+        <item name="android:windowLightNavigationBar">true</item>
+
+        <item name="android:textColorPrimary">@color/cv_text_primary</item>
+        <item name="android:textColorSecondary">@color/cv_text_secondary</item>
+        <item name="android:fontFamily">@font/nunito_sans</item>
+        <item name="fontFamily">@font/nunito_sans</item>
+        
+        <!-- Global Component Overrides -->
+        <item name="android:windowAnimationStyle">@style/Animation.CipherVault.Activity</item>
+        <item name="materialButtonStyle">@style/Widget.CipherVault.Button.Primary</item>
+        <item name="materialCardViewStyle">@style/Widget.CipherVault.Card</item>
+        
+    </style>
+
+    <style name="Theme.CipherVault" parent="Base.Theme.CipherVault" />
+
+    <style name="Theme.CipherVault.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cv_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.CipherVault</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="Widget.CipherVault.Button.Primary" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/cv_primary</item>
+        <item name="android:textColor">@color/cv_on_primary</item>
+        <item name="cornerRadius">@dimen/cv_corner_radius_button</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:textSize">@dimen/cv_text_size_button</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+
+    <style name="Widget.CipherVault.Button.Standard" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/cv_primary</item>
+        <item name="android:textColor">@color/cv_on_primary</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.CipherVault.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="strokeColor">@color/cv_outline</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="Widget.CipherVault.Button.Destructive" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@color/cv_error</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="cornerRadius">10dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="Widget.CipherVault.Button.Ghost" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/cv_text_secondary</item>
+        <item name="cornerRadius">@dimen/cv_corner_radius_button</item>
+        <item name="android:textSize">@dimen/cv_text_size_button</item>
+        <item name="android:letterSpacing">0.01</item>
+    </style>
+    
+    <!-- Card Styles -->
+    <style name="Widget.CipherVault.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/cv_surface</item>
+        <item name="cardCornerRadius">@dimen/cv_corner_radius_card</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+    
+    <!-- Nav Indicator Style -->
+    <style name="ShapeAppearance.CipherVault.NavIndicator" parent="ShapeAppearance.Material3.Corner.Full">
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="ShapeAppearance.CipherVault.RoundedRect" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerSize">10dp</item>
+    </style>
+
+    <style name="Widget.CipherVault.BottomNavigationView.ActiveIndicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
+        <item name="android:color">@color/cv_nav_indicator</item>
+        <item name="android:width">56dp</item>
+        <item name="android:height">34dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.NavIndicator</item>
+    </style>
+
+    <style name="Theme.CipherVault.BottomSheetDialog" parent="Theme.Material3.DayNight.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/Widget.CipherVault.BottomSheet</item>
+    </style>
+
+    <style name="Widget.CipherVault.BottomSheet" parent="Widget.Material3.BottomSheet">
+        <item name="backgroundTint">@color/cv_surface</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.BottomSheet</item>
+    </style>
+
+    <style name="ShapeAppearance.CipherVault.BottomSheet" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSizeTopLeft">24dp</item>
+        <item name="cornerSizeTopRight">24dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <style name="Animation.CipherVault.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/cv_slide_enter_forward</item>
+        <item name="android:activityOpenExitAnimation">@anim/cv_slide_exit_forward</item>
+        <item name="android:activityCloseEnterAnimation">@anim/cv_slide_enter_pop</item>
+        <item name="android:activityCloseExitAnimation">@anim/cv_slide_exit_pop</item>
+    </style>
+</resources>
+
+
+

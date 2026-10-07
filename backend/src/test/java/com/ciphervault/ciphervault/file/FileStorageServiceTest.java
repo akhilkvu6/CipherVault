@@ -77,4 +77,9 @@ public class FileStorageServiceTest {
         assertFalse(result, "Should return false for non-existent file");
         verify(fileRepository, never()).delete(any(StoredFile.class));
     }
+
+    @Test
+    void testMaxUploadSizeConstantEquals1GB() {
+        assertEquals(1073741824L, FileStorageService.MAX_FILE_SIZE, "MAX_FILE_SIZE must equal exactly 1,073,741,824 bytes (1 GB)");
+    }
 }

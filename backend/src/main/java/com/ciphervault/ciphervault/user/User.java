@@ -14,13 +14,16 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 public class User {
 
-    private static final long DEFAULT_STORAGE_LIMIT = 1024L * 1024L * 1024L;
+    private static final long DEFAULT_STORAGE_LIMIT = 10L * 1024L * 1024L * 1024L;
     private static final long DEFAULT_USED_STORAGE = 0L;
     private static final int DEFAULT_TOKEN_VERSION = 1;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
+    private String name;
 
     @Column(nullable = false, unique = true)
     private String username;
@@ -43,12 +46,18 @@ public class User {
     @Column(name = "token_version", nullable = false)
     private Integer tokenVersion = DEFAULT_TOKEN_VERSION;
 
+    @Column(name = "profile_photo_path")
+    private String profilePhotoPath;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (name == null && username != null) {
+            name = username;
+        }
     }
 
     public Long getId() {
@@ -57,6 +66,14 @@ public class User {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getUsername() {
@@ -113,6 +130,14 @@ public class User {
 
     public void setTokenVersion(Integer tokenVersion) {
         this.tokenVersion = tokenVersion;
+    }
+
+    public String getProfilePhotoPath() {
+        return profilePhotoPath;
+    }
+
+    public void setProfilePhotoPath(String profilePhotoPath) {
+        this.profilePhotoPath = profilePhotoPath;
     }
 
     public LocalDateTime getCreatedAt() {

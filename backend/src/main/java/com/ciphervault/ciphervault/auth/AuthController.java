@@ -26,13 +26,20 @@ import java.util.Map;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private static final int MIN_PASSWORD_LENGTH = 6;
+    private static final int MIN_PASSWORD_LENGTH = 8;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final KeyManagementService keyManagementService;
     private final LoginRateLimiterService loginRateLimiterService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.ciphervault.ciphervault.activity.ActivityService activityService;
+
+    public void setActivityService(com.ciphervault.ciphervault.activity.ActivityService activityService) {
+        this.activityService = activityService;
+    }
 
     public AuthController(
             UserRepository userRepository,
@@ -55,6 +62,15 @@ public class AuthController {
 
         if (request == null) {
             return badRequest("Request body is required");
+        }
+
+        if (request.getName() == null || request.getName().trim().isBlank()) {
+            return badRequest("Name is required");
+        }
+
+        String name = request.getName().trim();
+        if (name.length() > 255) {
+            return badRequest("Name must not exceed 255 characters");
         }
 
         String username = normalizeUsername(request.getUsername());
@@ -102,6 +118,7 @@ public class AuthController {
         }
 
         User user = new User();
+        user.setName(name);
         user.setUsername(username);
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -228,12 +245,27 @@ public class AuthController {
                 null,
                 elapsed(start));
 
+        if (activityService != null) {
+            try {
+                activityService.logEvent(
+                        user,
+                        com.ciphervault.ciphervault.activity.EventType.SIGN_IN,
+                        "User signed in",
+                        1,
+                        0L,
+                        null,
+                        "SUCCESS",
+                        null);
+            } catch (Exception ignored) {}
+        }
+
         return ResponseEntity.ok(
                 new LoginResponse(
                         true,
                         "Login successful",
                         token,
-                        user.getUsername()));
+                        user.getUsername(),
+                        user.getName()));
     }
 
     // Change the authenticated user's password and invalidate previously issued tokens.
@@ -320,6 +352,20 @@ public class AuthController {
                 user.getEmail(),
                 user.getTokenVersion());
 
+        if (activityService != null) {
+            try {
+                activityService.logEvent(
+                        user,
+                        com.ciphervault.ciphervault.activity.EventType.PASSWORD_CHANGED,
+                        "Password changed successfully",
+                        1,
+                        0L,
+                        null,
+                        "SUCCESS",
+                        null);
+            } catch (Exception ignored) {}
+        }
+
         return ResponseEntity.ok(
                 Map.of(
                         "success",
@@ -328,6 +374,33 @@ public class AuthController {
                         "Password changed successfully",
                         "token",
                         newToken));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+            if (user != null) {
+                int tokenVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 1;
+                user.setTokenVersion(tokenVersion + 1);
+                userRepository.save(user);
+
+                if (activityService != null) {
+                    try {
+                        activityService.logEvent(
+                                user,
+                                com.ciphervault.ciphervault.activity.EventType.SIGN_OUT,
+                                "User logged out",
+                                1,
+                                0L,
+                                null,
+                                "SUCCESS",
+                                null);
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return ResponseEntity.ok(Map.of("success", true, "message", "Logged out successfully"));
     }
 
     // Normalize usernames before validation and database lookups.
@@ -395,9 +468,18 @@ public class AuthController {
     // Represent the registration request received from the Android client.
     public static class RegisterRequest {
 
+        private String name;
         private String username;
         private String email;
         private String password;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
 
         public String getUsername() {
             return username;
@@ -459,7 +541,8 @@ public class AuthController {
             boolean success,
             String message,
             String token,
-            String username) {
+            String username,
+            String name) {
     }
 
     // Represent the password-change request received from the Android client.

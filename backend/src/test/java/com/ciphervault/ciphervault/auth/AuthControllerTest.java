@@ -44,6 +44,7 @@ class AuthControllerTest {
     @Test
     void registerShouldReturnJsonRegisterResponse() {
         AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("Alice Cooper");
         req.setUsername("alice");
         req.setEmail("alice@example.com");
         req.setPassword("Password123!");
@@ -62,6 +63,7 @@ class AuthControllerTest {
         assertEquals("User registered successfully", body.message());
         assertEquals("alice", body.username());
         assertEquals("alice@example.com", body.email());
+        verify(userRepository).save(argThat(u -> "Alice Cooper".equals(u.getName()) && "alice".equals(u.getUsername())));
     }
 
     @Test
@@ -71,6 +73,7 @@ class AuthControllerTest {
         req.setPassword("Password123!");
 
         User user = new User();
+        user.setName("Alice Cooper");
         user.setUsername("alice");
         user.setEmail("alice@example.com");
         user.setPassword("hashedPassword");
@@ -89,6 +92,7 @@ class AuthControllerTest {
         assertEquals("Login successful", body.message());
         assertEquals("mock-jwt-token", body.token());
         assertEquals("alice", body.username());
+        assertEquals("Alice Cooper", body.name());
     }
 
     @Test
@@ -194,8 +198,8 @@ class AuthControllerTest {
     void changePasswordShouldFailWhenPasswordTooShort() {
         AuthController.ChangePasswordRequest req = new AuthController.ChangePasswordRequest();
         req.setCurrentPassword("OldPassword123!");
-        req.setNewPassword("123");
-        req.setConfirmPassword("123");
+        req.setNewPassword("1234567");
+        req.setConfirmPassword("1234567");
 
         User user = new User();
         user.setEmail("alice@example.com");
@@ -210,7 +214,103 @@ class AuthControllerTest {
 
         assertEquals(400, response.getStatusCode().value());
         Map<?, ?> body = (Map<?, ?>) response.getBody();
-        assertEquals("Password must be at least 6 characters", body.get("message"));
+        assertEquals("Password must be at least 8 characters", body.get("message"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerShouldFailWhenNameIsBlank() {
+        AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("   ");
+        req.setUsername("alice");
+        req.setEmail("alice@example.com");
+        req.setPassword("Password123!");
+
+        ResponseEntity<?> response = authController.register(req);
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Name is required", body.get("message"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerShouldFailWhenPasswordTooShort() {
+        AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("Alice");
+        req.setUsername("alice");
+        req.setEmail("alice@example.com");
+        req.setPassword("Pass1!"); // 6 chars, under 8
+
+        ResponseEntity<?> response = authController.register(req);
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Password must be at least 8 characters", body.get("message"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerShouldFailWhenPasswordLacksUppercase() {
+        AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("Alice");
+        req.setUsername("alice");
+        req.setEmail("alice@example.com");
+        req.setPassword("password123!");
+
+        ResponseEntity<?> response = authController.register(req);
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Password must contain at least one uppercase character", body.get("message"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerShouldFailWhenPasswordLacksLowercase() {
+        AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("Alice");
+        req.setUsername("alice");
+        req.setEmail("alice@example.com");
+        req.setPassword("PASSWORD123!");
+
+        ResponseEntity<?> response = authController.register(req);
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Password must contain at least one lowercase character", body.get("message"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerShouldFailWhenPasswordLacksNumber() {
+        AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("Alice");
+        req.setUsername("alice");
+        req.setEmail("alice@example.com");
+        req.setPassword("Password!!!!");
+
+        ResponseEntity<?> response = authController.register(req);
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Password must contain at least one number", body.get("message"));
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void registerShouldFailWhenPasswordLacksSpecialSymbol() {
+        AuthController.RegisterRequest req = new AuthController.RegisterRequest();
+        req.setName("Alice");
+        req.setUsername("alice");
+        req.setEmail("alice@example.com");
+        req.setPassword("Password123");
+
+        ResponseEntity<?> response = authController.register(req);
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Password must contain at least one special symbol", body.get("message"));
         verify(userRepository, never()).save(any());
     }
 
@@ -233,5 +333,26 @@ class AuthControllerTest {
 
         assertEquals(429, response.getStatusCode().value());
         assertNotNull(response.getHeaders().getFirst("Retry-After"));
+    }
+
+    @Test
+    void logoutShouldIncrementTokenVersionAndReturnSuccess() {
+        User user = new User();
+        user.setEmail("alice@example.com");
+        user.setTokenVersion(1);
+
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("alice@example.com");
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
+
+        ResponseEntity<?> response = authController.logout(authentication);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody() instanceof Map);
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals(true, body.get("success"));
+        assertEquals("Logged out successfully", body.get("message"));
+        assertEquals(2, user.getTokenVersion());
+        verify(userRepository, times(1)).save(user);
     }
 }

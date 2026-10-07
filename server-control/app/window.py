@@ -5,7 +5,7 @@ from datetime import datetime
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTextEdit, QScrollArea, QFrame, QApplication,
-    QSizePolicy, QComboBox, QMessageBox, QGridLayout
+    QSizePolicy, QMessageBox, QGridLayout, QStackedWidget
 )
 from PySide6.QtCore import Qt, QTimer, Slot, Signal
 from PySide6.QtGui import QCloseEvent
@@ -17,16 +17,36 @@ from .services.log_service import app_logger
 from .services.environment_service import EnvironmentService
 from .services.health_service import HealthPoller, BackendState
 from .services.backend_service import BackendService
-from .services.network_service import NetworkService, NetworkAdapterInfo
+from .services.network_service import NetworkService
 from .services.adb_service import AdbService, AdbDevice
 from .widgets.settings_dialog import SettingsDialog
 
-# Regex to completely strip ANSI escape sequences from logs
+
 ANSI_STRIP_RE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
 
 
+# ---------------------------------------------------------------------------
+# Windows Settings-inspired palette
+# ---------------------------------------------------------------------------
+
+BG = "#111918"
+SIDEBAR = "#18201E"
+SIDEBAR_ACTIVE = "#26312E"
+CARD = "#1D2624"
+CARD_HOVER = "#25302D"
+BORDER = "#2B3734"
+TEXT = "#F2F5F3"
+TEXT_SECONDARY = "#B7C0BD"
+TEXT_MUTED = "#87938F"
+ACCENT = "#6CCBFF"
+ACCENT_HOVER = "#82D4FF"
+SUCCESS = "#6FD58A"
+WARNING = "#E6C46A"
+DANGER = "#FF817A"
+
+
 def strip_ansi(text: str) -> str:
-    return ANSI_STRIP_RE.sub('', text)
+    return ANSI_STRIP_RE.sub("", text)
 
 
 def make_subtle_divider() -> QFrame:
@@ -37,113 +57,114 @@ def make_subtle_divider() -> QFrame:
     return line
 
 
+def make_card(parent=None, object_name="card") -> QFrame:
+    card = QFrame(parent)
+    card.setObjectName(object_name)
+    card.setProperty("class", "settingsCard")
+    return card
+
+
+class SidebarButton(QPushButton):
+    def __init__(self, icon_name: str, text: str, parent=None):
+        super().__init__(parent)
+        self._icon_name = icon_name
+        self._base_text = text
+        self.setText(text)
+        self.setIcon(get_tabler_icon(icon_name, color=TEXT_SECONDARY, size=18))
+        self.setIconSize(self.sizeHint().scaled(18, 18, Qt.AspectRatioMode.KeepAspectRatio))
+        self.setCheckable(True)
+        self.setAutoExclusive(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedHeight(42)
+
+
 class RecommendedTile(QFrame):
-    """Prominent recommended connection tile with subtle green semantic treatment."""
+    """Recommended connection surface, styled like a Windows Settings card."""
 
     def __init__(self, on_use_callback=None):
         super().__init__()
-        self.setProperty("class", "recommendedCard")
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.setObjectName("recommendedCard")
         self._on_use_callback = on_use_callback
         self._current_rec = None
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 14, 18, 14)
-        layout.setSpacing(8)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
 
-        # Top Bar: Label on left, Status Pill on right
-        top_row = QHBoxLayout()
-        top_row.setSpacing(6)
-
-        rec_label = QLabel("Recommended connection")
-        rec_label.setStyleSheet("font-weight: 700; font-size: 12px; color: #2E7D32;")
-        top_row.addWidget(rec_label)
-        top_row.addStretch()
+        top = QHBoxLayout()
+        title = QLabel("Recommended connection")
+        title.setObjectName("cardEyebrow")
+        top.addWidget(title)
+        top.addStretch()
 
         self._status_pill = QLabel("● READY")
-        self._status_pill.setStyleSheet(
-            "font-weight: 700; font-size: 11px; color: #2E7D32; "
-            "background-color: #E2F3E5; border-radius: 10px; padding: 2px 8px;"
-        )
-        top_row.addWidget(self._status_pill)
-        layout.addLayout(top_row)
+        self._status_pill.setObjectName("successPill")
+        top.addWidget(self._status_pill)
+        layout.addLayout(top)
 
-        # Middle Area: Title & Subtitle + URL
-        mid_row = QHBoxLayout()
-        mid_row.setSpacing(12)
+        mid = QHBoxLayout()
+        mid.setSpacing(18)
 
-        info_col = QVBoxLayout()
-        info_col.setSpacing(2)
-
+        info = QVBoxLayout()
+        info.setSpacing(4)
         self._title_lbl = QLabel("Checking…")
-        self._title_lbl.setStyleSheet("font-weight: 700; font-size: 15px; color: #1D1D1D;")
+        self._title_lbl.setObjectName("cardTitle")
         self._sub_lbl = QLabel("Detecting best connection method…")
-        self._sub_lbl.setStyleSheet("color: #5A554E; font-size: 12px;")
-
-        info_col.addWidget(self._title_lbl)
-        info_col.addWidget(self._sub_lbl)
-        mid_row.addLayout(info_col, 1)
+        self._sub_lbl.setObjectName("secondaryText")
+        self._sub_lbl.setWordWrap(True)
+        info.addWidget(self._title_lbl)
+        info.addWidget(self._sub_lbl)
+        mid.addLayout(info, 1)
 
         self._url_lbl = QLabel("")
-        self._url_lbl.setStyleSheet('font-family: "JetBrains Mono"; font-size: 14px; font-weight: 600; color: #1D1D1D;')
+        self._url_lbl.setObjectName("monoText")
         self._url_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        mid_row.addWidget(self._url_lbl)
+        mid.addWidget(self._url_lbl)
+        layout.addLayout(mid)
 
-        layout.addLayout(mid_row)
-
-        # Bottom Action Bar: Feedback notice on left, Action buttons on right
-        bot_row = QHBoxLayout()
-        bot_row.setSpacing(8)
-
+        bottom = QHBoxLayout()
         self._feedback_lbl = QLabel("")
-        self._feedback_lbl.setStyleSheet("color: #2E7D32; font-size: 11px; font-weight: 600;")
-        bot_row.addWidget(self._feedback_lbl)
-        bot_row.addStretch()
+        self._feedback_lbl.setObjectName("successText")
+        bottom.addWidget(self._feedback_lbl)
+        bottom.addStretch()
 
         self._btn_use = QPushButton("Use Connection")
-        self._btn_use.setProperty("recommended", True)
-        self._btn_use.setFixedHeight(30)
+        self._btn_use.setProperty("primary", True)
         self._btn_use.clicked.connect(self._handle_use)
-        bot_row.addWidget(self._btn_use)
+        bottom.addWidget(self._btn_use)
 
         self._btn_copy = QPushButton("Copy")
-        self._btn_copy.setIcon(get_tabler_icon("copy", size=14))
-        self._btn_copy.setFixedHeight(30)
-        self._btn_copy.setFixedWidth(75)
+        self._btn_copy.setIcon(get_tabler_icon("copy", color=TEXT, size=14))
         self._btn_copy.clicked.connect(self._handle_copy)
-        bot_row.addWidget(self._btn_copy)
-
-        layout.addLayout(bot_row)
+        bottom.addWidget(self._btn_copy)
+        layout.addLayout(bottom)
 
     def set_recommendation(self, rec: dict):
         self._current_rec = rec
         if not rec or not rec.get("ready"):
             self._status_pill.setText("○ NOT READY")
-            self._status_pill.setStyleSheet(
-                "font-weight: 700; font-size: 11px; color: #8A6D3B; "
-                "background-color: #FCF8E3; border-radius: 10px; padding: 2px 8px;"
-            )
+            self._status_pill.setObjectName("warningPill")
+            self._status_pill.style().unpolish(self._status_pill)
+            self._status_pill.style().polish(self._status_pill)
             self._title_lbl.setText("No connection ready")
             self._sub_lbl.setText(
-                "Connect your Android device by USB or connect this computer and your phone to the same Wi-Fi network."
+                "Connect your Android device by USB or connect this computer and your phone "
+                "to the same Wi-Fi network."
             )
             self._url_lbl.setText("")
             self._btn_use.setVisible(False)
             self._btn_copy.setVisible(False)
-            self._feedback_lbl.setText("")
+            self._feedback_lbl.clear()
             return
 
         self._status_pill.setText("● READY")
-        self._status_pill.setStyleSheet(
-            "font-weight: 700; font-size: 11px; color: #2E7D32; "
-            "background-color: #E2F3E5; border-radius: 10px; padding: 2px 8px;"
-        )
+        self._status_pill.setObjectName("successPill")
+        self._status_pill.style().unpolish(self._status_pill)
+        self._status_pill.style().polish(self._status_pill)
         self._title_lbl.setText(rec.get("title", ""))
         self._sub_lbl.setText(rec.get("subtitle", ""))
         self._url_lbl.setText(rec.get("url", ""))
-
-        action_text = rec.get("action_text", "Use Connection")
-        self._btn_use.setText(action_text)
+        self._btn_use.setText(rec.get("action_text", "Use Connection"))
         self._btn_use.setVisible(True)
         self._btn_copy.setVisible(True)
 
@@ -153,17 +174,18 @@ class RecommendedTile(QFrame):
         url = self._current_rec.get("url", "")
         if url:
             QApplication.clipboard().setText(url)
-
         if self._on_use_callback:
             self._on_use_callback(self._current_rec)
 
-        conn_type = self._current_rec.get("type", "")
-        if conn_type == "usb":
-            self._feedback_lbl.setText("✓ USB ready & URL copied to clipboard! Set in CipherVault Android.")
+        if self._current_rec.get("type") == "usb":
+            self._feedback_lbl.setText(
+                "✓ USB ready and URL copied. Set it in CipherVault Android."
+            )
         else:
-            self._feedback_lbl.setText("✓ URL copied to clipboard! Enter this in CipherVault Android.")
-
-        QTimer.singleShot(4000, lambda: self._feedback_lbl.setText(""))
+            self._feedback_lbl.setText(
+                "✓ URL copied to clipboard. Enter it in CipherVault Android."
+            )
+        QTimer.singleShot(4000, self._feedback_lbl.clear)
 
     def _handle_copy(self):
         if not self._current_rec:
@@ -172,74 +194,72 @@ class RecommendedTile(QFrame):
         if url:
             QApplication.clipboard().setText(url)
             self._feedback_lbl.setText("✓ Copied to clipboard!")
-            QTimer.singleShot(2500, lambda: self._feedback_lbl.setText(""))
+            QTimer.singleShot(2500, self._feedback_lbl.clear)
 
 
 class ConnectionRow(QWidget):
-    """Compact One UI row for an individual connection method."""
+    """Compact connection row with Windows Settings-style spacing."""
 
     test_completed = Signal(str, str)
 
-    def __init__(self, icon_name: str, title: str, subtitle: str, url: str, can_test: bool = True, extra_widget=None):
+    def __init__(
+        self,
+        icon_name: str,
+        title: str,
+        subtitle: str,
+        url: str,
+        can_test: bool = True,
+        extra_widget=None,
+    ):
         super().__init__()
         self.test_completed.connect(self._update_test_ui)
         self._url = url
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(12, 7, 12, 7)
-        layout.setSpacing(12)
+        layout.setContentsMargins(14, 11, 14, 11)
+        layout.setSpacing(13)
 
-        # Icon
         icon_lbl = QLabel()
-        icon = get_tabler_icon(icon_name, color="#8C7B6D", size=20)
+        icon = get_tabler_icon(icon_name, color=TEXT_SECONDARY, size=20)
         icon_lbl.setPixmap(icon.pixmap(20, 20))
-        icon_lbl.setFixedSize(22, 22)
+        icon_lbl.setFixedSize(24, 24)
         layout.addWidget(icon_lbl)
 
-        # Title & Subtitle column
-        info_col = QVBoxLayout()
-        info_col.setSpacing(1)
-        info_col.setContentsMargins(0, 0, 0, 0)
+        info = QVBoxLayout()
+        info.setContentsMargins(0, 0, 0, 0)
+        info.setSpacing(2)
 
         t_lbl = QLabel(title)
-        t_lbl.setStyleSheet("font-weight: 700; font-size: 13px;")
+        t_lbl.setObjectName("rowTitle")
         self._sub_lbl = QLabel(subtitle)
-        self._sub_lbl.setStyleSheet("color: #6B6B6B; font-size: 11px;")
-        info_col.addWidget(t_lbl)
-        info_col.addWidget(self._sub_lbl)
-        layout.addLayout(info_col)
+        self._sub_lbl.setObjectName("rowSubtitle")
+        self._sub_lbl.setWordWrap(True)
 
-        layout.addStretch()
+        info.addWidget(t_lbl)
+        info.addWidget(self._sub_lbl)
+        layout.addLayout(info, 1)
 
-        # Optional embedded widget (e.g. reverse toggle button)
         if extra_widget:
             layout.addWidget(extra_widget)
 
-        # Monospace URL
         self._url_lbl = QLabel(url)
-        self._url_lbl.setStyleSheet('font-family: "JetBrains Mono"; font-size: 13px; font-weight: 500;')
+        self._url_lbl.setObjectName("monoText")
         self._url_lbl.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self._url_lbl)
 
-        # Status feedback
         self._status_lbl = QLabel("")
-        self._status_lbl.setStyleSheet("font-size: 11px; min-width: 65px;")
+        self._status_lbl.setObjectName("rowStatus")
         self._status_lbl.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(self._status_lbl)
 
-        # Actions
         if can_test:
             btn_test = QPushButton("Test")
-            btn_test.setIcon(get_tabler_icon("activity", size=13))
-            btn_test.setFixedHeight(26)
-            btn_test.setFixedWidth(65)
+            btn_test.setIcon(get_tabler_icon("activity", color=TEXT_SECONDARY, size=13))
             btn_test.clicked.connect(self._test)
             layout.addWidget(btn_test)
 
         btn_copy = QPushButton("Copy")
-        btn_copy.setIcon(get_tabler_icon("copy", size=13))
-        btn_copy.setFixedHeight(26)
-        btn_copy.setFixedWidth(65)
+        btn_copy.setIcon(get_tabler_icon("copy", color=TEXT_SECONDARY, size=13))
         btn_copy.clicked.connect(self._copy)
         layout.addWidget(btn_copy)
 
@@ -248,53 +268,59 @@ class ConnectionRow(QWidget):
 
     def _test(self):
         self._status_lbl.setText("Testing…")
-        self._status_lbl.setStyleSheet("font-size: 11px; color: #6B6B6B;")
+        self._status_lbl.setStyleSheet(f"color: {TEXT_MUTED};")
         threading.Thread(target=self._do_test, daemon=True).start()
 
     def _do_test(self):
         success, code, latency, msg = NetworkService.test_endpoint(self._url)
         if success:
             text = f"✓ {int(latency)} ms"
-            color = "#2E7D32"
+            color = SUCCESS
         elif code > 0:
             text = f"✗ HTTP {code}"
-            color = "#D32F2F"
+            color = DANGER
         else:
             text = f"✗ {msg}"
-            color = "#D32F2F"
+            color = DANGER
         self.test_completed.emit(text, color)
 
     def _update_test_ui(self, text: str, color: str):
         self._status_lbl.setText(text)
-        self._status_lbl.setStyleSheet(f"font-size: 11px; font-weight: 600; color: {color}; min-width: 65px;")
+        self._status_lbl.setStyleSheet(f"color: {color}; font-weight: 600;")
 
     def _copy(self):
         QApplication.clipboard().setText(self._url)
         self._status_lbl.setText("Copied!")
-        self._status_lbl.setStyleSheet("font-size: 11px; font-weight: 600; color: #8C7B6D; min-width: 65px;")
-        QTimer.singleShot(1500, lambda: self._status_lbl.setText(""))
+        self._status_lbl.setStyleSheet(f"color: {ACCENT}; font-weight: 600;")
+        QTimer.singleShot(1500, lambda: self._status_lbl.clear())
 
 
 class MainWindow(QMainWindow):
-    """Refined Samsung One UI-inspired CipherVault Server Manager."""
+    """
+    CipherVault Server Manager.
+
+    UI is redesigned to resemble the supplied Windows Settings reference while
+    preserving the existing backend, health, ADB, networking, diagnostics,
+    activity, logging and settings functionality.
+    """
 
     adb_updated = Signal(bool, list)
 
     def __init__(self):
         super().__init__()
         self.adb_updated.connect(self._update_adb_ui)
+
         self.setWindowTitle("CipherVault Server Manager")
-        self.resize(1080, 800)
-        self.setMinimumSize(960, 640)
+        self.resize(1280, 820)
+        self.setMinimumSize(1040, 680)
 
-        # State
         self._backend_state = BackendState.STOPPED
-        self._backend_info: dict = {}
-        self._started_at: datetime | None = None
-        self._adb_devices: list[AdbDevice] = []
-        self._selected_adb_serial: str | None = None
+        self._backend_info = {}
+        self._started_at = None
+        self._adb_devices = []
+        self._selected_adb_serial = None
+        self._nav_buttons = []
 
-        # Services
         self._backend_svc = BackendService()
         self._backend_svc.log_line.connect(self._on_log_line)
         self._backend_svc.state_changed.connect(self._on_backend_state)
@@ -303,34 +329,8 @@ class MainWindow(QMainWindow):
         self._health_poller = HealthPoller(interval=settings.health_interval)
         self._health_poller.status_changed.connect(self._on_health_status)
 
-        # Central widget with smooth scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        scroll.setObjectName("centralWidget")
-        self.setCentralWidget(scroll)
+        self._build_shell()
 
-        container = QWidget()
-        container.setObjectName("containerWidget")
-        scroll.setWidget(container)
-
-        self._layout = QVBoxLayout(container)
-        self._layout.setSpacing(18)
-        self._layout.setContentsMargins(32, 24, 32, 24)
-
-        # UI Hierarchy
-        self._build_header()
-        self._build_server_status_surface()
-        self._build_connect_section()
-        self._build_system_status_section()
-        self._build_warnings_section()
-        self._build_collapsible_api_activity()
-        self._build_collapsible_server_log()
-
-        # Calm background space at bottom (prevents unnatural stretching)
-        self._layout.addStretch(1)
-
-        # Timers
         self._refresh_timer = QTimer(self)
         self._refresh_timer.timeout.connect(self._refresh_connections_and_adb)
         self._refresh_timer.start(10000)
@@ -339,20 +339,413 @@ class MainWindow(QMainWindow):
         self._uptime_timer.timeout.connect(self._update_uptime)
         self._uptime_timer.setInterval(1000)
 
-        # Boot sequence
         self._health_poller.start()
         QTimer.singleShot(150, self._refresh_connections_and_adb)
         QTimer.singleShot(350, self._initial_backend_check_and_start)
 
     # -----------------------------------------------------------------------
-    # Auto-start on boot
+    # Global styling / shell
+    # -----------------------------------------------------------------------
+
+    def _build_shell(self):
+        shell = QWidget()
+        shell.setObjectName("shell")
+        root = QHBoxLayout(shell)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        self._build_sidebar(root)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setObjectName("contentScroll")
+        root.addWidget(scroll, 1)
+
+        container = QWidget()
+        container.setObjectName("contentContainer")
+        scroll.setWidget(container)
+        self._scroll_area = scroll
+
+        self._layout = QVBoxLayout(container)
+        self._layout.setContentsMargins(40, 32, 40, 44)
+        self._layout.setSpacing(22)
+
+        self._build_header()
+        self._build_server_status_surface()
+        self._build_connect_section()
+        self._build_system_status_section()
+        self._build_warnings_section()
+        self._build_collapsible_api_activity()
+        self._build_collapsible_server_log()
+        self._layout.addStretch(1)
+
+        self.setCentralWidget(shell)
+        self._apply_reference_style()
+
+    def _build_sidebar(self, root):
+        sidebar = QFrame()
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(238)
+
+        side = QVBoxLayout(sidebar)
+        side.setContentsMargins(18, 24, 18, 20)
+        side.setSpacing(8)
+
+        brand_row = QHBoxLayout()
+        brand_row.setSpacing(11)
+
+        logo = QLabel("CV")
+        logo.setObjectName("brandLogo")
+        logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        brand_row.addWidget(logo)
+
+        brand_text = QVBoxLayout()
+        brand_text.setSpacing(0)
+        brand = QLabel("CipherVault")
+        brand.setObjectName("brandTitle")
+        manager = QLabel("Server Manager")
+        manager.setObjectName("brandSubtitle")
+        brand_text.addWidget(brand)
+        brand_text.addWidget(manager)
+        brand_row.addLayout(brand_text)
+        side.addLayout(brand_row)
+
+        side.addSpacing(22)
+
+        section = QLabel("SERVER MANAGER")
+        section.setObjectName("sidebarSection")
+        side.addWidget(section)
+        side.addSpacing(2)
+
+        self._add_nav(side, "home", "Overview", self._server_card if hasattr(self, "_server_card") else None)
+        self._overview_btn = self._nav_buttons[-1]
+
+        self._add_nav(side, "device-desktop", "Connections", None)
+        self._connections_btn = self._nav_buttons[-1]
+
+        self._add_nav(side, "activity", "System status", None)
+        self._system_btn = self._nav_buttons[-1]
+
+        self._add_nav(side, "file-text", "Activity & logs", None)
+        self._activity_btn = self._nav_buttons[-1]
+
+        side.addStretch(1)
+
+        tip = QFrame()
+        tip.setObjectName("sidebarInfo")
+        tip_lay = QVBoxLayout(tip)
+        tip_lay.setContentsMargins(12, 12, 12, 12)
+        tip_lay.setSpacing(4)
+        tip_title = QLabel("Server status")
+        tip_title.setObjectName("sidebarInfoTitle")
+        self._sidebar_status = QLabel("Checking…")
+        self._sidebar_status.setObjectName("sidebarInfoValue")
+        tip_lay.addWidget(tip_title)
+        tip_lay.addWidget(self._sidebar_status)
+        side.addWidget(tip)
+
+        self._sidebar_settings = QPushButton("⚙  Settings")
+        self._sidebar_settings.setObjectName("sidebarSettings")
+        self._sidebar_settings.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._sidebar_settings.clicked.connect(self._open_settings)
+        side.addWidget(self._sidebar_settings)
+
+        version = QLabel("CipherVault · Local server control")
+        version.setObjectName("sidebarFooter")
+        side.addWidget(version)
+
+        root.addWidget(sidebar)
+
+    def _add_nav(self, layout, icon_name, text, target):
+        btn = SidebarButton(icon_name, text)
+        btn.clicked.connect(lambda: self._navigate(text))
+        self._nav_buttons.append(btn)
+        layout.addWidget(btn)
+
+    def _navigate(self, text):
+        targets = {
+            "Overview": getattr(self, "_server_card", None),
+            "Connections": getattr(self, "_connect_card", None),
+            "System status": getattr(self, "_system_card", None),
+            "Activity & logs": getattr(self, "_log_widget", None),
+        }
+        target = targets.get(text)
+        if target is not None:
+            self._scroll_area.ensureWidgetVisible(target, 0, 24)
+
+        for btn in self._nav_buttons:
+            btn.setChecked(btn.text() == text)
+
+    def _apply_reference_style(self):
+        self.setStyleSheet(f"""
+            QWidget {{
+                color: {TEXT};
+                font-family: "Segoe UI";
+                font-size: 13px;
+            }}
+            QMainWindow, #shell, #contentContainer, QScrollArea, #contentScroll {{
+                background: {BG};
+            }}
+            #sidebar {{
+                background: {SIDEBAR};
+                border-right: 1px solid {BORDER};
+            }}
+            #brandLogo {{
+                background: {ACCENT};
+                color: #071014;
+                border-radius: 9px;
+                font-size: 13px;
+                font-weight: 800;
+            }}
+            #brandTitle {{
+                font-size: 15px;
+                font-weight: 700;
+                color: {TEXT};
+            }}
+            #brandSubtitle {{
+                color: {TEXT_MUTED};
+                font-size: 11px;
+            }}
+            #sidebarSection {{
+                color: {TEXT_MUTED};
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                padding-left: 10px;
+            }}
+            SidebarButton {{
+                text-align: left;
+            }}
+            QPushButton {{
+                background: #222C2A;
+                border: 1px solid {BORDER};
+                border-radius: 7px;
+                padding: 7px 13px;
+                color: {TEXT};
+            }}
+            QPushButton:hover {{
+                background: {CARD_HOVER};
+                border-color: #3B4A46;
+            }}
+            QPushButton:pressed {{
+                background: #2A3834;
+            }}
+            QPushButton[primary="true"] {{
+                background: {ACCENT};
+                color: #071014;
+                border: 1px solid {ACCENT};
+                font-weight: 700;
+            }}
+            QPushButton[primary="true"]:hover {{
+                background: {ACCENT_HOVER};
+            }}
+            QPushButton#sidebarSettings {{
+                background: transparent;
+                border: none;
+                text-align: left;
+                color: {TEXT_SECONDARY};
+                padding: 10px 12px;
+                border-radius: 7px;
+            }}
+            QPushButton#sidebarSettings:hover {{
+                background: {SIDEBAR_ACTIVE};
+                color: {TEXT};
+            }}
+            QPushButton[class="navButton"] {{
+                background: transparent;
+                border: none;
+                text-align: left;
+                padding: 8px 12px;
+                border-radius: 8px;
+                color: {TEXT_SECONDARY};
+            }}
+            QPushButton[class="navButton"]:hover {{
+                background: {SIDEBAR_ACTIVE};
+                color: {TEXT};
+            }}
+            QPushButton[class="navButton"]:checked {{
+                background: {SIDEBAR_ACTIVE};
+                color: {TEXT};
+                font-weight: 600;
+            }}
+            #sidebarInfo {{
+                background: #202A27;
+                border: 1px solid {BORDER};
+                border-radius: 9px;
+            }}
+            #sidebarInfoTitle {{
+                color: {TEXT_MUTED};
+                font-size: 10px;
+            }}
+            #sidebarInfoValue {{
+                color: {SUCCESS};
+                font-weight: 700;
+            }}
+            #sidebarFooter {{
+                color: #66736F;
+                font-size: 10px;
+                padding-left: 12px;
+            }}
+            #contentContainer {{
+                background: {BG};
+            }}
+            #pageTitle {{
+                font-size: 28px;
+                font-weight: 700;
+            }}
+            #pageSubtitle {{
+                color: {TEXT_MUTED};
+                font-size: 12px;
+            }}
+            #metaLine {{
+                color: {TEXT_MUTED};
+                font-size: 11px;
+            }}
+            #sectionTitle {{
+                font-size: 19px;
+                font-weight: 650;
+            }}
+            #sectionSubtitle {{
+                color: {TEXT_MUTED};
+                font-size: 12px;
+            }}
+            QFrame[class="settingsCard"], #serverCard, #recommendedCard {{
+                background: {CARD};
+                border: 1px solid {BORDER};
+                border-radius: 10px;
+            }}
+            #recommendedCard {{
+                border-color: #365548;
+            }}
+            #cardEyebrow {{
+                color: {SUCCESS};
+                font-size: 11px;
+                font-weight: 700;
+            }}
+            #cardTitle {{
+                font-size: 16px;
+                font-weight: 700;
+            }}
+            #rowTitle {{
+                font-size: 13px;
+                font-weight: 650;
+            }}
+            #rowSubtitle, #secondaryText {{
+                color: {TEXT_MUTED};
+                font-size: 11px;
+            }}
+            #monoText {{
+                color: {TEXT_SECONDARY};
+                font-family: "Cascadia Mono", "Consolas", monospace;
+                font-size: 11px;
+            }}
+            #rowStatus {{
+                color: {TEXT_MUTED};
+                font-size: 11px;
+            }}
+            #successText {{
+                color: {SUCCESS};
+                font-size: 11px;
+                font-weight: 600;
+            }}
+            #successPill {{
+                background: #203A2B;
+                color: {SUCCESS};
+                border-radius: 9px;
+                padding: 3px 8px;
+                font-size: 10px;
+                font-weight: 700;
+            }}
+            #warningPill {{
+                background: #403A24;
+                color: {WARNING};
+                border-radius: 9px;
+                padding: 3px 8px;
+                font-size: 10px;
+                font-weight: 700;
+            }}
+            #statusPill {{
+                background: #26312E;
+                border: 1px solid {BORDER};
+                border-radius: 13px;
+            }}
+            #statusDot {{
+                font-size: 12px;
+            }}
+            #statusText {{
+                font-size: 11px;
+                font-weight: 700;
+            }}
+            #subtleDivider, QFrame[class="subtleDivider"] {{
+                background: {BORDER};
+                border: none;
+                max-height: 1px;
+            }}
+            QPushButton[class="collapsibleHeader"] {{
+                background: transparent;
+                border: none;
+                text-align: left;
+                color: {TEXT_SECONDARY};
+                padding: 9px 2px;
+                font-weight: 600;
+            }}
+            QPushButton[class="collapsibleHeader"]:hover {{
+                color: {TEXT};
+            }}
+            QTextEdit {{
+                background: #0D1312;
+                border: 1px solid {BORDER};
+                border-radius: 8px;
+                padding: 9px;
+                color: #BFD0CA;
+                font-family: "Cascadia Mono", "Consolas", monospace;
+                font-size: 11px;
+            }}
+            QScrollBar:vertical {{
+                background: transparent;
+                width: 10px;
+                margin: 2px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: #34413E;
+                border-radius: 5px;
+                min-height: 30px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: #465650;
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0;
+            }}
+            QToolTip {{
+                background: #25302D;
+                color: {TEXT};
+                border: 1px solid #3B4A46;
+                padding: 5px;
+            }}
+        """)
+
+        for btn in self._nav_buttons:
+            btn.setProperty("class", "navButton")
+            btn.style().unpolish(btn)
+            btn.style().polish(btn)
+
+        if self._nav_buttons:
+            self._nav_buttons[0].setChecked(True)
+
+    # -----------------------------------------------------------------------
+    # Auto-start
     # -----------------------------------------------------------------------
 
     def _initial_backend_check_and_start(self):
         app_logger.log("app", "Inspecting backend status on startup")
         occupied, pid, proc = EnvironmentService.check_port_listener(settings.backend_port)
         if occupied:
-            app_logger.log("app", f"Port {settings.backend_port} occupied by PID {pid} ({proc}), attaching...")
+            app_logger.log(
+                "app",
+                f"Port {settings.backend_port} occupied by PID {pid} ({proc}), attaching..."
+            )
             self._backend_svc.start_backend()
             return
 
@@ -364,295 +757,265 @@ class MainWindow(QMainWindow):
             self._health_poller.set_state(BackendState.STOPPED, "Ready to start")
 
     # -----------------------------------------------------------------------
-    # UI Hierarchy Construction
+    # Header
     # -----------------------------------------------------------------------
 
     def _build_header(self):
-        header_box = QVBoxLayout()
-        header_box.setSpacing(3)
+        header = QVBoxLayout()
+        header.setSpacing(6)
 
-        top_row = QHBoxLayout()
-        top_row.setSpacing(12)
+        top = QHBoxLayout()
+        top.setSpacing(12)
 
-        # Title in Source Serif 4
-        title_box = QVBoxLayout()
-        title_box.setSpacing(1)
-        title = QLabel("CipherVault")
-        title.setStyleSheet('font-family: "Source Serif 4"; font-size: 26px; font-weight: 600;')
-        sub = QLabel("Server Manager")
-        sub.setStyleSheet("color: #6B6B6B; font-size: 13px; font-weight: 600;")
-        title_box.addWidget(title)
-        title_box.addWidget(sub)
-        top_row.addLayout(title_box)
+        title_col = QVBoxLayout()
+        title_col.setSpacing(1)
 
-        top_row.addStretch()
+        title = QLabel("Server Manager")
+        title.setObjectName("pageTitle")
+        subtitle = QLabel("Manage the CipherVault backend and Android connectivity")
+        subtitle.setObjectName("pageSubtitle")
+        title_col.addWidget(title)
+        title_col.addWidget(subtitle)
+        top.addLayout(title_col)
+        top.addStretch()
 
-        # Status Badge Pill
         self._status_pill = QFrame()
-        self._status_pill.setStyleSheet(
-            "background-color: #F0EEEA; border-radius: 13px; padding: 3px 10px;"
-        )
-        pill_layout = QHBoxLayout(self._status_pill)
-        pill_layout.setContentsMargins(8, 3, 8, 3)
-        pill_layout.setSpacing(6)
+        self._status_pill.setObjectName("statusPill")
+        pill = QHBoxLayout(self._status_pill)
+        pill.setContentsMargins(9, 5, 9, 5)
+        pill.setSpacing(5)
 
         self._status_dot = QLabel("●")
-        self._status_dot.setStyleSheet("font-size: 13px; color: #757575;")
-        self._status_text = QLabel("Checking…")
-        self._status_text.setStyleSheet("font-weight: 700; font-size: 12px; color: #4A443E;")
-        pill_layout.addWidget(self._status_dot)
-        pill_layout.addWidget(self._status_text)
-        top_row.addWidget(self._status_pill)
+        self._status_dot.setObjectName("statusDot")
+        self._status_text = QLabel("CHECKING")
+        self._status_text.setObjectName("statusText")
+        pill.addWidget(self._status_dot)
+        pill.addWidget(self._status_text)
+        top.addWidget(self._status_pill)
 
-        # Action Buttons (Settings & Refresh)
         btn_refresh = QPushButton("Refresh")
-        btn_refresh.setIcon(get_tabler_icon("refresh", size=13))
-        btn_refresh.setFixedHeight(28)
+        btn_refresh.setIcon(get_tabler_icon("refresh", color=TEXT_SECONDARY, size=13))
         btn_refresh.clicked.connect(self._manual_refresh)
+        top.addWidget(btn_refresh)
 
         btn_settings = QPushButton("Settings")
-        btn_settings.setIcon(get_tabler_icon("settings", size=13))
-        btn_settings.setFixedHeight(28)
+        btn_settings.setIcon(get_tabler_icon("settings", color=TEXT_SECONDARY, size=13))
         btn_settings.clicked.connect(self._open_settings)
+        top.addWidget(btn_settings)
 
-        top_row.addWidget(btn_refresh)
-        top_row.addWidget(btn_settings)
+        header.addLayout(top)
 
-        header_box.addLayout(top_row)
-
-        # Technical metadata line below title (subtle secondary text, 12px Nunito Sans)
-        self._meta_line = QLabel("Managed server · Port 8080 · Java 21 · Spring Boot 4.1.1 · Uptime —")
-        self._meta_line.setStyleSheet(
-            'color: #7A7570; font-size: 12px; font-weight: 500; margin-top: 3px;'
+        self._meta_line = QLabel(
+            "Managed server · Port 8080 · Java 21 · Spring Boot 4.1.1 · Uptime —"
         )
-        header_box.addWidget(self._meta_line)
+        self._meta_line.setObjectName("metaLine")
+        header.addWidget(self._meta_line)
 
-        self._layout.addLayout(header_box)
-        self._layout.addWidget(make_subtle_divider())
+        self._layout.addLayout(header)
+
+    # -----------------------------------------------------------------------
+    # Backend status
+    # -----------------------------------------------------------------------
 
     def _build_server_status_surface(self):
-        """Compact, balanced status surface with state-aware controls."""
-        self._server_card = QFrame()
-        self._server_card.setProperty("class", "oneUiCard")
+        self._server_card = make_card(object_name="serverCard")
         self._server_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
-        card_layout = QHBoxLayout(self._server_card)
-        card_layout.setContentsMargins(18, 14, 18, 14)
-        card_layout.setSpacing(16)
+        card = QHBoxLayout(self._server_card)
+        card.setContentsMargins(20, 18, 20, 18)
+        card.setSpacing(22)
 
-        # Left Column: Heading, description, metadata
-        info_col = QVBoxLayout()
-        info_col.setSpacing(3)
+        info = QVBoxLayout()
+        info.setSpacing(4)
 
         self._status_heading = QLabel("ONLINE")
-        self._status_heading.setStyleSheet("font-weight: 700; font-size: 15px; color: #2E7D32;")
+        self._status_heading.setObjectName("cardTitle")
         self._status_desc = QLabel("CipherVault backend is running normally.")
-        self._status_desc.setStyleSheet("color: #4A443E; font-size: 13px;")
+        self._status_desc.setObjectName("secondaryText")
         self._status_meta = QLabel("Port 8080 · PID — · Uptime —")
-        self._status_meta.setStyleSheet('font-family: "JetBrains Mono"; color: #8C7B6D; font-size: 11px;')
+        self._status_meta.setObjectName("monoText")
 
-        info_col.addWidget(self._status_heading)
-        info_col.addWidget(self._status_desc)
-        info_col.addWidget(self._status_meta)
-        card_layout.addLayout(info_col, 1)
+        info.addWidget(self._status_heading)
+        info.addWidget(self._status_desc)
+        info.addWidget(self._status_meta)
+        card.addLayout(info, 1)
 
-        # Right Column: State-aware action buttons
-        self._ctrl_btn_box = QHBoxLayout()
-        self._ctrl_btn_box.setSpacing(8)
+        controls = QHBoxLayout()
+        controls.setSpacing(8)
 
         self._btn_start = QPushButton("Start Server")
-        self._btn_start.setIcon(get_tabler_icon("play", color="#FFFFFF", size=14))
         self._btn_start.setProperty("primary", True)
-        self._btn_start.setFixedHeight(30)
-        self._btn_start.setFixedWidth(115)
+        self._btn_start.setIcon(get_tabler_icon("play", color="#071014", size=14))
         self._btn_start.clicked.connect(self._do_start)
 
         self._btn_restart = QPushButton("Restart")
-        self._btn_restart.setIcon(get_tabler_icon("restart", size=14))
-        self._btn_restart.setFixedHeight(30)
-        self._btn_restart.setFixedWidth(95)
+        self._btn_restart.setIcon(get_tabler_icon("restart", color=TEXT_SECONDARY, size=14))
         self._btn_restart.clicked.connect(self._do_restart)
 
         self._btn_stop = QPushButton("Stop")
-        self._btn_stop.setIcon(get_tabler_icon("stop", size=14))
-        self._btn_stop.setFixedHeight(30)
-        self._btn_stop.setFixedWidth(85)
+        self._btn_stop.setIcon(get_tabler_icon("stop", color=TEXT_SECONDARY, size=14))
         self._btn_stop.clicked.connect(self._do_stop)
 
-        self._ctrl_btn_box.addWidget(self._btn_start)
-        self._ctrl_btn_box.addWidget(self._btn_restart)
-        self._ctrl_btn_box.addWidget(self._btn_stop)
+        controls.addWidget(self._btn_start)
+        controls.addWidget(self._btn_restart)
+        controls.addWidget(self._btn_stop)
+        card.addLayout(controls)
 
-        card_layout.addLayout(self._ctrl_btn_box)
         self._layout.addWidget(self._server_card)
 
+    # -----------------------------------------------------------------------
+    # Connections
+    # -----------------------------------------------------------------------
+
     def _build_connect_section(self):
-        """Primary application section: Connect to CipherVault."""
-        sec_box = QVBoxLayout()
-        sec_box.setSpacing(2)
+        header = QVBoxLayout()
+        header.setSpacing(3)
 
-        sec_title = QLabel("Connect to CipherVault")
-        sec_title.setStyleSheet('font-family: "Source Serif 4"; font-size: 17px; font-weight: 600;')
-        sec_sub = QLabel("Choose how your Android device connects to this computer.")
-        sec_sub.setStyleSheet("color: #6B6B6B; font-size: 12px; margin-bottom: 4px;")
+        title = QLabel("Connect to CipherVault")
+        title.setObjectName("sectionTitle")
+        sub = QLabel("Choose how your Android device connects to this computer.")
+        sub.setObjectName("sectionSubtitle")
 
-        sec_box.addWidget(sec_title)
-        sec_box.addWidget(sec_sub)
-        self._layout.addLayout(sec_box)
+        header.addWidget(title)
+        header.addWidget(sub)
+        self._layout.addLayout(header)
 
-        # 1. Recommended Connection Tile (Top of Connect section)
         self._rec_tile = RecommendedTile(on_use_callback=self._handle_recommended_use)
         self._layout.addWidget(self._rec_tile)
 
-        # 2. Available Connections Card (Secondary list below)
-        self._connect_card = QFrame()
-        self._connect_card.setProperty("class", "oneUiCard")
-        self._connect_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self._connect_card = make_card()
+        card = QVBoxLayout(self._connect_card)
+        card.setContentsMargins(10, 10, 10, 10)
+        card.setSpacing(0)
 
-        card_layout = QVBoxLayout(self._connect_card)
-        card_layout.setContentsMargins(12, 10, 12, 10)
-        card_layout.setSpacing(0)
+        avail = QLabel("AVAILABLE CONNECTIONS")
+        avail.setStyleSheet(
+            f"color: {TEXT_MUTED}; font-size: 10px; font-weight: 700; "
+            "letter-spacing: 1px; padding: 5px 10px 7px;"
+        )
+        card.addWidget(avail)
 
-        avail_lbl = QLabel("Available connections")
-        avail_lbl.setStyleSheet("font-weight: 700; font-size: 11px; color: #8C7B6D; margin: 4px 10px 6px 10px;")
-        card_layout.addWidget(avail_lbl)
-
-        # USB / ADB Row with embedded reverse action
         self._usb_widget = QWidget()
-        usb_layout = QVBoxLayout(self._usb_widget)
-        usb_layout.setContentsMargins(0, 0, 0, 0)
-        usb_layout.setSpacing(0)
+        usb_lay = QVBoxLayout(self._usb_widget)
+        usb_lay.setContentsMargins(0, 0, 0, 0)
+        usb_lay.setSpacing(0)
 
         self._btn_usb_reverse = QPushButton("Enable Reverse")
-        self._btn_usb_reverse.setFixedHeight(26)
-        self._btn_usb_reverse.setMinimumWidth(110)
         self._btn_usb_reverse.clicked.connect(self._toggle_adb_reverse)
         self._btn_usb_reverse.setVisible(False)
 
         self._usb_row = ConnectionRow(
-            "usb", "USB / ADB", "Checking USB devices…", "http://127.0.0.1:8080/",
-            extra_widget=self._btn_usb_reverse
+            "usb",
+            "USB / ADB",
+            "Checking USB devices…",
+            "http://127.0.0.1:8080/",
+            extra_widget=self._btn_usb_reverse,
         )
-        usb_layout.addWidget(self._usb_row)
+        usb_lay.addWidget(self._usb_row)
+        card.addWidget(self._usb_widget)
+        card.addWidget(make_subtle_divider())
 
-        card_layout.addWidget(self._usb_widget)
-        card_layout.addWidget(make_subtle_divider())
-
-        # Wi-Fi Row Container
         self._wifi_container = QVBoxLayout()
         self._wifi_container.setSpacing(0)
-        card_layout.addLayout(self._wifi_container)
+        card.addLayout(self._wifi_container)
 
-        # Ethernet Row Container (Rendered ONLY when active)
         self._eth_container = QVBoxLayout()
         self._eth_container.setSpacing(0)
-        card_layout.addLayout(self._eth_container)
+        card.addLayout(self._eth_container)
 
-        # Android Emulator Row
         self._emu_row = ConnectionRow(
-            "emulator", "Android Emulator", "Host loopback alias", "http://10.0.2.2:8080/", can_test=False
+            "emulator",
+            "Android Emulator",
+            "Host loopback alias",
+            "http://10.0.2.2:8080/",
+            can_test=False,
         )
-        card_layout.addWidget(self._emu_row)
+        card.addWidget(self._emu_row)
+        card.addWidget(make_subtle_divider())
 
-        # Advanced Network Interfaces (Collapsible)
         self._adv_net_btn = QPushButton("Advanced network interfaces  ▶")
         self._adv_net_btn.setProperty("class", "collapsibleHeader")
         self._adv_net_btn.clicked.connect(self._toggle_advanced_network)
+        card.addWidget(self._adv_net_btn)
 
         self._adv_net_widget = QWidget()
         self._adv_net_layout = QVBoxLayout(self._adv_net_widget)
         self._adv_net_layout.setContentsMargins(10, 2, 10, 6)
         self._adv_net_layout.setSpacing(2)
         self._adv_net_widget.setVisible(False)
+        card.addWidget(self._adv_net_widget)
 
-        card_layout.addWidget(make_subtle_divider())
-        card_layout.addWidget(self._adv_net_btn)
-        card_layout.addWidget(self._adv_net_widget)
+        card.addWidget(make_subtle_divider())
 
-        # Subtle Informational Notice at bottom of Connect Card
-        card_layout.addWidget(make_subtle_divider())
         info_row = QHBoxLayout()
-        info_row.setContentsMargins(10, 6, 10, 4)
-        info_row.setSpacing(6)
-
+        info_row.setContentsMargins(10, 8, 10, 6)
         info_icon = QLabel()
-        info_icon.setPixmap(get_tabler_icon("info", color="#8C7B6D", size=14).pixmap(14, 14))
+        info_icon.setPixmap(
+            get_tabler_icon("info", color=TEXT_MUTED, size=14).pixmap(14, 14)
+        )
         info_row.addWidget(info_icon)
-
         info_text = QLabel(
             "PC Test only verifies that the backend responds from this computer. "
             "For Wi-Fi, your Android device and PC must be on the same network."
         )
-        info_text.setStyleSheet("color: #6B6B6B; font-size: 11px;")
+        info_text.setObjectName("sectionSubtitle")
+        info_text.setWordWrap(True)
         info_row.addWidget(info_text, 1)
+        card.addLayout(info_row)
 
-        card_layout.addLayout(info_row)
         self._layout.addWidget(self._connect_card)
 
+    # -----------------------------------------------------------------------
+    # System status
+    # -----------------------------------------------------------------------
+
     def _build_system_status_section(self):
-        """Consolidated, cleanly aligned System Status section with View Diagnostics."""
-        sec_header = QHBoxLayout()
-        sec_header.setSpacing(8)
+        header = QHBoxLayout()
+        title = QLabel("System status")
+        title.setObjectName("sectionTitle")
+        header.addWidget(title)
+        header.addStretch()
 
-        sec_title = QLabel("System Status")
-        sec_title.setStyleSheet('font-family: "Source Serif 4"; font-size: 15px; font-weight: 600;')
-        sec_header.addWidget(sec_title)
-        sec_header.addStretch()
-
-        self._btn_diag_toggle = QPushButton("View Diagnostics ▼")
-        self._btn_diag_toggle.setFixedHeight(25)
+        self._btn_diag_toggle = QPushButton("View diagnostics ▼")
         self._btn_diag_toggle.clicked.connect(self._toggle_diagnostics)
-        sec_header.addWidget(self._btn_diag_toggle)
-        self._layout.addLayout(sec_header)
+        header.addWidget(self._btn_diag_toggle)
+        self._layout.addLayout(header)
 
-        # System Status Card
-        self._system_card = QFrame()
-        self._system_card.setProperty("class", "oneUiCard")
-        self._system_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self._system_card = make_card()
+        sys = QVBoxLayout(self._system_card)
+        sys.setContentsMargins(20, 16, 20, 16)
+        sys.setSpacing(8)
 
-        sys_layout = QVBoxLayout(self._system_card)
-        sys_layout.setContentsMargins(18, 12, 18, 12)
-        sys_layout.setSpacing(6)
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(28)
+        grid.setVerticalSpacing(8)
 
-        # Cleanly aligned 4-row Summary
-        summary_grid = QGridLayout()
-        summary_grid.setHorizontalSpacing(18)
-        summary_grid.setVerticalSpacing(4)
-
-        lbl_b = QLabel("Backend")
+        labels = ["Backend", "Database", "Storage", "Encryption"]
         self._sys_backend_val = QLabel("● Checking…")
-        summary_grid.addWidget(lbl_b, 0, 0)
-        summary_grid.addWidget(self._sys_backend_val, 0, 1)
-
-        lbl_d = QLabel("Database")
         self._sys_db_val = QLabel("● Waiting for backend…")
-        summary_grid.addWidget(lbl_d, 1, 0)
-        summary_grid.addWidget(self._sys_db_val, 1, 1)
-
-        lbl_s = QLabel("Storage")
         self._sys_storage_val = QLabel("● Ready")
-        summary_grid.addWidget(lbl_s, 2, 0)
-        summary_grid.addWidget(self._sys_storage_val, 2, 1)
-
-        lbl_e = QLabel("Encryption")
         self._sys_crypto_val = QLabel("● AES-256-GCM · BCrypt · JWT Initialized")
-        summary_grid.addWidget(lbl_e, 3, 0)
-        summary_grid.addWidget(self._sys_crypto_val, 3, 1)
+        values = [
+            self._sys_backend_val,
+            self._sys_db_val,
+            self._sys_storage_val,
+            self._sys_crypto_val,
+        ]
 
-        for l in [lbl_b, lbl_d, lbl_s, lbl_e]:
-            l.setStyleSheet("color: #6B6B6B; font-size: 12px; font-weight: 600; min-width: 95px;")
+        for row, (name, value) in enumerate(zip(labels, values)):
+            lbl = QLabel(name)
+            lbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 12px; font-weight: 600;")
+            value.setObjectName("monoText")
+            grid.addWidget(lbl, row, 0)
+            grid.addWidget(value, row, 1)
 
-        for v in [self._sys_backend_val, self._sys_db_val, self._sys_storage_val, self._sys_crypto_val]:
-            v.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 500;')
+        sys.addLayout(grid)
 
-        sys_layout.addLayout(summary_grid)
-
-        # Expanded Diagnostics (Collapsed by default)
         self._diag_container = QWidget()
-        diag_layout = QVBoxLayout(self._diag_container)
-        diag_layout.setContentsMargins(0, 8, 0, 0)
-        diag_layout.setSpacing(3)
-        diag_layout.addWidget(make_subtle_divider())
+        diag = QVBoxLayout(self._diag_container)
+        diag.setContentsMargins(0, 10, 0, 0)
+        diag.setSpacing(4)
+        diag.addWidget(make_subtle_divider())
 
         self._diag_time = QLabel("Server Time: —")
         self._diag_latency = QLabel("Health Latency: —")
@@ -660,163 +1023,195 @@ class MainWindow(QMainWindow):
         self._diag_pool = QLabel("Database Connection Pool: HikariCP (MySQL)")
         self._diag_key = QLabel("Key Management: Initialized (Streaming mode)")
 
-        for d in [self._diag_time, self._diag_latency, self._diag_binding, self._diag_pool, self._diag_key]:
-            d.setStyleSheet('font-family: "JetBrains Mono"; font-size: 11px; color: #6B6B6B;')
-            diag_layout.addWidget(d)
+        for item in [
+            self._diag_time,
+            self._diag_latency,
+            self._diag_binding,
+            self._diag_pool,
+            self._diag_key,
+        ]:
+            item.setObjectName("monoText")
+            diag.addWidget(item)
 
         self._diag_container.setVisible(False)
-        sys_layout.addWidget(self._diag_container)
+        sys.addWidget(self._diag_container)
 
         self._layout.addWidget(self._system_card)
 
+    # -----------------------------------------------------------------------
+    # Warnings
+    # -----------------------------------------------------------------------
+
     def _build_warnings_section(self):
-        """Compact warning row rendered only when development fallbacks exist."""
-        self._warn_card = QFrame()
-        self._warn_card.setProperty("class", "oneUiCard")
-        self._warn_card.setStyleSheet("background-color: #FDF9F2; border: 1px solid #EFE4D0;")
-        self._warn_card.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self._warn_card = make_card()
+        self._warn_card.setStyleSheet(
+            f"background: #28251B; border: 1px solid #4B432C; border-radius: 10px;"
+        )
 
-        warn_layout = QVBoxLayout(self._warn_card)
-        warn_layout.setContentsMargins(14, 10, 14, 10)
-        warn_layout.setSpacing(4)
+        lay = QVBoxLayout(self._warn_card)
+        lay.setContentsMargins(16, 12, 16, 12)
+        lay.setSpacing(5)
 
-        header_row = QHBoxLayout()
-        header_row.setSpacing(6)
+        head = QHBoxLayout()
+        icon = QLabel()
+        icon.setPixmap(get_tabler_icon("alert", color=WARNING, size=15).pixmap(15, 15))
+        head.addWidget(icon)
 
-        warn_icon = QLabel()
-        warn_icon.setPixmap(get_tabler_icon("alert", color="#B36A00", size=15).pixmap(15, 15))
-        header_row.addWidget(warn_icon)
+        title = QLabel(
+            "Development configuration: 3 fallback values active · JWT · Master Key · PBKDF2"
+        )
+        title.setStyleSheet(f"color: {WARNING}; font-size: 11px; font-weight: 700;")
+        head.addWidget(title, 1)
 
-        warn_title = QLabel("⚠ Development configuration: 3 fallback values active · JWT · Master Key · PBKDF2")
-        warn_title.setStyleSheet("color: #8C5311; font-size: 12px; font-weight: 700;")
-        header_row.addWidget(warn_title, 1)
-
-        self._btn_warn_toggle = QPushButton("View Details ▼")
-        self._btn_warn_toggle.setFixedHeight(23)
+        self._btn_warn_toggle = QPushButton("View details ▼")
         self._btn_warn_toggle.clicked.connect(self._toggle_warnings)
-        header_row.addWidget(self._btn_warn_toggle)
-        warn_layout.addLayout(header_row)
+        head.addWidget(self._btn_warn_toggle)
+        lay.addLayout(head)
 
         self._warn_details = QWidget()
-        details_lay = QVBoxLayout(self._warn_details)
-        details_lay.setContentsMargins(22, 2, 6, 2)
-        details_lay.setSpacing(2)
+        details = QVBoxLayout(self._warn_details)
+        details.setContentsMargins(22, 2, 6, 2)
+        details.setSpacing(3)
 
-        w1 = QLabel("• JWT: Development fallback secret active (configure CIPHERVAULT_JWT_SECRET for production)")
-        w2 = QLabel("• Master Key: Development fallback passphrase active (configure CIPHERVAULT_MASTER_KEY for production)")
-        w3 = QLabel("• PBKDF2 Salt: Development fallback salt active (configure CIPHERVAULT_PBKDF2_SALT for production)")
-        w_note = QLabel("Note: Secret values and keys are strictly withheld from display.")
-
-        for item in [w1, w2, w3, w_note]:
-            item.setStyleSheet("color: #8C5311; font-size: 11px;")
-            details_lay.addWidget(item)
+        items = [
+            "• JWT: Development fallback secret active (configure CIPHERVAULT_JWT_SECRET for production)",
+            "• Master Key: Development fallback passphrase active (configure CIPHERVAULT_MASTER_KEY for production)",
+            "• PBKDF2 Salt: Development fallback salt active (configure CIPHERVAULT_PBKDF2_SALT for production)",
+            "Note: Secret values and keys are strictly withheld from display.",
+        ]
+        for text in items:
+            lbl = QLabel(text)
+            lbl.setWordWrap(True)
+            lbl.setStyleSheet(f"color: #CBB77A; font-size: 11px;")
+            details.addWidget(lbl)
 
         self._warn_details.setVisible(False)
-        warn_layout.addWidget(self._warn_details)
-
+        lay.addWidget(self._warn_details)
         self._layout.addWidget(self._warn_card)
 
+    # -----------------------------------------------------------------------
+    # Activity / logs
+    # -----------------------------------------------------------------------
+
     def _build_collapsible_api_activity(self):
-        """Collapsible Recent API Activity section."""
-        self._api_btn = QPushButton("Recent API Activity (0)  ▶")
+        self._api_btn = QPushButton("Recent API activity (0)  ▶")
         self._api_btn.setProperty("class", "collapsibleHeader")
         self._api_btn.clicked.connect(self._toggle_api_activity)
         self._layout.addWidget(self._api_btn)
 
         self._api_widget = QWidget()
-        self._api_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        api_layout = QVBoxLayout(self._api_widget)
-        api_layout.setContentsMargins(0, 0, 0, 4)
-        api_layout.setSpacing(4)
+        api = QVBoxLayout(self._api_widget)
+        api.setContentsMargins(0, 0, 0, 5)
 
         self._api_log = QTextEdit()
         self._api_log.setReadOnly(True)
-        self._api_log.setFixedHeight(110)
-        self._api_log.setPlaceholderText("Observed backend HTTP requests will appear here live")
-        api_layout.addWidget(self._api_log)
+        self._api_log.setFixedHeight(130)
+        self._api_log.setPlaceholderText(
+            "Observed backend HTTP requests will appear here live"
+        )
+        api.addWidget(self._api_log)
 
         self._api_widget.setVisible(False)
         self._layout.addWidget(self._api_widget)
 
     def _build_collapsible_server_log(self):
-        """Collapsible Server Log section."""
-        self._log_btn = QPushButton("Server Log  ▶")
+        self._log_btn = QPushButton("Server log  ▶")
         self._log_btn.setProperty("class", "collapsibleHeader")
         self._log_btn.clicked.connect(self._toggle_server_log)
         self._layout.addWidget(self._log_btn)
 
         self._log_widget = QWidget()
-        self._log_widget.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        log_layout = QVBoxLayout(self._log_widget)
-        log_layout.setContentsMargins(0, 0, 0, 4)
-        log_layout.setSpacing(6)
+        log = QVBoxLayout(self._log_widget)
+        log.setContentsMargins(0, 0, 0, 5)
+        log.setSpacing(7)
 
         self._server_log = QTextEdit()
         self._server_log.setReadOnly(True)
-        self._server_log.setFixedHeight(170)
-        self._server_log.setPlaceholderText("Spring Boot stdout and stderr output streams here")
-        log_layout.addWidget(self._server_log)
+        self._server_log.setFixedHeight(190)
+        self._server_log.setPlaceholderText(
+            "Spring Boot stdout and stderr output streams here"
+        )
+        log.addWidget(self._server_log)
 
-        btn_row = QHBoxLayout()
-        btn_row.addStretch()
-        btn_clear = QPushButton("Clear Log")
-        btn_clear.setFixedHeight(25)
-        btn_clear.clicked.connect(lambda: self._server_log.clear())
-        btn_copy = QPushButton("Copy All")
-        btn_copy.setFixedHeight(25)
-        btn_copy.clicked.connect(lambda: QApplication.clipboard().setText(self._server_log.toPlainText()))
-        btn_row.addWidget(btn_clear)
-        btn_row.addWidget(btn_copy)
-        log_layout.addLayout(btn_row)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+
+        clear = QPushButton("Clear log")
+        clear.clicked.connect(self._server_log.clear)
+        copy = QPushButton("Copy all")
+        copy.clicked.connect(
+            lambda: QApplication.clipboard().setText(self._server_log.toPlainText())
+        )
+        buttons.addWidget(clear)
+        buttons.addWidget(copy)
+        log.addLayout(buttons)
 
         self._log_widget.setVisible(False)
         self._layout.addWidget(self._log_widget)
 
     # -----------------------------------------------------------------------
-    # Collapsible Toggles
+    # Toggles
     # -----------------------------------------------------------------------
 
     def _toggle_advanced_network(self):
-        vis = not self._adv_net_widget.isVisible()
-        self._adv_net_widget.setVisible(vis)
-        self._adv_net_btn.setText(f"Advanced network interfaces  {'▼' if vis else '▶'}")
+        visible = not self._adv_net_widget.isVisible()
+        self._adv_net_widget.setVisible(visible)
+        self._adv_net_btn.setText(
+            f"Advanced network interfaces  {'▼' if visible else '▶'}"
+        )
 
     def _toggle_diagnostics(self):
-        vis = not self._diag_container.isVisible()
-        self._diag_container.setVisible(vis)
-        self._btn_diag_toggle.setText("Hide Diagnostics ▲" if vis else "View Diagnostics ▼")
+        visible = not self._diag_container.isVisible()
+        self._diag_container.setVisible(visible)
+        self._btn_diag_toggle.setText(
+            "Hide diagnostics ▲" if visible else "View diagnostics ▼"
+        )
 
     def _toggle_warnings(self):
-        vis = not self._warn_details.isVisible()
-        self._warn_details.setVisible(vis)
-        self._btn_warn_toggle.setText("Hide Details ▲" if vis else "View Details ▼")
+        visible = not self._warn_details.isVisible()
+        self._warn_details.setVisible(visible)
+        self._btn_warn_toggle.setText(
+            "Hide details ▲" if visible else "View details ▼"
+        )
 
     def _toggle_api_activity(self):
-        vis = not self._api_widget.isVisible()
-        self._api_widget.setVisible(vis)
-        count = len(self._api_log.toPlainText().strip().split("\n")) if self._api_log.toPlainText().strip() else 0
-        self._api_btn.setText(f"Recent API Activity ({count})  {'▼' if vis else '▶'}")
+        visible = not self._api_widget.isVisible()
+        self._api_widget.setVisible(visible)
+        count = (
+            len(self._api_log.toPlainText().strip().split("\n"))
+            if self._api_log.toPlainText().strip()
+            else 0
+        )
+        self._api_btn.setText(
+            f"Recent API activity ({count})  {'▼' if visible else '▶'}"
+        )
 
     def _toggle_server_log(self):
-        vis = not self._log_widget.isVisible()
-        self._log_widget.setVisible(vis)
-        self._log_btn.setText(f"Server Log  {'▼' if vis else '▶'}")
+        visible = not self._log_widget.isVisible()
+        self._log_widget.setVisible(visible)
+        self._log_btn.setText(f"Server log  {'▼' if visible else '▶'}")
 
     # -----------------------------------------------------------------------
-    # Backend Actions
+    # Backend actions
     # -----------------------------------------------------------------------
 
     def _do_start(self):
         if self._backend_svc.isRunning():
             return
+
         if self._backend_svc.isFinished():
             self._backend_svc = BackendService()
             self._backend_svc.log_line.connect(self._on_log_line)
             self._backend_svc.state_changed.connect(self._on_backend_state)
             self._backend_svc.startup_info.connect(self._on_startup_info)
+
         app_logger.log("action", "Starting backend server")
-        self._health_poller.set_state(BackendState.STARTING, "Starting Spring Boot...")
-        self._update_server_status_ui(BackendState.STARTING, "Launching backend process...")
+        self._health_poller.set_state(
+            BackendState.STARTING, "Starting Spring Boot..."
+        )
+        self._update_server_status_ui(
+            BackendState.STARTING, "Launching backend process..."
+        )
         self._started_at = datetime.now()
         self._backend_svc.start_backend()
 
@@ -832,8 +1227,12 @@ class MainWindow(QMainWindow):
     def _do_restart(self):
         app_logger.log("action", "Restarting backend server")
         self._do_stop()
-        self._health_poller.set_state(BackendState.STARTING, "Restarting backend...")
-        self._update_server_status_ui(BackendState.STARTING, "Restarting...")
+        self._health_poller.set_state(
+            BackendState.STARTING, "Restarting backend..."
+        )
+        self._update_server_status_ui(
+            BackendState.STARTING, "Restarting..."
+        )
         QTimer.singleShot(1500, self._restart_step2)
 
     def _restart_step2(self):
@@ -844,79 +1243,81 @@ class MainWindow(QMainWindow):
         self._do_start()
 
     # -----------------------------------------------------------------------
-    # Recommended Connection Logic
+    # Recommendation
     # -----------------------------------------------------------------------
 
     def _determine_recommendation(self) -> dict:
-        """Determines the single best available connection for an Android device."""
-        # 1. Physical Android device connected via USB
-        phys_dev = next((d for d in self._adb_devices if d.state == "device" and not d.is_emulator), None)
-        if phys_dev:
+        physical = next(
+            (d for d in self._adb_devices if d.state == "device" and not d.is_emulator),
+            None,
+        )
+        if physical:
             return {
                 "type": "usb",
                 "title": "USB / ADB",
-                "subtitle": f"Physical Android device connected ({phys_dev.serial})",
+                "subtitle": f"Physical Android device connected ({physical.serial})",
                 "url": "http://127.0.0.1:8080/",
                 "action_text": "Use USB",
                 "ready": True,
-                "device": phys_dev
+                "device": physical,
             }
 
-        # 2. Wi-Fi: active usable Wi-Fi address exists
         adapters = NetworkService.get_classified_adapters()
         if adapters["wifi"]:
-            w = adapters["wifi"][0]
+            wifi = adapters["wifi"][0]
             return {
                 "type": "wifi",
                 "title": "Wi-Fi",
-                "subtitle": f"Connect your Android phone over the same local network ({w.ip})",
-                "url": w.url,
+                "subtitle": f"Connect your Android phone over the same local network ({wifi.ip})",
+                "url": wifi.url,
                 "action_text": "Use Wi-Fi",
                 "ready": True,
-                "adapter": w
+                "adapter": wifi,
             }
 
-        # 3. Ethernet: usable LAN connection exists
         if adapters["ethernet"]:
-            e = adapters["ethernet"][0]
+            ethernet = adapters["ethernet"][0]
             return {
                 "type": "ethernet",
                 "title": "Ethernet",
-                "subtitle": f"Available on local network ({e.ip})",
-                "url": e.url,
+                "subtitle": f"Available on local network ({ethernet.ip})",
+                "url": ethernet.url,
                 "action_text": "Use Ethernet",
                 "ready": True,
-                "adapter": e
+                "adapter": ethernet,
             }
 
-        # 4. Emulator: only if an emulator is actually connected/running
-        emu_dev = next((d for d in self._adb_devices if d.state == "device" and d.is_emulator), None)
-        if emu_dev:
+        emulator = next(
+            (d for d in self._adb_devices if d.state == "device" and d.is_emulator),
+            None,
+        )
+        if emulator:
             return {
                 "type": "emulator",
                 "title": "Android Emulator",
-                "subtitle": f"Android emulator detected ({emu_dev.serial})",
+                "subtitle": f"Android emulator detected ({emulator.serial})",
                 "url": "http://10.0.2.2:8080/",
                 "action_text": "Use Emulator",
                 "ready": True,
-                "device": emu_dev
+                "device": emulator,
             }
 
-        # 5. Nothing ready
         return {
             "type": "none",
             "title": "No connection ready",
-            "subtitle": "Connect your Android device by USB or connect this computer and your phone to the same Wi-Fi network.",
+            "subtitle": (
+                "Connect your Android device by USB or connect this computer "
+                "and your phone to the same Wi-Fi network."
+            ),
             "url": "",
             "action_text": "",
-            "ready": False
+            "ready": False,
         }
 
     def _handle_recommended_use(self, rec: dict):
         if not rec:
             return
-        conn_type = rec.get("type", "")
-        if conn_type == "usb":
+        if rec.get("type") == "usb":
             dev = rec.get("device")
             if dev and not dev.reverse_active:
                 AdbService.enable_reverse(dev.serial)
@@ -924,7 +1325,7 @@ class MainWindow(QMainWindow):
                 self._update_adb_ui(True, self._adb_devices)
 
     # -----------------------------------------------------------------------
-    # Network and ADB Refresh
+    # Network / ADB
     # -----------------------------------------------------------------------
 
     def _manual_refresh(self):
@@ -933,49 +1334,67 @@ class MainWindow(QMainWindow):
         self._refresh_connections_and_adb()
 
     def _refresh_connections_and_adb(self):
-        # 1. Socket Binding
-        b_type, b_desc = NetworkService.check_backend_binding(settings.backend_port)
-        self._diag_binding.setText(f"Socket Binding: {b_desc}")
+        _, binding_desc = NetworkService.check_backend_binding(settings.backend_port)
+        self._diag_binding.setText(f"Socket Binding: {binding_desc}")
 
-        # 2. Classified Adapters
         adapters = NetworkService.get_classified_adapters()
 
-        # Wi-Fi
         self._clear_layout(self._wifi_container)
         if settings.show_wifi and adapters["wifi"]:
-            for a in adapters["wifi"]:
-                self._wifi_container.addWidget(ConnectionRow("wifi", "Wi-Fi", f"● Available · {a.ip} ({a.name})", a.url))
+            for adapter in adapters["wifi"]:
+                self._wifi_container.addWidget(
+                    ConnectionRow(
+                        "wifi",
+                        "Wi-Fi",
+                        f"● Available · {adapter.ip} ({adapter.name})",
+                        adapter.url,
+                    )
+                )
             self._wifi_container.addWidget(make_subtle_divider())
 
-        # Ethernet: Only rendered if active and usable!
         self._clear_layout(self._eth_container)
         if settings.show_ethernet and adapters["ethernet"]:
-            for a in adapters["ethernet"]:
-                self._eth_container.addWidget(ConnectionRow("ethernet", "Ethernet", f"● Available · {a.ip} ({a.name})", a.url))
+            for adapter in adapters["ethernet"]:
+                self._eth_container.addWidget(
+                    ConnectionRow(
+                        "ethernet",
+                        "Ethernet",
+                        f"● Available · {adapter.ip} ({adapter.name})",
+                        adapter.url,
+                    )
+                )
             self._eth_container.addWidget(make_subtle_divider())
 
-        # Advanced / Virtual (WSL, Hyper-V, VPN)
         self._clear_layout(self._adv_net_layout)
         if adapters["other"]:
             self._adv_net_btn.setVisible(True)
-            self._adv_net_btn.setText(f"Advanced network interfaces ({len(adapters['other'])})  ▶")
-            for a in adapters["other"]:
-                self._adv_net_layout.addWidget(ConnectionRow("wifi", a.name, f"Virtual / Local · {a.ip}", a.url))
+            self._adv_net_btn.setText(
+                f"Advanced network interfaces ({len(adapters['other'])})  ▶"
+            )
+            for adapter in adapters["other"]:
+                self._adv_net_layout.addWidget(
+                    ConnectionRow(
+                        "wifi",
+                        adapter.name,
+                        f"Virtual / Local · {adapter.ip}",
+                        adapter.url,
+                    )
+                )
         else:
             self._adv_net_btn.setVisible(False)
 
-        # 3. ADB Devices in background worker
-        threading.Thread(target=self._query_adb_async, daemon=True).start()
+        threading.Thread(
+            target=self._query_adb_async,
+            daemon=True,
+        ).start()
 
     def _query_adb_async(self):
-        avail = AdbService.is_available()
-        devices = AdbService.get_devices() if avail else []
-        self.adb_updated.emit(avail, devices)
+        available = AdbService.is_available()
+        devices = AdbService.get_devices() if available else []
+        self.adb_updated.emit(available, devices)
 
     def _update_adb_ui(self, adb_avail: bool, devices: list[AdbDevice]):
         self._adb_devices = devices
-
-        # Update recommendation tile dynamically
         rec = self._determine_recommendation()
         self._rec_tile.set_recommendation(rec)
 
@@ -984,6 +1403,7 @@ class MainWindow(QMainWindow):
             return
 
         self._usb_widget.setVisible(True)
+
         if not adb_avail:
             self._usb_row.update_subtitle("⚠ ADB platform-tools not found in PATH")
             self._btn_usb_reverse.setVisible(False)
@@ -996,36 +1416,61 @@ class MainWindow(QMainWindow):
 
         target_serial = devices[0].serial
         self._selected_adb_serial = target_serial
-        active_dev = next((d for d in devices if d.serial == target_serial), devices[0])
+        active_dev = next(
+            (d for d in devices if d.serial == target_serial),
+            devices[0],
+        )
 
-        # Auto-enable reverse if configured
         if settings.auto_enable_adb_reverse and not active_dev.reverse_active:
-            active_dev.reverse_active = True  # Optimistic UI update
+            active_dev.reverse_active = True
             threading.Thread(
-                target=lambda s: (AdbService.enable_reverse(s), self._query_adb_async()), 
-                args=(active_dev.serial,), 
-                daemon=True
+                target=lambda s: (
+                    AdbService.enable_reverse(s),
+                    self._query_adb_async(),
+                ),
+                args=(active_dev.serial,),
+                daemon=True,
             ).start()
 
-        # Clean status line with device serial & state
-        dev_desc = "Physical" if not active_dev.is_emulator else "Emulator"
-        state_tag = "Reverse active" if active_dev.reverse_active else "Reverse inactive"
-        self._usb_row.update_subtitle(f"● Connected · {active_dev.serial} ({dev_desc}) · {state_tag}")
+        device_kind = "Physical" if not active_dev.is_emulator else "Emulator"
+        reverse_state = (
+            "Reverse active" if active_dev.reverse_active else "Reverse inactive"
+        )
+        self._usb_row.update_subtitle(
+            f"● Connected · {active_dev.serial} ({device_kind}) · {reverse_state}"
+        )
 
         self._btn_usb_reverse.setVisible(True)
         self._btn_usb_reverse.setEnabled(True)
-        self._btn_usb_reverse.setText("Disable Reverse" if active_dev.reverse_active else "Enable Reverse")
-        self._btn_usb_reverse.setProperty("primary", not active_dev.reverse_active)
+        self._btn_usb_reverse.setText(
+            "Disable Reverse" if active_dev.reverse_active else "Enable Reverse"
+        )
+        self._btn_usb_reverse.setProperty(
+            "primary", not active_dev.reverse_active
+        )
         self._btn_usb_reverse.style().unpolish(self._btn_usb_reverse)
         self._btn_usb_reverse.style().polish(self._btn_usb_reverse)
 
     def _toggle_adb_reverse(self):
         if not self._adb_devices:
             return
-        active_dev = next((d for d in self._adb_devices if d.serial == self._selected_adb_serial), self._adb_devices[0])
+
+        active_dev = next(
+            (
+                d
+                for d in self._adb_devices
+                if d.serial == self._selected_adb_serial
+            ),
+            self._adb_devices[0],
+        )
+
         self._btn_usb_reverse.setText("Toggling…")
         self._btn_usb_reverse.setEnabled(False)
-        threading.Thread(target=self._do_toggle_reverse, args=(active_dev.serial, active_dev.reverse_active), daemon=True).start()
+        threading.Thread(
+            target=self._do_toggle_reverse,
+            args=(active_dev.serial, active_dev.reverse_active),
+            daemon=True,
+        ).start()
 
     def _do_toggle_reverse(self, dev_serial, is_active):
         if is_active:
@@ -1038,14 +1483,14 @@ class MainWindow(QMainWindow):
     def _clear_layout(self, layout):
         while layout.count():
             item = layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
             elif item.layout():
                 self._clear_layout(item.layout())
 
     # -----------------------------------------------------------------------
-    # Signal Handlers & Log Streaming
+    # Signals / logs
     # -----------------------------------------------------------------------
 
     @Slot(str)
@@ -1058,7 +1503,9 @@ class MainWindow(QMainWindow):
             self._api_log.append(f"{now}   {clean_line.strip()}")
             if not self._api_widget.isVisible():
                 count = len(self._api_log.toPlainText().strip().split("\n"))
-                self._api_btn.setText(f"Recent API Activity ({count})  ▶")
+                self._api_btn.setText(
+                    f"Recent API activity ({count})  ▶"
+                )
 
     @Slot(str, str)
     def _on_backend_state(self, state: str, detail: str):
@@ -1072,7 +1519,11 @@ class MainWindow(QMainWindow):
             self._refresh_connections_and_adb()
         elif state == BackendState.STARTING:
             self._health_poller.poll_now()
-        elif state in (BackendState.STOPPED, BackendState.ERROR, BackendState.FOREIGN_SERVICE):
+        elif state in (
+            BackendState.STOPPED,
+            BackendState.ERROR,
+            BackendState.FOREIGN_SERVICE,
+        ):
             self._uptime_timer.stop()
 
     @Slot(dict)
@@ -1080,153 +1531,223 @@ class MainWindow(QMainWindow):
         self._backend_info = info
         self._update_metadata_line()
 
-        # Update System Status Card Summary
         if "mysql_version" in info or info.get("db_connected"):
-            ver = info.get("mysql_version", "8.0")
-            self._sys_db_val.setText(f"● Connected · MySQL {ver} · ciphervault")
-            self._sys_db_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #2E7D32;')
+            version = info.get("mysql_version", "8.0")
+            self._sys_db_val.setText(
+                f"● Connected · MySQL {version} · ciphervault"
+            )
+            self._sys_db_val.setStyleSheet(
+                f"color: {SUCCESS}; font-weight: 600;"
+            )
 
         if "files_scanned" in info:
             scanned = info.get("files_scanned", "0")
             missing = info.get("missing_metadata", "0")
-            self._sys_storage_val.setText(f"● Ready · {scanned} files · {missing} missing metadata")
+            self._sys_storage_val.setText(
+                f"● Ready · {scanned} files · {missing} missing metadata"
+            )
 
-        # Update Diagnostics
         if "jvm_pid" in info:
-            self._diag_pool.setText(f"Process PID: {info['jvm_pid']} · Database Pool: HikariCP (MySQL)")
+            self._diag_pool.setText(
+                f"Process PID: {info['jvm_pid']} · Database Pool: HikariCP (MySQL)"
+            )
 
     @Slot(str, str, dict)
     def _on_health_status(self, state: str, reason: str, data: dict):
         self._update_server_status_ui(state, reason, data)
 
     # -----------------------------------------------------------------------
-    # State-Aware UI Updating
+    # State-aware UI
     # -----------------------------------------------------------------------
 
-    def _update_server_status_ui(self, state: str, detail: str = "", data: dict = None):
-        pid_str = str(self._backend_info.get("jvm_pid", self._backend_svc.pid or "—"))
-        uptime_str = self._get_uptime_string()
+    def _update_server_status_ui(
+        self,
+        state: str,
+        detail: str = "",
+        data: dict = None,
+    ):
+        pid_str = str(
+            self._backend_info.get("jvm_pid", self._backend_svc.pid or "—")
+        )
+        uptime = self._get_uptime_string()
+
+        self._sidebar_status.setText(state.upper())
 
         if state == BackendState.ONLINE:
-            # Header pill
-            self._status_dot.setStyleSheet("font-size: 13px; color: #2E7D32;")
+            self._status_dot.setStyleSheet(f"color: {SUCCESS};")
             self._status_text.setText("ONLINE")
-            self._status_text.setStyleSheet("font-weight: 700; font-size: 12px; color: #2E7D32;")
-            self._status_pill.setStyleSheet("background-color: #E8F5E9; border-radius: 13px; padding: 3px 10px;")
+            self._status_text.setStyleSheet(
+                f"color: {SUCCESS}; font-weight: 700;"
+            )
 
-            # Server status card
             self._status_heading.setText("ONLINE")
-            self._status_heading.setStyleSheet("font-weight: 700; font-size: 15px; color: #2E7D32;")
-            self._status_desc.setText("CipherVault backend is running normally.")
-            self._status_meta.setText(f"Port 8080 · PID {pid_str} · Uptime {uptime_str}")
+            self._status_heading.setStyleSheet(
+                f"color: {SUCCESS}; font-size: 16px; font-weight: 700;"
+            )
+            self._status_desc.setText(
+                "CipherVault backend is running normally."
+            )
+            self._status_meta.setText(
+                f"Port {settings.backend_port} · PID {pid_str} · Uptime {uptime}"
+            )
 
-            # State-aware buttons: Start is HIDDEN when online!
             self._btn_start.setVisible(False)
             self._btn_restart.setVisible(True)
             self._btn_stop.setVisible(True)
 
-            # System card
             latency = data.get("_latency_ms", "3") if data else "3"
-            self._sys_backend_val.setText(f"● Online · 200 OK · {latency} ms")
-            self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #2E7D32;')
+            self._sys_backend_val.setText(
+                f"● Online · 200 OK · {latency} ms"
+            )
+            self._sys_backend_val.setStyleSheet(
+                f"color: {SUCCESS}; font-weight: 600;"
+            )
 
             if data and data.get("timestamp"):
-                self._diag_time.setText(f"Server Time: {data['timestamp']}")
-                self._diag_latency.setText(f"Health Latency: {latency} ms")
+                self._diag_time.setText(
+                    f"Server Time: {data['timestamp']}"
+                )
+                self._diag_latency.setText(
+                    f"Health Latency: {latency} ms"
+                )
 
         elif state == BackendState.STARTING:
-            self._status_dot.setStyleSheet("font-size: 13px; color: #B36A00;")
+            self._status_dot.setStyleSheet(f"color: {WARNING};")
             self._status_text.setText("STARTING")
-            self._status_text.setStyleSheet("font-weight: 700; font-size: 12px; color: #B36A00;")
-            self._status_pill.setStyleSheet("background-color: #FFF8E1; border-radius: 13px; padding: 3px 10px;")
+            self._status_text.setStyleSheet(
+                f"color: {WARNING}; font-weight: 700;"
+            )
 
             self._status_heading.setText("STARTING")
-            self._status_heading.setStyleSheet("font-weight: 700; font-size: 15px; color: #B36A00;")
-            self._status_desc.setText("Starting CipherVault backend… Waiting for Spring Boot health response.")
-            self._status_meta.setText(f"Port 8080 · PID {pid_str}")
+            self._status_heading.setStyleSheet(
+                f"color: {WARNING}; font-size: 16px; font-weight: 700;"
+            )
+            self._status_desc.setText(
+                "Starting CipherVault backend… waiting for Spring Boot health response."
+            )
+            self._status_meta.setText(
+                f"Port {settings.backend_port} · PID {pid_str}"
+            )
 
             self._btn_start.setVisible(False)
             self._btn_restart.setVisible(False)
             self._btn_stop.setVisible(True)
 
             self._sys_backend_val.setText("● Starting…")
-            self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #B36A00;')
+            self._sys_backend_val.setStyleSheet(
+                f"color: {WARNING}; font-weight: 600;"
+            )
 
         elif state == BackendState.FOREIGN_SERVICE:
-            self._status_dot.setStyleSheet("font-size: 13px; color: #D32F2F;")
+            self._status_dot.setStyleSheet(f"color: {DANGER};")
             self._status_text.setText("PORT OCCUPIED")
-            self._status_text.setStyleSheet("font-weight: 700; font-size: 12px; color: #D32F2F;")
-            self._status_pill.setStyleSheet("background-color: #FFEBEE; border-radius: 13px; padding: 3px 10px;")
+            self._status_text.setStyleSheet(
+                f"color: {DANGER}; font-weight: 700;"
+            )
 
             self._status_heading.setText("PORT OCCUPIED")
-            self._status_heading.setStyleSheet("font-weight: 700; font-size: 15px; color: #D32F2F;")
-            self._status_desc.setText(detail or "Port 8080 is in use by another service. CipherVault cannot safely bind.")
-            self._status_meta.setText(f"Port 8080 occupied · PID {pid_str}")
+            self._status_heading.setStyleSheet(
+                f"color: {DANGER}; font-size: 16px; font-weight: 700;"
+            )
+            self._status_desc.setText(
+                detail
+                or "Port 8080 is in use by another service. CipherVault cannot safely bind."
+            )
+            self._status_meta.setText(
+                f"Port {settings.backend_port} occupied · PID {pid_str}"
+            )
 
             self._btn_start.setVisible(False)
             self._btn_restart.setVisible(False)
             self._btn_stop.setVisible(False)
 
             self._sys_backend_val.setText("⚠ Port Conflict")
-            self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #D32F2F;')
+            self._sys_backend_val.setStyleSheet(
+                f"color: {DANGER}; font-weight: 600;"
+            )
 
         elif state == BackendState.STOPPED:
-            self._status_dot.setStyleSheet("font-size: 13px; color: #757575;")
+            self._status_dot.setStyleSheet(f"color: {TEXT_MUTED};")
             self._status_text.setText("OFFLINE")
-            self._status_text.setStyleSheet("font-weight: 700; font-size: 12px; color: #757575;")
-            self._status_pill.setStyleSheet("background-color: #F0EEEA; border-radius: 13px; padding: 3px 10px;")
+            self._status_text.setStyleSheet(
+                f"color: {TEXT_MUTED}; font-weight: 700;"
+            )
 
             self._status_heading.setText("OFFLINE")
-            self._status_heading.setStyleSheet("font-weight: 700; font-size: 15px; color: #757575;")
-            self._status_desc.setText("The CipherVault backend is not running.")
-            self._status_meta.setText("Port 8080 · PID —")
+            self._status_heading.setStyleSheet(
+                f"color: {TEXT_MUTED}; font-size: 16px; font-weight: 700;"
+            )
+            self._status_desc.setText(
+                "The CipherVault backend is not running."
+            )
+            self._status_meta.setText(
+                f"Port {settings.backend_port} · PID —"
+            )
 
-            # State-aware buttons: Start is VISIBLE and primary!
             self._btn_start.setVisible(True)
             self._btn_restart.setVisible(False)
             self._btn_stop.setVisible(False)
 
             self._sys_backend_val.setText("○ Stopped")
-            self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #757575;')
+            self._sys_backend_val.setStyleSheet(
+                f"color: {TEXT_MUTED}; font-weight: 600;"
+            )
             self._sys_db_val.setText("○ Waiting for backend")
-            self._sys_db_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #757575;')
+            self._sys_db_val.setStyleSheet(
+                f"color: {TEXT_MUTED}; font-weight: 600;"
+            )
 
-        else:  # OFFLINE / ERROR
-            self._status_dot.setStyleSheet("font-size: 13px; color: #D32F2F;")
+        else:
+            self._status_dot.setStyleSheet(f"color: {DANGER};")
             self._status_text.setText("OFFLINE")
-            self._status_text.setStyleSheet("font-weight: 700; font-size: 12px; color: #D32F2F;")
-            self._status_pill.setStyleSheet("background-color: #FFEBEE; border-radius: 13px; padding: 3px 10px;")
+            self._status_text.setStyleSheet(
+                f"color: {DANGER}; font-weight: 700;"
+            )
 
             self._status_heading.setText("OFFLINE")
-            self._status_heading.setStyleSheet("font-weight: 700; font-size: 15px; color: #D32F2F;")
-            self._status_desc.setText(detail or "The CipherVault backend is not responding.")
-            self._status_meta.setText("Port 8080 · Connection refused")
+            self._status_heading.setStyleSheet(
+                f"color: {DANGER}; font-size: 16px; font-weight: 700;"
+            )
+            self._status_desc.setText(
+                detail or "The CipherVault backend is not responding."
+            )
+            self._status_meta.setText(
+                f"Port {settings.backend_port} · Connection refused"
+            )
 
             self._btn_start.setVisible(True)
             self._btn_restart.setVisible(False)
             self._btn_stop.setVisible(False)
 
             self._sys_backend_val.setText("○ Offline")
-            self._sys_backend_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #D32F2F;')
+            self._sys_backend_val.setStyleSheet(
+                f"color: {DANGER}; font-weight: 600;"
+            )
             self._sys_db_val.setText("○ Offline")
-            self._sys_db_val.setStyleSheet('font-family: "JetBrains Mono"; font-size: 12px; font-weight: 600; color: #757575;')
+            self._sys_db_val.setStyleSheet(
+                f"color: {TEXT_MUTED}; font-weight: 600;"
+            )
 
         self._update_metadata_line()
 
     def _get_uptime_string(self) -> str:
         if self._started_at:
             delta = datetime.now() - self._started_at
-            s = int(delta.total_seconds())
-            h, rem = divmod(s, 3600)
-            m, sec = divmod(rem, 60)
-            return f"{h:02d}:{m:02d}:{sec:02d}"
+            seconds = int(delta.total_seconds())
+            hours, rem = divmod(seconds, 3600)
+            minutes, sec = divmod(rem, 60)
+            return f"{hours:02d}:{minutes:02d}:{sec:02d}"
         return "—"
 
     def _update_uptime(self):
-        uptime_str = self._get_uptime_string()
-        pid_str = str(self._backend_info.get("jvm_pid", self._backend_svc.pid or "—"))
+        uptime = self._get_uptime_string()
+        pid = str(
+            self._backend_info.get("jvm_pid", self._backend_svc.pid or "—")
+        )
         if self._backend_state == BackendState.ONLINE:
-            self._status_meta.setText(f"Port 8080 · PID {pid_str} · Uptime {uptime_str}")
+            self._status_meta.setText(
+                f"Port {settings.backend_port} · PID {pid} · Uptime {uptime}"
+            )
         self._update_metadata_line()
 
     def _update_metadata_line(self):
@@ -1234,14 +1755,18 @@ class MainWindow(QMainWindow):
         port = str(settings.backend_port)
         java_ver = self._backend_info.get("java_version", "21.0.12")
         spring_ver = self._backend_info.get("spring_version", "4.1.1")
-        pid_str = str(self._backend_info.get("jvm_pid", self._backend_svc.pid or "—"))
-        uptime_str = self._get_uptime_string()
+        pid = str(
+            self._backend_info.get("jvm_pid", self._backend_svc.pid or "—")
+        )
+        uptime = self._get_uptime_string()
 
-        meta_text = f"{owner} · Port {port} · Java {java_ver} · Spring Boot {spring_ver} · PID {pid_str} · Uptime {uptime_str}"
-        self._meta_line.setText(meta_text)
+        self._meta_line.setText(
+            f"{owner} · Port {port} · Java {java_ver} · "
+            f"Spring Boot {spring_ver} · PID {pid} · Uptime {uptime}"
+        )
 
     # -----------------------------------------------------------------------
-    # Settings & Window Lifecycle
+    # Settings / lifecycle
     # -----------------------------------------------------------------------
 
     def _open_settings(self):
@@ -1249,24 +1774,36 @@ class MainWindow(QMainWindow):
         if dlg.exec():
             app = QApplication.instance()
             apply_theme(app, settings.theme)
+            # Re-apply the Server Manager reference styling after the global
+            # theme so the main window keeps the supplied Windows Settings look.
+            self._apply_reference_style()
             self._health_poller.set_interval(settings.health_interval)
             self._refresh_connections_and_adb()
 
     def changeEvent(self, event):
-        if event.type() == event.Type.ActivationChange and self.isActiveWindow():
+        if (
+            event.type() == event.Type.ActivationChange
+            and self.isActiveWindow()
+        ):
             self._refresh_connections_and_adb()
         super().changeEvent(event)
 
     def closeEvent(self, event: QCloseEvent):
-        if self._backend_svc.isRunning() and self._backend_svc.owns_process:
+        if (
+            self._backend_svc.isRunning()
+            and self._backend_svc.owns_process
+        ):
             reply = QMessageBox.question(
                 self,
                 "Backend Still Running",
                 "The CipherVault backend was launched by Server Manager and is currently running.\n\n"
                 "Would you like to stop the backend before closing?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Yes
+                | QMessageBox.StandardButton.No
+                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Yes,
             )
+
             if reply == QMessageBox.StandardButton.Yes:
                 self._backend_svc.stop_backend()
                 self._health_poller.stop()

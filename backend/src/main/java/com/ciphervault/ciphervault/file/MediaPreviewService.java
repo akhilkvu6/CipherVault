@@ -398,8 +398,15 @@ public class MediaPreviewService {
         return null;
     }
 
+    public static final long MAX_JCODEC_VIDEO_SIZE = 100L * 1024L * 1024L; // 100 MB safety threshold
+
     private byte[] extractFrameWithJCodec(Path sourceFile) {
         try {
+            if (Files.exists(sourceFile) && Files.size(sourceFile) > MAX_JCODEC_VIDEO_SIZE) {
+                log.info("Video file exceeds JCodec pure-Java size limit ({} bytes), skipping pure-Java frame grab", Files.size(sourceFile));
+                return null;
+            }
+
             File file = sourceFile.toFile();
 
             Picture picture = null;

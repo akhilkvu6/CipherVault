@@ -21,11 +21,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxSizeException(MaxUploadSizeExceededException exc) {
-        log.warn("Upload rejected: File exceeds configured limit of 200MB");
+        log.warn("Upload rejected: File exceeds configured limit of 500MB");
         return errorResponse(
                 HttpStatus.PAYLOAD_TOO_LARGE,
                 "MAX_UPLOAD_SIZE_EXCEEDED",
-                "File exceeds the maximum allowable upload limit of 200MB");
+                "File exceeds the maximum allowable upload limit of 500MB");
     }
 
     @ExceptionHandler(DuplicateFileException.class)

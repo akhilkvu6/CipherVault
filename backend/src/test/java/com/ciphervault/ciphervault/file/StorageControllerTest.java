@@ -96,4 +96,72 @@ class StorageControllerTest {
         assertEquals(1, response.getBody().size());
         assertEquals("large.bin", response.getBody().get(0).get("filename"));
     }
+
+    @Test
+    void getDuplicatesShouldReturnGroupedDuplicateFilesAndSavings() {
+        User user = new User();
+        user.setId(1L);
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
+
+        StoredFile f1 = new StoredFile();
+        f1.setId(101L);
+        f1.setOriginalFilename("photo1.jpg");
+        f1.setSha256Hash("aabbcc123");
+        f1.setFileSize(2048L);
+        f1.setContentType("image/jpeg");
+
+        StoredFile f2 = new StoredFile();
+        f2.setId(102L);
+        f2.setOriginalFilename("photo2.jpg");
+        f2.setSha256Hash("aabbcc123");
+        f2.setFileSize(2048L);
+        f2.setContentType("image/jpeg");
+
+        StoredFile f3 = new StoredFile();
+        f3.setId(103L);
+        f3.setOriginalFilename("unique.txt");
+        f3.setSha256Hash("uniquerecord");
+        f3.setFileSize(512L);
+        f3.setContentType("text/plain");
+
+        when(fileRepository.findByUser(user)).thenReturn(List.of(f1, f2, f3));
+
+        ResponseEntity<List<Map<String, Object>>> response = storageController.getDuplicates(authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1, response.getBody().size());
+
+        Map<String, Object> group = response.getBody().get(0);
+        assertEquals("aabbcc123", group.get("hash"));
+        assertEquals(2L, ((Number) group.get("fileCount")).longValue());
+        assertEquals(2048L, ((Number) group.get("fileSize")).longValue());
+        assertEquals(4096L, ((Number) group.get("totalOccupied")).longValue());
+        assertEquals(2048L, ((Number) group.get("potentialSaving")).longValue());
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> files = (List<Map<String, Object>>) group.get("files");
+        assertEquals(2, files.size());
+    }
+
+    @Test
+    void getDuplicatesShouldReturnEmptyListWhenNoDuplicates() {
+        User user = new User();
+        user.setId(1L);
+        when(userRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(user));
+
+        StoredFile f1 = new StoredFile();
+        f1.setId(101L);
+        f1.setOriginalFilename("file1.pdf");
+        f1.setSha256Hash("hash_one");
+        f1.setFileSize(1000L);
+
+        when(fileRepository.findByUser(user)).thenReturn(List.of(f1));
+
+        ResponseEntity<List<Map<String, Object>>> response = storageController.getDuplicates(authentication);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().size());
+    }
 }

@@ -14,7 +14,7 @@ public class ActivityService {
         this.repository = repository;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public void logEvent(User user, EventType type, String summary, Integer fileCount, Long totalBytes, String affectedFiles, String status, String errorMessage) {
         if (user == null) return;
         

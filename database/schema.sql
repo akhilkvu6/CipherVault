@@ -7,13 +7,15 @@ USE ciphervault;
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
     username VARCHAR(255) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    storage_limit BIGINT NOT NULL DEFAULT 1073741824,
+    storage_limit BIGINT NOT NULL DEFAULT 10737418240,
     used_storage BIGINT NOT NULL DEFAULT 0,
     user_key VARCHAR(512) NULL,
     token_version BIGINT NOT NULL DEFAULT 0,
+    profile_photo_path VARCHAR(512) NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -22,6 +22,8 @@ public class FileStorageConfig {
             STORAGE_ROOT.resolve("uploads");
     public static final Path PREVIEW_STORAGE =
             STORAGE_ROOT.resolve("previews");
+    public static final Path PROFILE_PHOTO_STORAGE =
+            STORAGE_ROOT.resolve("profile_photos");
 
     public FileStorageConfig() {
         log.debug("Initializing file storage configuration...");
@@ -30,6 +32,7 @@ public class FileStorageConfig {
             Files.createDirectories(ENCRYPTED_STORAGE);
             Files.createDirectories(NORMAL_STORAGE);
             Files.createDirectories(PREVIEW_STORAGE);
+            Files.createDirectories(PROFILE_PHOTO_STORAGE);
 
             log.debug("File storage directories initialized successfully.");
         } catch (Exception e) {

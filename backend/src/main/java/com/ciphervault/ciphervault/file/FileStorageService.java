@@ -34,6 +34,7 @@ public class FileStorageService {
             LoggerFactory.getLogger(FileStorageService.class);
 
     private static final int BUFFER_SIZE = 16 * 1024;
+    public static final long MAX_FILE_SIZE = 1024L * 1024L * 1024L; // 1 GB (1,073,741,824 bytes)
 
     private final FileRepository fileRepository;
     private final UserRepository userRepository;
@@ -131,6 +132,17 @@ public class FileStorageService {
             }
 
             fileSize = Files.size(tempSourceFile);
+
+            if (fileSize > MAX_FILE_SIZE) {
+                log.warn(
+                        "Upload rejected: file size ({} bytes) exceeds maximum allowable limit of 1GB ({} bytes)",
+                        fileSize,
+                        MAX_FILE_SIZE
+                );
+                throw new IllegalArgumentException(
+                        "File exceeds the maximum allowable upload limit of 1 GB"
+                );
+            }
 
             long usedStorage = user.getUsedStorage() != null
                     ? user.getUsedStorage()
@@ -246,6 +258,21 @@ public class FileStorageService {
                         existingDuplicate.get().getId(),
                         existingDuplicate.get().getOriginalFilename()
                 );
+
+                if (activityService != null) {
+                    try {
+                        activityService.logEvent(
+                                user,
+                                EventType.DUPLICATE_DETECTED,
+                                "Duplicate detected: " + originalFilename + " matches " + existingDuplicate.get().getOriginalFilename(),
+                                1,
+                                fileSize,
+                                originalFilename,
+                                "REJECTED",
+                                "Duplicate file already exists"
+                        );
+                    } catch (Exception ignored) { }
+                }
 
                 throw new DuplicateFileException(
                         "Duplicate file already exists",

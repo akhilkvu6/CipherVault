@@ -4,8 +4,9 @@
 
 - **JDK**: Java 21 LTS (or OpenJDK 21)
 - **Database**: MySQL Server 8.0+ running on port `3306`
-- **Android**: Android Studio Hedgehog / Ladybug+ with Android SDK Platform 37 (Min SDK: 24, Android 7.0+)
+- **Android**: Android Studio with Android SDK Platform 37 (Min SDK: 26, Android 8.0+)
 - **Build Tools**: Apache Maven (wrapper included: `./mvnw.cmd`), Gradle 9.6.0 (wrapper included: `./gradlew.bat`)
+- **Optional Tools**: ExifTool on system PATH for camera/lens EXIF metadata extraction (gracefully falls back to pure Java if absent)
 
 ---
 

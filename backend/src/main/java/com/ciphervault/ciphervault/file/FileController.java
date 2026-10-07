@@ -52,6 +52,13 @@ public class FileController {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.ciphervault.ciphervault.transfer.TransferRepository transferRepository;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.ciphervault.ciphervault.activity.ActivityService activityService;
+
+    public void setActivityService(com.ciphervault.ciphervault.activity.ActivityService activityService) {
+        this.activityService = activityService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public FileController(
             FileStorageService fileStorageService,
@@ -652,6 +659,22 @@ public class FileController {
                     transferRepository.save(t);
                 } catch (Exception ex) {
                     log.warn("Failed to record download transfer", ex);
+                }
+            }
+
+            if (activityService != null) {
+                try {
+                    activityService.logEvent(
+                            user,
+                            com.ciphervault.ciphervault.activity.EventType.DOWNLOAD,
+                            "Downloaded " + payload.getFilename(),
+                            1,
+                            payload.getContentLength(),
+                            payload.getFilename(),
+                            "SUCCESS",
+                            null);
+                } catch (Exception ex) {
+                    log.warn("Failed to record download activity", ex);
                 }
             }
 

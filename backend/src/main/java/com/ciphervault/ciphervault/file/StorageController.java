@@ -105,20 +105,61 @@ public class StorageController {
         User user = getAuthenticatedUser(authentication);
         if (user == null) throw new com.ciphervault.ciphervault.exception.ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication required");
 
-        // The database schema enforces a unique constraint on (user_id, sha256_hash),
-        // meaning structural duplicates are currently impossible.
-        // Returning an empty list to preserve the Android API contract.
+        List<StoredFile> userFiles = fileRepository.findByUser(user);
+        Map<String, List<StoredFile>> groupedByHash = userFiles.stream()
+                .filter(f -> f.getSha256Hash() != null && !f.getSha256Hash().isBlank())
+                .collect(Collectors.groupingBy(f -> f.getSha256Hash().toLowerCase(java.util.Locale.ROOT)));
+
         List<Map<String, Object>> result = new ArrayList<>();
+        for (Map.Entry<String, List<StoredFile>> entry : groupedByHash.entrySet()) {
+            List<StoredFile> duplicates = entry.getValue();
+            if (duplicates.size() > 1) {
+                long groupSize = duplicates.get(0).getFileSize() != null ? duplicates.get(0).getFileSize() : 0L;
+                long count = duplicates.size();
+                long totalOccupied = groupSize * count;
+                long potentialSaving = groupSize * (count - 1);
+
+                Map<String, Object> group = new HashMap<>();
+                group.put("hash", entry.getKey());
+                group.put("fileSize", groupSize);
+                group.put("fileCount", count);
+                group.put("totalOccupied", totalOccupied);
+                group.put("potentialSaving", potentialSaving);
+
+                List<Map<String, Object>> fileList = duplicates.stream().map(f -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", f.getId());
+                    map.put("filename", f.getOriginalFilename());
+                    map.put("fileSize", f.getFileSize());
+                    map.put("size", f.getFileSize());
+                    map.put("contentType", f.getContentType());
+                    map.put("mimeType", f.getContentType());
+                    map.put("encrypted", f.isEncrypted());
+                    map.put("sha256Hash", f.getSha256Hash());
+                    map.put("createdAt", f.getCreatedAt() != null ? f.getCreatedAt().toString() : null);
+                    map.put("uploadedAt", f.getCreatedAt() != null ? f.getCreatedAt().toString() : null);
+                    map.put("hasPreview", f.isHasPreview());
+                    map.put("category", fileCategoryService.determineCategory(f.getOriginalFilename(), f.getContentType()));
+                    return map;
+                }).collect(Collectors.toList());
+
+                group.put("files", fileList);
+                result.add(group);
+            }
+        }
+
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/large-files")
-    public ResponseEntity<List<Map<String, Object>>> getLargeFiles(Authentication authentication) {
+    public ResponseEntity<List<Map<String, Object>>> getLargeFiles(
+            @org.springframework.web.bind.annotation.RequestParam(value = "minSize", required = false) Long minSize,
+            Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         if (user == null) throw new com.ciphervault.ciphervault.exception.ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication required");
 
-        long minSizeBytes = 100L * 1024L * 1024L; // 100 MB
-        List<StoredFile> largeFiles = fileRepository.findByUserAndFileSizeGreaterThanEqualOrderByFileSizeDesc(user, minSizeBytes, PageRequest.of(0, 100)).getContent();
+        long threshold = (minSize != null && minSize > 0) ? minSize : 50L * 1024L * 1024L; // 50 MB threshold
+        List<StoredFile> largeFiles = fileRepository.findByUserAndFileSizeGreaterThanEqualOrderByFileSizeDesc(user, threshold, PageRequest.of(0, 100)).getContent();
         List<Map<String, Object>> result = largeFiles.stream().map(f -> {
             Map<String, Object> map = new HashMap<>();
             map.put("id", f.getId());
@@ -137,5 +178,9 @@ public class StorageController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
+    }
+
+    public ResponseEntity<List<Map<String, Object>>> getLargeFiles(Authentication authentication) {
+        return getLargeFiles(null, authentication);
     }
 }

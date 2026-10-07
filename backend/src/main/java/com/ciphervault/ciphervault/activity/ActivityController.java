@@ -47,12 +47,12 @@ public class ActivityController {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         
         LocalDateTime after = null;
-        if (period != null) {
+        if (period != null && !period.isBlank() && !"all".equalsIgnoreCase(period) && !"alltime".equalsIgnoreCase(period)) {
             switch (period.toLowerCase()) {
                 case "today": after = LocalDateTime.now().toLocalDate().atStartOfDay(); break;
                 case "week": after = LocalDateTime.now().minusDays(7); break;
                 case "month": after = LocalDateTime.now().minusDays(30); break;
-                default: throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PERIOD", "Supported periods: today, week, month");
+                default: throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PERIOD", "Supported periods: today, week, month, all");
             }
         }
         
