@@ -1,9 +1,87 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.CipherVault" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!-- Common Material 3 Foundation: Shapes and Typography -->
+    <style name="Base.Theme.CipherVault.Common" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Shape Appearance Foundation -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.CipherVault.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.CipherVault.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.CipherVault.Large</item>
+
+        <!-- Typography Foundation -->
+        <item name="textAppearanceDisplayLarge">@style/TextAppearance.CipherVault.DisplayLarge</item>
+        <item name="textAppearanceDisplayMedium">@style/TextAppearance.CipherVault.DisplayMedium</item>
+        <item name="textAppearanceDisplaySmall">@style/TextAppearance.CipherVault.DisplaySmall</item>
+        <item name="textAppearanceHeadlineLarge">@style/TextAppearance.CipherVault.HeadlineLarge</item>
+        <item name="textAppearanceHeadlineMedium">@style/TextAppearance.CipherVault.HeadlineMedium</item>
+        <item name="textAppearanceHeadlineSmall">@style/TextAppearance.CipherVault.HeadlineSmall</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.CipherVault.TitleLarge</item>
+        <item name="textAppearanceTitleMedium">@style/TextAppearance.CipherVault.TitleMedium</item>
+        <item name="textAppearanceTitleSmall">@style/TextAppearance.CipherVault.TitleSmall</item>
+        <item name="textAppearanceBodyLarge">@style/TextAppearance.CipherVault.BodyLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.CipherVault.BodyMedium</item>
+        <item name="textAppearanceBodySmall">@style/TextAppearance.CipherVault.BodySmall</item>
+        <item name="textAppearanceLabelLarge">@style/TextAppearance.CipherVault.LabelLarge</item>
+        <item name="textAppearanceLabelMedium">@style/TextAppearance.CipherVault.LabelMedium</item>
+        <item name="textAppearanceLabelSmall">@style/TextAppearance.CipherVault.LabelSmall</item>
     </style>
 
+    <!-- Base CipherVault Light Theme -->
+    <style name="Base.Theme.CipherVault" parent="Base.Theme.CipherVault.Common">
+        <!-- Semantic Primary Roles -->
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_onPrimaryContainer</item>
+        <item name="colorPrimaryInverse">@color/md_theme_light_inversePrimary</item>
+
+        <!-- Semantic Secondary Roles -->
+        <item name="colorSecondary">@color/md_theme_light_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_onSecondaryContainer</item>
+
+        <!-- Semantic Tertiary Roles -->
+        <item name="colorTertiary">@color/md_theme_light_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_light_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_onTertiaryContainer</item>
+
+        <!-- Semantic Error Roles -->
+        <item name="colorError">@color/md_theme_light_error</item>
+        <item name="colorOnError">@color/md_theme_light_onError</item>
+        <item name="colorErrorContainer">@color/md_theme_light_errorContainer</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_onErrorContainer</item>
+
+        <!-- Semantic Background & Surface Roles -->
+        <item name="android:colorBackground">@color/md_theme_light_background</item>
+        <item name="colorOnBackground">@color/md_theme_light_onBackground</item>
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
+
+        <!-- Semantic Outline Roles -->
+        <item name="colorOutline">@color/md_theme_light_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
+
+        <!-- Semantic Surface Hierarchy Roles -->
+        <item name="colorSurfaceInverse">@color/md_theme_light_inverseSurface</item>
+        <item name="colorOnSurfaceInverse">@color/md_theme_light_inverseOnSurface</item>
+        <item name="colorSurfaceContainerLowest">@color/md_theme_light_surfaceContainerLowest</item>
+        <item name="colorSurfaceContainerLow">@color/md_theme_light_surfaceContainerLow</item>
+        <item name="colorSurfaceContainer">@color/md_theme_light_surfaceContainer</item>
+        <item name="colorSurfaceContainerHigh">@color/md_theme_light_surfaceContainerHigh</item>
+        <item name="colorSurfaceContainerHighest">@color/md_theme_light_surfaceContainerHighest</item>
+        <item name="colorSurfaceDim">@color/md_theme_light_surfaceDim</item>
+        <item name="colorSurfaceBright">@color/md_theme_light_surfaceBright</item>
+
+        <!-- System-Bar Theme Foundation (Light) -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <!-- Application Theme -->
     <style name="Theme.CipherVault" parent="Base.Theme.CipherVault" />
 </resources>
