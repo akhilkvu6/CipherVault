@@ -49,6 +49,33 @@ public class MainActivity extends AppCompatActivity {
             navController = navHostFragment.getNavController();
             setupBottomNavigation();
             setupBackNavigation();
+            setupSessionManagement();
+        }
+    }
+
+    private void setupSessionManagement() {
+        com.ciphervault.app.core.session.SessionManager sessionManager =
+                new com.ciphervault.app.core.session.SessionManager(this);
+
+        sessionManager.setOnSessionInvalidatedListener(() -> {
+            runOnUiThread(() -> {
+                if (navController != null && navController.getCurrentDestination() != null) {
+                    int currentId = navController.getCurrentDestination().getId();
+                    if (currentId != R.id.dest_auth) {
+                        NavOptions options = new NavOptions.Builder()
+                                .setPopUpTo(R.id.nav_main, true)
+                                .build();
+                        navController.navigate(R.id.dest_auth, null, options);
+                    }
+                }
+            });
+        });
+
+        // Section 14: Local session check without network call
+        if (!sessionManager.hasSession()) {
+            navController.navigate(R.id.dest_auth, null, new NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_main, true)
+                    .build());
         }
     }
 

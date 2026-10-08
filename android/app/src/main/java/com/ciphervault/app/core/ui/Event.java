@@ -1,0 +1,30 @@
+package com.ciphervault.app.core.ui;
+
+import androidx.annotation.Nullable;
+
+/**
+ * Event wrapper for one-time navigation or snackbar UI events.
+ */
+public class Event<T> {
+
+    private final T content;
+    private boolean hasBeenHandled = false;
+
+    public Event(T content) {
+        this.content = content;
+    }
+
+    @Nullable
+    public T getContentIfNotHandled() {
+        if (hasBeenHandled) {
+            return null;
+        } else {
+            hasBeenHandled = true;
+            return content;
+        }
+    }
+
+    public T peekContent() {
+        return content;
+    }
+}
