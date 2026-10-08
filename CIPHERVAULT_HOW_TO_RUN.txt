@@ -1,0 +1,92 @@
+================================================================================
+CIPHERVAULT — QUICK OPERATIONS & COMMAND CHEAT SHEET
+================================================================================
+
+1. START MYSQL (WINDOWS)
+--------------------------------------------------------------------------------
+PowerShell (Admin):
+  net start MySQL80
+
+Create DB & User (if first time):
+  mysql -u root -p
+  CREATE DATABASE IF NOT EXISTS ciphervault CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  CREATE USER IF NOT EXISTS '<MYSQL_USERNAME>'@'localhost' IDENTIFIED BY '<MYSQL_PASSWORD>';
+  GRANT ALL PRIVILEGES ON ciphervault.* TO '<MYSQL_USERNAME>'@'localhost';
+  FLUSH PRIVILEGES;
+  EXIT;
+
+
+2. START SPRING BOOT BACKEND
+--------------------------------------------------------------------------------
+PowerShell:
+  cd backend
+  .\mvnw.cmd spring-boot:run
+
+Backend starts on: http://0.0.0.0:8080
+Wait for log: "Tomcat started on port 8080 (http)"
+
+
+3. VERIFY BACKEND HEALTH
+--------------------------------------------------------------------------------
+PowerShell:
+  curl http://localhost:8080/api/health
+  # Or:
+  Invoke-RestMethod http://localhost:8080/api/health | ConvertTo-Json
+
+Expected: HTTP 200 OK, status: "UP", 6 healthy components.
+
+
+4. LAUNCH DESKTOP SERVER CONTROL GUI (OPTIONAL)
+--------------------------------------------------------------------------------
+PowerShell:
+  cd server-control
+  pip install -r requirements.txt
+  .\run.bat
+
+
+5. CONNECT ANDROID DEVICE / EMULATOR
+--------------------------------------------------------------------------------
+Mode 1: USB Cable (ADB Reverse - Fastest & Most Reliable):
+  adb reverse tcp:8080 tcp:8080
+  In App: Host = 127.0.0.1, Port = 8080 -> Tap "Test Connection"
+
+Mode 2: Android Studio Emulator:
+  In App: Tap "Emulator (10.0.2.2)" chip -> Tap "Test Connection"
+
+Mode 3: Physical Device on Same Local Wi-Fi (LAN):
+  Find PC IP: ipconfig (Look for Wireless LAN IPv4, e.g. 192.168.1.75)
+  Allow Port in Firewall (PowerShell Admin):
+    netsh advfirewall firewall add rule name="CipherVault Backend" dir=in action=allow protocol=TCP localport=8080
+  In App: Host = 192.168.1.75, Port = 8080 -> Tap "Test Connection"
+
+Mode 4: Mobile Hotspot (Field Testing):
+  Turn on Phone Hotspot -> Connect PC Wi-Fi to phone hotspot.
+  In App: Tap "Hotspot (192.168.43.)" chip, enter final IP octet -> Tap "Test Connection"
+
+
+6. COMPILE & INSTALL ANDROID APP (COMMAND LINE)
+--------------------------------------------------------------------------------
+PowerShell:
+  cd android
+  .\gradlew.bat assembleDebug
+  adb install -r app/build/outputs/apk/debug/app-debug.apk
+  adb shell am start -n com.ciphervault.app/.SplashActivity
+
+
+7. RUN AUTOMATED TEST SUITES
+--------------------------------------------------------------------------------
+Backend Tests:
+  cd backend
+  .\mvnw.cmd test
+
+Android Unit Tests:
+  cd android
+  .\gradlew.bat testDebugUnitTest
+
+
+8. STOPPING SERVICES
+--------------------------------------------------------------------------------
+Backend: Press Ctrl + C in terminal, then type Y and Enter.
+ADB Reverse remove: adb reverse --remove tcp:8080
+MySQL: net stop MySQL80
+================================================================================
