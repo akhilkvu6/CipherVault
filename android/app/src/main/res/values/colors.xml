@@ -93,4 +93,19 @@
     <color name="md_theme_dark_inversePrimary">#006684</color>
     <color name="md_theme_dark_surfaceDim">#101416</color>
     <color name="md_theme_dark_surfaceBright">#36393C</color>
+
+    <!-- Specific feature tokens -->
+    <color name="vault_unencrypted">#FFBA1A1A</color>
+    <color name="vault_encrypted">#FF006684</color>
+    <color name="cv_text_secondary">#FF70787D</color>
+    <color name="cv_primary">#FF006684</color>
+    <color name="cv_surface">#FFFBFDFE</color>
+    <color name="cv_surface_variant">#FFDCE4E8</color>
+    <color name="cv_border">#FFBFC8CC</color>
+    <color name="cv_text_primary">#FF191C1E</color>
+    <color name="cv_security_success">#FF2E7D32</color>
+    <color name="cv_indicator_active">#FF006684</color>
+    <color name="cv_indicator_inactive">#FFBFC8CC</color>
+    <color name="status_connected">#FF2E7D32</color>
+    <color name="status_error">#FFBA1A1A</color>
 </resources>

@@ -40,7 +40,7 @@ public class StorageController {
         User user = getAuthenticatedUser(authentication);
         if (user == null) throw new com.ciphervault.ciphervault.exception.ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Authentication required");
 
-        long totalBytes = user.getStorageLimit() != null ? user.getStorageLimit() : 1_000_000_000L;
+        long totalBytes = user.getStorageLimit() != null ? user.getStorageLimit() : (10L * 1024L * 1024L * 1024L);
         long usedBytes = user.getUsedStorage() != null ? user.getUsedStorage() : 0L;
         long availableBytes = Math.max(0, totalBytes - usedBytes);
         double percentage = totalBytes > 0 ? ((double) usedBytes / totalBytes) * 100 : 0.0;

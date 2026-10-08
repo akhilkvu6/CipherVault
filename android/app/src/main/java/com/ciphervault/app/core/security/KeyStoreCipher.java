@@ -129,6 +129,9 @@ public class KeyStoreCipher {
     }
 
     private String encodeBase64(byte[] data) {
+        if (!isAndroidRuntime()) {
+            return java.util.Base64.getEncoder().encodeToString(data);
+        }
         try {
             return Base64.encodeToString(data, Base64.NO_WRAP);
         } catch (Throwable t) {
@@ -137,6 +140,9 @@ public class KeyStoreCipher {
     }
 
     private byte[] decodeBase64(String str) {
+        if (!isAndroidRuntime()) {
+            return java.util.Base64.getDecoder().decode(str);
+        }
         try {
             return Base64.decode(str, Base64.NO_WRAP);
         } catch (Throwable t) {

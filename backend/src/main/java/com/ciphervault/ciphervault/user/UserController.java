@@ -225,8 +225,11 @@ public class UserController {
                         "username", newUsername));
     }
 
-    @RequestMapping(value = {"/data", "/delete-all-data"}, method = {RequestMethod.DELETE, RequestMethod.POST})
-    public ResponseEntity<Map<String, Object>> deleteAllData(Authentication authentication) {
+    @RequestMapping(value = "/name", method = {RequestMethod.PUT, RequestMethod.POST})
+    public ResponseEntity<Map<String, Object>> updateName(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("success", false, "message", "Authentication required"));
@@ -236,6 +239,170 @@ public class UserController {
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(Map.of("success", false, "message", "User not found"));
+        }
+
+        String newName = request != null ? request.get("name") : null;
+        if (newName == null || newName.trim().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Name is required"));
+        }
+
+        newName = newName.trim();
+        if (newName.length() > 255) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Name must not exceed 255 characters"));
+        }
+
+        user.setName(newName);
+        userRepository.save(user);
+
+        if (activityService != null) {
+            try {
+                activityService.logEvent(
+                        user,
+                        EventType.USERNAME_CHANGED,
+                        "Updated display name to " + newName,
+                        1,
+                        0L,
+                        null,
+                        "SUCCESS",
+                        null);
+            } catch (Exception ignored) {}
+        }
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "message", "Name updated successfully",
+                        "name", newName));
+    }
+
+    @RequestMapping(value = "/password", method = {RequestMethod.PUT, RequestMethod.POST})
+    public ResponseEntity<Map<String, Object>> updatePassword(
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Authentication required"));
+        }
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "message", "User not found"));
+        }
+
+        if (request == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Request body is required"));
+        }
+
+        String currentPassword = request.get("currentPassword");
+        if (currentPassword == null || currentPassword.isBlank()) {
+            currentPassword = request.get("oldPassword");
+        }
+        if (currentPassword == null || currentPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Current password is required"));
+        }
+
+        if (passwordEncoder != null && !passwordEncoder.matches(currentPassword, user.getPassword())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Incorrect current password"));
+        }
+
+        String newPassword = request.get("newPassword");
+        if (newPassword == null || newPassword.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "New password is required"));
+        }
+
+        if (newPassword.length() < 8) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Password must be at least 8 characters"));
+        }
+        if (!newPassword.matches(".*[A-Z].*")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Password must contain at least one uppercase character"));
+        }
+        if (!newPassword.matches(".*[a-z].*")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Password must contain at least one lowercase character"));
+        }
+        if (!newPassword.matches(".*\\d.*")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Password must contain at least one number"));
+        }
+        if (!newPassword.matches(".*[^a-zA-Z0-9].*")) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Password must contain at least one special symbol"));
+        }
+
+        if (newPassword.equals(currentPassword)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "New password cannot be the same as current password"));
+        }
+
+        String confirmPassword = request.get("confirmPassword");
+        if (confirmPassword == null || !newPassword.equals(confirmPassword)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "New password and confirmation do not match"));
+        }
+
+        if (passwordEncoder != null) {
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
+
+        int tokenVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 1;
+        user.setTokenVersion(tokenVersion + 1);
+        userRepository.save(user);
+
+        if (activityService != null) {
+            try {
+                activityService.logEvent(
+                        user,
+                        EventType.PASSWORD_CHANGED,
+                        "Password changed successfully",
+                        1,
+                        0L,
+                        null,
+                        "SUCCESS",
+                        null);
+            } catch (Exception ignored) {}
+        }
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "success", true,
+                        "message", "Password changed successfully"));
+    }
+
+    public ResponseEntity<Map<String, Object>> deleteAllData(Authentication authentication) {
+        return deleteAllData(null, authentication);
+    }
+
+    @RequestMapping(value = {"/data", "/delete-all-data"}, method = {RequestMethod.DELETE, RequestMethod.POST})
+    public ResponseEntity<Map<String, Object>> deleteAllData(
+            @RequestBody(required = false) Map<String, String> request,
+            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("success", false, "message", "Authentication required"));
+        }
+
+        User user = userRepository.findByEmail(authentication.getName()).orElse(null);
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("success", false, "message", "User not found"));
+        }
+
+        if (request != null && request.containsKey("password") && request.get("password") != null && !request.get("password").isBlank()) {
+            String rawPassword = request.get("password");
+            if (passwordEncoder != null && !passwordEncoder.matches(rawPassword, user.getPassword())) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("success", false, "message", "Incorrect password"));
+            }
         }
 
         Object lockKey = user.getId() != null ? ("cv_user_data_" + user.getId()).intern() : new Object();

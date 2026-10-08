@@ -96,15 +96,15 @@ public interface FileMetadataRepository extends JpaRepository<FileMetadata, Long
             FROM FileMetadata m
             WHERE m.file.user = :user
               AND (
-                LOWER(m.cameraMake) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.cameraModel) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.resolution) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.videoCodec) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.artist) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.album) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.author) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.genre) LIKE LOWER(CONCAT(:prefix, '%')) OR
-                LOWER(m.title) LIKE LOWER(CONCAT(:prefix, '%'))
+                LOWER(m.cameraMake) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.cameraModel) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.resolution) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.videoCodec) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.artist) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.album) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.author) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.genre) LIKE LOWER(CONCAT('%', :prefix, '%')) OR
+                LOWER(m.title) LIKE LOWER(CONCAT('%', :prefix, '%'))
               )
             """)
     List<Object[]> findSuggestions(@Param("user") User user, @Param("prefix") String prefix);

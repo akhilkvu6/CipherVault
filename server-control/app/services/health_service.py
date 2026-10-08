@@ -4,13 +4,7 @@ import requests
 from datetime import datetime
 from PySide6.QtCore import QThread, Signal
 
-class BackendState:
-    STOPPED = "STOPPED"
-    STARTING = "STARTING"
-    ONLINE = "ONLINE"
-    OFFLINE = "OFFLINE"
-    ERROR = "ERROR"
-    FOREIGN_SERVICE = "FOREIGN_SERVICE"
+from .backend_state import BackendState
 
 
 class HealthPoller(QThread):

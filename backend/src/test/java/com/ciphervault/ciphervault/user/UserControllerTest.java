@@ -133,4 +133,62 @@ class UserControllerTest {
         assertEquals(HttpStatus.OK, okResp.getStatusCode());
         Mockito.verify(userRepository, Mockito.times(1)).delete(user);
     }
+
+    @Test
+    void updateNameShouldValidateAndPersist() {
+        User user = new User();
+        user.setId(1L);
+        user.setName("Old Name");
+        user.setEmail("test@example.com");
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+        // Blank name fails
+        ResponseEntity<Map<String, Object>> blankResp = userController.updateName(Map.of("name", "   "), authentication);
+        assertEquals(HttpStatus.BAD_REQUEST, blankResp.getStatusCode());
+
+        // Valid name succeeds
+        ResponseEntity<Map<String, Object>> okResp = userController.updateName(Map.of("name", "New John"), authentication);
+        assertEquals(HttpStatus.OK, okResp.getStatusCode());
+        assertEquals("New John", user.getName());
+        Mockito.verify(userRepository, Mockito.atLeastOnce()).save(user);
+    }
+
+    @Test
+    void updatePasswordShouldValidateAndPersist() {
+        org.springframework.security.crypto.password.PasswordEncoder encoder =
+                Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class);
+        userController.setPasswordEncoder(encoder);
+
+        User user = new User();
+        user.setId(1L);
+        user.setEmail("test@example.com");
+        user.setPassword("oldEncoded");
+        user.setTokenVersion(1);
+
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(encoder.matches("OldPass123!", "oldEncoded")).thenReturn(true);
+        when(encoder.matches("WrongPass!", "oldEncoded")).thenReturn(false);
+        when(encoder.encode("NewPass456!")).thenReturn("newEncoded");
+
+        // Wrong current password fails
+        Map<String, String> wrongReq = Map.of(
+                "currentPassword", "WrongPass!",
+                "newPassword", "NewPass456!",
+                "confirmPassword", "NewPass456!"
+        );
+        ResponseEntity<Map<String, Object>> wrongResp = userController.updatePassword(wrongReq, authentication);
+        assertEquals(HttpStatus.BAD_REQUEST, wrongResp.getStatusCode());
+
+        // Correct password succeeds
+        Map<String, String> validReq = Map.of(
+                "currentPassword", "OldPass123!",
+                "newPassword", "NewPass456!",
+                "confirmPassword", "NewPass456!"
+        );
+        ResponseEntity<Map<String, Object>> okResp = userController.updatePassword(validReq, authentication);
+        assertEquals(HttpStatus.OK, okResp.getStatusCode());
+        assertEquals(2, user.getTokenVersion());
+        Mockito.verify(userRepository, Mockito.atLeastOnce()).save(user);
+    }
 }

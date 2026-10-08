@@ -69,10 +69,45 @@ class NetworkService:
         return results
 
     @classmethod
+    def get_preferred_wifi_connection(cls, port: int = 8080) -> tuple[str, int, str, bool]:
+        """
+        Returns (ip, port, description, is_active):
+        - Prioritizes mobile hotspot (192.168.43.x).
+        - Then prioritizes any active Wi-Fi adapter.
+        - Then falls back to Ethernet / LAN.
+        - Finally falls back to 127.0.0.1.
+        """
+        adapters = cls.get_classified_adapters()
+
+        # 1. Check for specific Android Hotspot IP in any adapter (often 192.168.43.x)
+        all_adapters = adapters["wifi"] + adapters["ethernet"] + adapters["other"]
+        for adapter in all_adapters:
+            if adapter.ip.startswith("192.168.43."):
+                return adapter.ip, port, f"Phone Hotspot ({adapter.name})", True
+
+        # 2. Prefer any Wi-Fi adapter
+        if adapters["wifi"]:
+            adapter = adapters["wifi"][0]
+            return adapter.ip, port, f"Wi-Fi Adapter ({adapter.name})", True
+
+        # 3. Fallback to Ethernet
+        if adapters["ethernet"]:
+            adapter = adapters["ethernet"][0]
+            return adapter.ip, port, f"Ethernet ({adapter.name})", True
+
+        # 4. Fallback to other valid LAN interface
+        if adapters["other"]:
+            adapter = adapters["other"][0]
+            return adapter.ip, port, f"Local Interface ({adapter.name})", True
+
+        # 5. Localhost offline fallback
+        return "127.0.0.1", port, "Localhost (No Wi-Fi Connected)", False
+
+    @classmethod
     def check_backend_binding(cls, port: int = 8080) -> tuple[str, str]:
         """Returns (binding_type, description):
-        - 'all': Bound to 0.0.0.0 or :: (accessible from LAN)
-        - 'localhost': Bound to 127.0.0.1 or ::1 only (NOT accessible from LAN)
+        - 'all': Bound to 0.0.0.0 or :: (accessible from LAN / Hotspot)
+        - 'localhost': Bound to 127.0.0.1 or ::1 only (NOT accessible from phone)
         - 'none': Not currently listening
         """
         try:
@@ -94,8 +129,10 @@ class NetworkService:
         """Tests base_url + 'api/health'.
         Returns (success, http_code, latency_ms, message).
         """
-        clean_base = base_url.rstrip("/") + "/"
-        target_url = clean_base + "api/health"
+        url = base_url.strip()
+        if not url.endswith("/api/health"):
+            url = url.rstrip("/") + "/api/health"
+        target_url = url
 
         try:
             t0 = time.monotonic()
@@ -105,10 +142,10 @@ class NetworkService:
             if resp.status_code == 200:
                 try:
                     data = resp.json()
-                    svc = data.get("service", "CipherVault")
-                    return True, 200, latency, f"Reachable ({svc})"
+                    status = data.get("status", "UP")
+                    return True, 200, latency, f"Online ({status})"
                 except Exception:
-                    return True, 200, latency, "Reachable (Non-JSON)"
+                    return True, 200, latency, "Online"
             else:
                 return False, resp.status_code, latency, f"HTTP {resp.status_code}"
 

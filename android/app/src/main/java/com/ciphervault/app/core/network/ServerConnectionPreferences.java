@@ -13,8 +13,8 @@ import java.net.URI;
  */
 public class ServerConnectionPreferences {
 
-    public static final String PREF_NAME = "ciphervault_server_preferences";
-    public static final String KEY_SERVER_URL = "key_server_url";
+    public static final String PREF_NAME = "CipherVaultNetwork";
+    public static final String KEY_SERVER_URL = "server_base_url";
     public static final String DEFAULT_SERVER_URL = "http://10.0.2.2:8080/";
 
     private final SharedPreferences preferences;

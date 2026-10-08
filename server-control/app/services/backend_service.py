@@ -7,7 +7,7 @@ import psutil
 from PySide6.QtCore import QThread, Signal
 
 from .environment_service import get_project_root, EnvironmentService
-from .health_service import BackendState
+from .backend_state import BackendState
 from .log_service import app_logger
 
 
@@ -300,5 +300,15 @@ class BackendService(QThread):
             parent.kill()
         except psutil.NoSuchProcess:
             pass
+        except Exception:
+            pass
+
+        # Windows guarantee: taskkill /F /T /PID
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                capture_output=True,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
         except Exception:
             pass

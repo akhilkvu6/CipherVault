@@ -28,7 +28,7 @@
     <!-- Authentication Destination -->
     <fragment
         android:id="@+id/dest_auth"
-        android:name="com.ciphervault.app.auth.AuthFragment"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
         android:label="Auth">
         <action
             android:id="@+id/action_dest_auth_to_nav_main"

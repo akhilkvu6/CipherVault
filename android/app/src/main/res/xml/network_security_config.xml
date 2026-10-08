@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <!-- Production / Release: Enforce HTTPS only; no cleartext permitted -->
-    <base-config cleartextTrafficPermitted="false" />
+    <!-- Allow cleartext HTTP for local self-hosted backend connections and development -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
 </network-security-config>

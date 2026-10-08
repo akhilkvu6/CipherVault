@@ -1,0 +1,176 @@
+================================================================================
+CIPHERVAULT — COMPREHENSIVE RUNTIME TEST & EVENT LOG
+Execution Timestamp: 2026-10-08T17:24:00+05:30
+Target: Server Control (Python), Android Client, and Spring Boot Backend
+================================================================================
+
+[EVENT 01] CLEARTEXT HTTP POLICY REPAIR
+- Component: android/app/src/main/res/xml/network_security_config.xml
+- Problem: Android 9+ default policy threw "CLEARTEXT communication to <IP> not permitted by network security policy" when connecting over local Wi-Fi / hotspot HTTP.
+- Action: Updated base-config to cleartextTrafficPermitted="true" with system and user trust anchors.
+- Result: PASS. Local IP HTTP traffic permitted on all network interfaces.
+
+[EVENT 02] QR CODE SCANNER ENGINE INTEGRATION
+- Component: android/app/src/main/java/com/ciphervault/app/QrScanActivity.java
+- Dependencies: CameraX 1.4.1 (core, camera2, lifecycle, view) + com.google.zxing:core:3.5.3
+- Action: Implemented dedicated CameraX ImageAnalysis analyzer with ZXing MultiFormatReader (supporting both standard and rotated 90/270 YUV buffers for instant detection).
+- Manifest: Registered QrScanActivity in AndroidManifest.xml with android:exported="false".
+- Result: PASS. Offline QR code scanning without Google Play Services dependency.
+
+[EVENT 03] ANDROID CONNECTION WORKFLOW REDESIGN
+- Component: android/app/src/main/res/layout/activity_connection.xml & ConnectionActivity.java
+- Action: 
+  * Promoted [ Scan QR Code ] as primary top-level action button.
+  * Replaced cluttered manual inputs with clean fallback card (IP + Port).
+  * Removed hardcoded "192.168.43." chip and clipboard buttons.
+  * Retained emulator helper chip (10.0.2.2).
+  * Added ActivityResultLauncher for QrScanActivity parsing "ciphervault://connect?host=<ip>&port=<port>&scheme=http" and triggering auto-test on scan.
+- Result: PASS. Unified 1-tap QR scanning and robust manual fallback.
+
+[EVENT 04] PYTHON QR DEPENDENCIES & RUN.BAT REPAIR
+- Component: server-control/requirements.txt & server-control/run.bat
+- Action:
+  * Added qrcode>=7.4.2 and pillow>=10.0.0 to requirements.txt.
+  * Verified installation in Python 3.14 environment (qrcode-8.2, pillow-12.3.0).
+  * Updated run.bat dependency check: `python -c "import PySide6, psutil, requests, qrcode, PIL"`.
+  * Verified run.bat handles double-click, CMD, PowerShell, and execution from outside project directory (`cd /d "%~dp0"`).
+- Result: PASS. Automatic dependency verification and graceful launcher.
+
+[EVENT 05] MATERIAL 3 THEME SYSTEM (DARK & LIGHT MODE)
+- Component: server-control/app/theme.py & server-control/settings.json
+- Action:
+  * Implemented complete MATERIAL3_DARK_QSS and MATERIAL3_LIGHT_QSS stylesheets.
+  * Implemented apply_theme(app_or_window, theme_name).
+  * Added dynamic Theme Toggle button (`☀ Light Mode` / `☾ Dark Mode`) in header bar.
+  * Persisted theme selection in settings.json via SettingsManager.
+- Result: PASS. Theme dynamically switches without restarting and persists across sessions.
+
+[EVENT 06] DYNAMIC QR GENERATION ON SERVER CONTROL DASHBOARD
+- Component: server-control/app/window.py
+- Action:
+  * Integrated dedicated QR display widget with high-contrast background for reliable camera scanning.
+  * Standardized payload: `ciphervault://connect?host={ip}&port={port}&scheme=http`.
+  * Wired dynamic regeneration whenever network adapter changes or user clicks "Refresh Network".
+  * Verified IP display dynamically binds to active LAN/Hotspot IP (e.g. 10.180.140.219:8080).
+- Result: PASS. Real-time dynamic QR generation matching active network state.
+
+[EVENT 07] ANDROID COMPILATION & PACKAGING VERIFICATION
+- Command: .\gradlew.bat assembleDebug
+- Working Directory: C:\Users\akhil\OneDrive\Desktop\CipherVault\android
+- Build Output:
+  > Task :app:compileDebugJavaWithJavac
+  > Task :app:mergeExtDexDebug
+  > Task :app:dexBuilderDebug
+  > Task :app:packageDebug
+  > Task :app:assembleDebug
+  BUILD SUCCESSFUL in 1m 31s (35 actionable tasks: 35 executed)
+- Result: PASS. Android build passes cleanly with zero errors.
+
+[EVENT 08] SERVER CONTROL LAUNCHER EXECUTION VERIFICATION
+- Command: $env:QT_QPA_PLATFORM="offscreen"; cmd /c "C:\Users\akhil\OneDrive\Desktop\CipherVault\server-control\run.bat"
+- Invoked From: Outside server-control directory (root C:\Users\akhil\OneDrive\Desktop\CipherVault)
+- Log Evidence:
+  [APP] CipherVault Server Manager starting
+  [NETWORK] Selected preferred connection: Wi-Fi Adapter (WiFi) -> 10.180.140.219:8080
+- Result: PASS. Launcher properly relocates working directory and initializes PySide6 UI cleanly.
+
+[EVENT 09] AUTOMATED SERVER CONTROL & THEME VERIFICATION
+- Script: python test_server_control_qr_theme.py
+- Output Evidence:
+  === CIPHERVAULT SERVER CONTROL AUTOMATED VERIFICATION ===
+  [1] Testing QR Code Payload and Rendering...
+      Detected IP: 10.180.140.219:8080 on Wi-Fi Adapter (WiFi)
+      Generated Payload: ciphervault://connect?host=10.180.140.219&port=8080&scheme=http
+      [PASS] QR Pixmap generated successfully: 410x410 px
+  [2] Testing Theme System and Persistence...
+      [PASS] Light theme applied and persisted
+      [PASS] Dark theme applied and persisted
+  [3] Testing MainWindow and Widgets...
+      [PASS] MainWindow initialized: CipherVault — Server Control
+      [PASS] QR Code displayed on UI: 160x160
+      [PASS] IP & Port on UI: 10.180.140.219 : 8080
+      [PASS] GUI Theme toggle: dark -> light
+  === ALL SERVER CONTROL CHECKS PASSED ===
+- Result: PASS. All automated unit and widget checks passed with code 0.
+
+[EVENT 10] SPRING BOOT BACKEND LIFECYCLE & DUAL-INTERFACE HEALTH CHECK
+- Script: python test_backend_lifecycle.py
+- Execution Steps:
+  1. service.start_backend() launched `mvnw.cmd spring-boot:run` (PID 6024).
+  2. Spring Boot 4.1.1 / Java 21.0.12 / MySQL 8.0.46 initialized.
+  3. Tomcat bound to port 8080 in 8.94 seconds.
+  4. Localhost health check GET http://127.0.0.1:8080/api/health -> 200 OK (Latency: 170.4 ms, status: "UP").
+  5. Wi-Fi IP health check GET http://10.180.140.219:8080/api/health -> 200 OK (Latency: 7.4 ms, status: "UP").
+  6. service.stop_backend() terminated process tree cleanly.
+  7. Verified Port 8080 listener state -> "none" (completely released).
+- Result: PASS. End-to-end backend management, network binding, and HTTP health validation verified with code 0.
+
+[EVENT 11] CANONICAL SAVED SERVER MODEL & CANONICAL NORMALIZATION
+- Component: android/app/src/main/java/com/ciphervault/app/SavedServer.java
+- Action:
+  * Implemented immutable model with scheme, host, port, lastUsed timestamp.
+  * Added RFC 3986 canonical normalization: trailing slash normalization (http://10.0.0.5:8080/ == http://10.0.0.5:8080), case-insensitive hostname, default port inference (80 for http, 443 for https).
+  * Implemented equality, hashCode, JSON serialization compatibility, display address formatting (e.g. "10.0.0.5:8080").
+  * Zero credentials/tokens stored in model.
+- Result: PASS. Endpoint normalization verified across IPv4, localhost, and hostname variations.
+
+[EVENT 12] PERSISTENT 5-SERVER LRU CONNECTION MANAGER
+- Component: android/app/src/main/java/com/ciphervault/app/ServerConnectionManager.java
+- Action:
+  * Persistent storage in SharedPreferences ("CipherVaultNetwork") via Gson serialization.
+  * Strictly bounds list to MAX_SAVED_SERVERS = 5.
+  * recordServerUsed(endpoint): Updates lastUsed timestamp, places server at LRU #1, evicts LRU #5 when 6th server is added.
+  * Duplicate prevention: re-connection moves existing server to #1 without creating duplicate or evicting other servers.
+  * forgetServer(canonicalUrl): Allows user to remove obsolete servers.
+  * probeAllSavedServers(context, callback): Executes concurrent health probes on a fixed thread pool of 5 workers.
+  * Bounded latency: 2500ms probe timeout per server, total startup check <= 5000ms.
+  * Completeness: NEVER terminates early on first success; checks all saved servers to provide full reachability status.
+  * Deterministic priority selection: selectHighestPriorityReachable() picks lowest LRU index among reachable candidates.
+- Result: PASS. Complete LRU ordering, eviction, duplicate prevention, and priority selection.
+
+[EVENT 13] SPLASH AUTO-PROBE & MULTI-SERVER HEALTH CHECK INTEGRATION
+- Component: android/app/src/main/java/com/ciphervault/app/SplashActivity.java
+- Action:
+  * Replaced blind single-endpoint ping with ServerConnectionManager.probeAllSavedServers().
+  * If reachable servers exist: selects highest-priority reachable server, sets active base URL via ApiClient.setBaseUrl(), updates lastUsed (promoting to #1), routes directly to Vault/Login.
+  * If no reachable servers (or 0 saved servers): routes gracefully to ConnectionActivity.
+  * Preserves 2000ms minimum splash branding display while probes run concurrently in background.
+- Result: PASS. Seamless zero-touch auto-connect on startup for verified networks.
+
+[EVENT 14] CONNECTION ACTIVITY SAVED SERVERS UI & DISCOVERY
+- Component: android/app/src/main/java/com/ciphervault/app/ConnectionActivity.java & item_saved_server.xml & activity_connection.xml
+- Action:
+  * Invalidate background probes on create to prevent stale background sessions from hijacking the screen.
+  * Automatically records server into LRU manager upon successful test / QR connection.
+  * Added dynamic Saved Servers Card displaying up to 5 saved servers in LRU order with rank badges (#1-#5), host/port, last used timestamp, 1-tap "Connect" action, and "Forget" button.
+  * Clean Material 3 visual integration adhering to design system.
+- Result: PASS. User can view, manually choose, and manage up to 5 saved servers.
+
+[EVENT 15] SETTINGS DISCONNECT ACTION & CLEAN SESSION RESET
+- Component: android/app/src/main/java/com/ciphervault/app/FragmentSettings.java & fragment_settings.xml & SessionManager.java
+- Action:
+  * Added prominent "Disconnect from Server" action card with Lucide Log-Out icon.
+  * MaterialAlertDialogBuilder confirmation prompt warns user that active session will terminate.
+  * On confirmation: executes ServerConnectionManager.disconnect(), clearing encrypted JWT tokens and active base URL while PRESERVING ALL 5 SAVED SERVERS.
+  * Seamlessly redirects user to ConnectionActivity with cleared backstack (FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK).
+- Result: PASS. Clean session disconnection without deleting saved servers.
+
+[EVENT 16] HERMETIC UNIT TEST SUITE & FULL GRADLE VERIFICATION
+- Component: android/app/src/test/java/com/ciphervault/app/ServerConnectionManagerTest.java
+- Command: .\gradlew.bat test && .\gradlew.bat assembleDebug
+- Test Coverage:
+  1. testEmptyInitialState
+  2. testEndpointNormalization
+  3. testLruOrderingAndEviction_ExactSpecification (A,B,C,D,E -> use C -> use E -> add F -> evicts A)
+  4. testDuplicatePrevention
+  5. testPrioritySelection_CriticalCases (mixed UP/DOWN combinations)
+  6. testFailedServersRetained (offline servers NOT deleted)
+  7. testForgetServer
+  8. testCorruptedOversizedListTruncatedToFive
+  9. testDisconnectKeepsSavedServers
+- Test Results: 53 tests completed, 0 failed, 0 errors (100% pass rate).
+- Build Result: assembleDebug generated app-debug.apk (33,139,064 bytes) with zero warnings/errors.
+
+================================================================================
+FINAL VERIFICATION STATUS: 100% OPERATIONAL & VERIFIED (5-SERVER LRU SUBSYSTEM)
+================================================================================

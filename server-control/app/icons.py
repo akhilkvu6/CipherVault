@@ -25,7 +25,9 @@ _PATHS = {
     "chevron_right": '<polyline points="9 6 15 12 9 18" />',
     "chevron_down": '<polyline points="6 9 12 15 18 9" />',
     "terminal": '<polyline points="4 17 10 11 4 5" /><line x1="12" y1="19" x2="20" y2="19" />',
-    "activity": '<polyline points="3 12 6 12 9 3 13 21 16 12 21 12" />'
+    "activity": '<polyline points="3 12 6 12 9 3 13 21 16 12 21 12" />',
+    "shield": '<path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />',
+    "server": '<rect x="3" y="4" width="18" height="8" rx="3" /><rect x="3" y="12" width="18" height="8" rx="3" /><line x1="7" y1="8" x2="7.01" y2="8" /><line x1="7" y1="16" x2="7.01" y2="16" />'
 }
 
 _icon_cache = {}
