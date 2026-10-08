@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Global Motion Timing Tokens -->
+    <integer name="motion_duration_micro">100</integer>
+    <integer name="motion_duration_fast">160</integer>
+    <integer name="motion_duration_standard">220</integer>
+    <integer name="motion_duration_emphasis">280</integer>
+</resources>

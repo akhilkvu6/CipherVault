@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_root"
+    app:startDestination="@id/nav_main">
+
+    <!-- Onboarding Destination -->
+    <fragment
+        android:id="@+id/dest_onboarding"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Onboarding">
+        <action
+            android:id="@+id/action_dest_onboarding_to_dest_auth"
+            app:destination="@id/dest_auth"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_onboarding_to_nav_main"
+            app:destination="@id/nav_main"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popUpTo="@id/dest_onboarding"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Authentication Destination -->
+    <fragment
+        android:id="@+id/dest_auth"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Auth">
+        <action
+            android:id="@+id/action_dest_auth_to_nav_main"
+            app:destination="@id/nav_main"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popUpTo="@id/dest_auth"
+            app:popUpToInclusive="true" />
+    </fragment>
+
+    <!-- Main Section (Bottom Navigation) -->
+    <include app:graph="@navigation/nav_main" />
+
+</navigation>

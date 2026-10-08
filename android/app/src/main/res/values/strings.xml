@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">CipherVault</string>
+
+    <!-- Bottom Navigation Tab Titles -->
+    <string name="nav_title_home">Home</string>
+    <string name="nav_title_files">Files</string>
+    <string name="nav_title_activity">Activity</string>
+    <string name="nav_title_profile">Profile</string>
 </resources>

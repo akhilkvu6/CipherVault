@@ -8,4 +8,8 @@
     <dimen name="shape_corner_large">16dp</dimen>
     <dimen name="shape_corner_extra_large">24dp</dimen>
     <dimen name="shape_corner_full">9999dp</dimen>
+
+    <!-- Global Motion Foundation -->
+    <dimen name="motion_translation_standard">24dp</dimen>
+    <dimen name="motion_translation_standard_negative">-24dp</dimen>
 </resources>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_files"
+    app:startDestination="@id/dest_files">
+
+    <!-- Files Root -->
+    <fragment
+        android:id="@+id/dest_files"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Files">
+        <action
+            android:id="@+id/action_dest_files_to_dest_search"
+            app:destination="@id/dest_search"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_files_to_dest_upload_staging"
+            app:destination="@id/dest_upload_staging"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_files_to_dest_camera_capture"
+            app:destination="@id/dest_camera_capture"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_files_to_dest_large_files"
+            app:destination="@id/dest_large_files"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_files_to_dest_file_viewer"
+            app:destination="@id/dest_file_viewer"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+    </fragment>
+
+    <!-- Child Destinations -->
+    <fragment
+        android:id="@+id/dest_search"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Search" />
+
+    <fragment
+        android:id="@+id/dest_upload_staging"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Upload Staging" />
+
+    <fragment
+        android:id="@+id/dest_camera_capture"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Camera Capture" />
+
+    <fragment
+        android:id="@+id/dest_large_files"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Large Files" />
+
+    <fragment
+        android:id="@+id/dest_file_viewer"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="File Viewer" />
+
+</navigation>

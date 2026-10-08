@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_profile"
+    app:startDestination="@id/dest_profile">
+
+    <!-- Profile Root -->
+    <fragment
+        android:id="@+id/dest_profile"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Profile">
+        <action
+            android:id="@+id/action_dest_profile_to_dest_settings"
+            app:destination="@id/dest_settings"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_profile_to_dest_account_management"
+            app:destination="@id/dest_account_management"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_profile_to_dest_diagnostics"
+            app:destination="@id/dest_diagnostics"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+    </fragment>
+
+    <!-- Child Destinations -->
+    <fragment
+        android:id="@+id/dest_settings"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Settings" />
+
+    <fragment
+        android:id="@+id/dest_account_management"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Account Management" />
+
+    <fragment
+        android:id="@+id/dest_diagnostics"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Diagnostics" />
+
+</navigation>

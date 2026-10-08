@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_activity"
+    app:startDestination="@id/dest_activity">
+
+    <!-- Activity Root -->
+    <fragment
+        android:id="@+id/dest_activity"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Activity">
+        <action
+            android:id="@+id/action_dest_activity_to_dest_live_transfers"
+            app:destination="@id/dest_live_transfers"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+        <action
+            android:id="@+id/action_dest_activity_to_dest_audit_log"
+            app:destination="@id/dest_audit_log"
+            app:enterAnim="@animator/nav_forward_enter"
+            app:exitAnim="@animator/nav_forward_exit"
+            app:popEnterAnim="@animator/nav_back_enter"
+            app:popExitAnim="@animator/nav_back_exit" />
+    </fragment>
+
+    <!-- Child Destinations -->
+    <fragment
+        android:id="@+id/dest_live_transfers"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Live Transfers" />
+
+    <fragment
+        android:id="@+id/dest_audit_log"
+        android:name="com.ciphervault.app.navigation.StructuralDestinationFragment"
+        android:label="Audit Log" />
+
+</navigation>
