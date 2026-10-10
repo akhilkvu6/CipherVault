@@ -7,6 +7,8 @@ import android.graphics.Color;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.material.color.DynamicColors;
+
 public class ThemeManager {
 
     public static void applyTheme(Activity activity) {
@@ -15,9 +17,15 @@ public class ThemeManager {
             CipherVaultPreferences.AppearanceMode appearance = CipherVaultPreferences.getAppearance(activity);
             applyAppearanceMode(appearance);
             activity.setTheme(R.style.Theme_CipherVault);
+            if (CipherVaultPreferences.isDynamicColorEnabled(activity) && DynamicColors.isDynamicColorAvailable()) {
+                DynamicColors.applyIfAvailable(activity);
+            }
         } catch (Exception e) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
             activity.setTheme(R.style.Theme_CipherVault);
+            if (CipherVaultPreferences.isDynamicColorEnabled(activity) && DynamicColors.isDynamicColorAvailable()) {
+                DynamicColors.applyIfAvailable(activity);
+            }
         }
     }
 

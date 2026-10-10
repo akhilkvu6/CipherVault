@@ -2,8 +2,6 @@ package com.ciphervault.app;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ImageButton;
@@ -22,7 +20,6 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.textfield.TextInputEditText;
@@ -41,19 +38,17 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
  * Setup, recovery, and configuration activity for CipherVault Server connection.
- * Supports instant QR code scanning via camera, clean manual IPv4 fallback,
- * persistent 5-server LRU candidate selection, and verification against /api/health.
+ * Supports instant QR code scanning, single combined server address manual input,
+ * dynamic test button states, and single most-recently-used server record.
  */
 public class ConnectionActivity extends BaseActivity {
 
-    private MaterialButton btnScanQr;
+    private View btnScanQr;
+    private MaterialCardView cardQrScan;
     private TextInputEditText etServerIp;
-    private TextInputEditText etServerPort;
     private MaterialButton btnTestConnection;
     private MaterialButton btnSaveConnection;
     private LinearProgressIndicator progressConnection;
-
-    private Chip chipEmulator;
 
     private MaterialCardView cardStatusDetails;
     private TextView tvStatusTitle;
@@ -61,10 +56,8 @@ public class ConnectionActivity extends BaseActivity {
     private TextView tvStatusMessage;
 
     private MaterialCardView cardSavedServers;
-    private TextView tvSavedServersCount;
     private LinearLayout containerSavedServers;
 
-    private boolean isFormattingText = false;
     private String lastVerifiedUrl = null;
 
     private final ActivityResultLauncher<Intent> qrScanLauncher =
@@ -107,13 +100,11 @@ public class ConnectionActivity extends BaseActivity {
 
     private void initViews() {
         btnScanQr = findViewById(R.id.btnScanQr);
+        cardQrScan = findViewById(R.id.cardQrScan);
         etServerIp = findViewById(R.id.etServerIp);
-        etServerPort = findViewById(R.id.etServerPort);
         btnTestConnection = findViewById(R.id.btnTestConnection);
         btnSaveConnection = findViewById(R.id.btnSaveConnection);
         progressConnection = findViewById(R.id.progressConnection);
-
-        chipEmulator = findViewById(R.id.chipEmulator);
 
         cardStatusDetails = findViewById(R.id.cardStatusDetails);
         tvStatusTitle = findViewById(R.id.tvStatusTitle);
@@ -121,7 +112,6 @@ public class ConnectionActivity extends BaseActivity {
         tvStatusMessage = findViewById(R.id.tvStatusMessage);
 
         cardSavedServers = findViewById(R.id.cardSavedServers);
-        tvSavedServersCount = findViewById(R.id.tvSavedServersCount);
         containerSavedServers = findViewById(R.id.containerSavedServers);
     }
 
@@ -137,19 +127,16 @@ public class ConnectionActivity extends BaseActivity {
             int port = uri.getPort();
 
             if (host != null && !host.isEmpty()) {
-                etServerIp.setText(host);
+                if (port > 0) {
+                    etServerIp.setText(host + ":" + port);
+                } else {
+                    etServerIp.setText(host + ":8080");
+                }
             } else {
-                etServerIp.setText("10.0.2.2");
-            }
-
-            if (port > 0) {
-                etServerPort.setText(String.valueOf(port));
-            } else {
-                etServerPort.setText("8080");
+                etServerIp.setText("10.0.2.2:8080");
             }
         } catch (Exception e) {
-            etServerIp.setText("10.0.2.2");
-            etServerPort.setText("8080");
+            etServerIp.setText("10.0.2.2:8080");
         }
 
         boolean autoOpened = getIntent().getBooleanExtra("EXTRA_AUTO_OPENED", false);
@@ -157,10 +144,10 @@ public class ConnectionActivity extends BaseActivity {
             tvStatusTitle.setText("Saved Servers Unavailable");
             tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.status_error));
             tvStatusServer.setText("Previous URL: " + currentUrl);
-            tvStatusMessage.setText("Saved servers are unreachable. Ensure laptop and phone are on the same network and Spring Boot is running. Scan the QR code or enter address below.");
+            tvStatusMessage.setText("Saved servers are unreachable. Ensure laptop and phone are on the same network and Spring Boot is running. Scan QR code or enter address below.");
         } else {
             tvStatusServer.setText("Configured: " + currentUrl);
-            tvStatusMessage.setText("Scan the QR code or enter laptop's IPv4 address and port to connect.");
+            tvStatusMessage.setText("Scan QR code or enter server address to connect.");
         }
     }
 
@@ -173,90 +160,48 @@ public class ConnectionActivity extends BaseActivity {
         }
 
         cardSavedServers.setVisibility(View.VISIBLE);
-        if (tvSavedServersCount != null) {
-            tvSavedServersCount.setText(servers.size() + " / " + ServerConnectionManager.MAX_SAVED_SERVERS);
-        }
         containerSavedServers.removeAllViews();
 
         LayoutInflater inflater = LayoutInflater.from(this);
-        for (int i = 0; i < servers.size(); i++) {
-            SavedServer server = servers.get(i);
-            View itemView = inflater.inflate(R.layout.item_saved_server, containerSavedServers, false);
+        // Requirement 2.4: Show a single most-recently-used server record, not multiple history items.
+        // Do not show a delete button for this item.
+        SavedServer server = servers.get(0);
+        View itemView = inflater.inflate(R.layout.item_saved_server, containerSavedServers, false);
 
-            TextView tvRank = itemView.findViewById(R.id.tvServerRank);
-            TextView tvAddress = itemView.findViewById(R.id.tvServerAddress);
-            TextView tvStatus = itemView.findViewById(R.id.tvServerLruStatus);
-            MaterialButton btnConnect = itemView.findViewById(R.id.btnConnectSavedServer);
-            ImageButton btnForget = itemView.findViewById(R.id.btnForgetSavedServer);
+        TextView tvAddress = itemView.findViewById(R.id.tvServerAddress);
+        TextView tvStatus = itemView.findViewById(R.id.tvServerLruStatus);
+        MaterialButton btnConnect = itemView.findViewById(R.id.btnConnectSavedServer);
 
-            tvRank.setText("#" + (i + 1));
-            tvAddress.setText(server.getDisplayAddress());
+        if (tvAddress != null) tvAddress.setText(server.getDisplayAddress());
+        if (tvStatus != null) tvStatus.setText("Recent Server");
 
-            if (i == 0) {
-                tvStatus.setText("Most recently used (#1)");
-            } else if (i == servers.size() - 1 && servers.size() > 1) {
-                tvStatus.setText("Least recently used (#" + (i + 1) + ")");
-            } else {
-                tvStatus.setText("Saved candidate (#" + (i + 1) + ")");
-            }
-
+        if (btnConnect != null) {
+            btnConnect.setText("Select");
             btnConnect.setOnClickListener(v -> {
-                etServerIp.setText(server.getHost());
-                etServerPort.setText(String.valueOf(server.getPort()));
-                Toast.makeText(this, "Testing saved server: " + server.getDisplayAddress(), Toast.LENGTH_SHORT).show();
+                etServerIp.setText(server.getDisplayAddress());
                 testConnection(null);
             });
-
-            btnForget.setOnClickListener(v -> {
-                new MaterialAlertDialogBuilder(this)
-                        .setTitle("Forget Server")
-                        .setMessage("Remove " + server.getDisplayAddress() + " from saved connections?")
-                        .setPositiveButton("Forget", (dialog, which) -> {
-                            ServerConnectionManager.getInstance(this).forgetServer(server.getCanonicalUrl());
-                            renderSavedServersList();
-                        })
-                        .setNegativeButton("Cancel", null)
-                        .show();
-            });
-
-            containerSavedServers.addView(itemView);
         }
+
+        containerSavedServers.addView(itemView);
     }
 
     private void setupListeners() {
-        btnScanQr.setOnClickListener(v -> {
-            Intent intent = new Intent(this, QrScanActivity.class);
-            qrScanLauncher.launch(intent);
-        });
-
-        btnTestConnection.setOnClickListener(v -> testConnection(null));
-        btnSaveConnection.setOnClickListener(v -> saveAndContinue());
-
-        if (chipEmulator != null) {
-            chipEmulator.setOnClickListener(v -> {
-                etServerIp.setText("10.0.2.2");
-                etServerPort.setText("8080");
-                testConnection(null);
+        if (btnScanQr != null) {
+            btnScanQr.setOnClickListener(v -> {
+                Intent intent = new Intent(this, QrScanActivity.class);
+                qrScanLauncher.launch(intent);
+            });
+        }
+        if (cardQrScan != null) {
+            cardQrScan.setOnClickListener(v -> {
+                Intent intent = new Intent(this, QrScanActivity.class);
+                qrScanLauncher.launch(intent);
             });
         }
 
-        // Auto-clean any pasted URLs with http:// or port numbers
-        etServerIp.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                if (isFormattingText || s == null) return;
-                String text = s.toString();
-                if (text.contains("http://") || text.contains("https://") || text.contains(":") || text.contains("/")) {
-                    parseAndSetCleanInput(text);
-                }
-            }
-        });
+        btnTestConnection.setOnClickListener(v -> testConnection(null));
+        btnSaveConnection.setOnClickListener(v -> saveAndContinue());
     }
 
     private void handleQrScanResult(String raw) {
@@ -289,111 +234,81 @@ public class ConnectionActivity extends BaseActivity {
             return;
         }
 
+        final String scannedAddress;
         if (host != null && !host.isEmpty()) {
-            isFormattingText = true;
-            etServerIp.setText(host);
-            if (etServerIp.getText() != null) {
-                etServerIp.setSelection(etServerIp.getText().length());
+            if (port != null && !port.isEmpty()) {
+                scannedAddress = host + ":" + port;
+            } else {
+                scannedAddress = host + ":8080";
             }
-            isFormattingText = false;
-        }
-
-        if (port != null && !port.isEmpty()) {
-            etServerPort.setText(port);
         } else {
-            etServerPort.setText("8080");
+            scannedAddress = raw.trim();
         }
 
-        Toast.makeText(this, "QR Code scanned! Testing connection...", Toast.LENGTH_SHORT).show();
-        testConnection(null);
-    }
-
-    private void parseAndSetCleanInput(String raw) {
-        if (raw == null) return;
-        String clean = raw.trim()
-                .replace("http://", "")
-                .replace("https://", "");
-
-        if (clean.contains("/")) {
-            clean = clean.substring(0, clean.indexOf("/"));
-        }
-
-        String ip = clean;
-        String port = null;
-
-        if (clean.contains(":")) {
-            String[] parts = clean.split(":");
-            ip = parts[0];
-            if (parts.length > 1 && !parts[1].trim().isEmpty()) {
-                port = parts[1].trim();
-            }
-        }
-
-        isFormattingText = true;
-        etServerIp.setText(ip);
-        if (etServerIp.getText() != null) {
-            etServerIp.setSelection(etServerIp.getText().length());
-        }
-        if (port != null && !port.isEmpty()) {
-            etServerPort.setText(port);
-        }
-        isFormattingText = false;
+        // Requirement 2.3:
+        // 3. The scanned server address is displayed in a popup.
+        // 4. The popup contains a Connect action.
+        // 5. When the user clicks Connect, the address is inserted into the server-address text field.
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Server QR Scanned")
+                .setMessage("Scanned Server Address:\n" + scannedAddress)
+                .setPositiveButton("Connect", (dialog, which) -> {
+                    etServerIp.setText(scannedAddress);
+                    if (etServerIp.getText() != null) {
+                        etServerIp.setSelection(etServerIp.getText().length());
+                    }
+                    Toast.makeText(this, "Address inserted. Tap 'Test Server Connection' to verify.", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     /**
-     * Builds and validates canonical server URL.
-     * Enforces strict IPv4 validation and numeric port boundaries.
+     * Builds and validates canonical server URL from single server address input.
      */
     private String buildTargetUrl() {
-        String rawIp = etServerIp.getText() != null ? etServerIp.getText().toString().trim() : "";
-        String rawPort = etServerPort.getText() != null ? etServerPort.getText().toString().trim() : "";
-
-        if (rawIp.isEmpty()) {
-            etServerIp.setError("IPv4 address is required");
+        String raw = etServerIp.getText() != null ? etServerIp.getText().toString().trim() : "";
+        if (raw.isEmpty()) {
+            etServerIp.setError("Server address is required");
             etServerIp.requestFocus();
             return null;
         }
 
         // Clean any residual prefixes
-        rawIp = rawIp.replace("http://", "").replace("https://", "");
-        if (rawIp.contains("/")) {
-            rawIp = rawIp.substring(0, rawIp.indexOf("/"));
+        raw = raw.replace("http://", "").replace("https://", "");
+        if (raw.endsWith("/")) {
+            raw = raw.substring(0, raw.length() - 1);
         }
-        if (rawIp.contains(":")) {
-            String[] parts = rawIp.split(":");
-            rawIp = parts[0];
-            if (parts.length > 1 && !parts[1].isEmpty()) {
-                rawPort = parts[1];
-                etServerPort.setText(rawPort);
+
+        String host = raw;
+        int portNum = 8080;
+
+        if (raw.contains(":")) {
+            String[] parts = raw.split(":");
+            host = parts[0].trim();
+            if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                try {
+                    portNum = Integer.parseInt(parts[1].trim());
+                    if (!NetworkPreferences.isValidPort(portNum)) {
+                        etServerIp.setError("Invalid port (1–65535)");
+                        etServerIp.requestFocus();
+                        return null;
+                    }
+                } catch (NumberFormatException e) {
+                    etServerIp.setError("Port must be numeric");
+                    etServerIp.requestFocus();
+                    return null;
+                }
             }
         }
 
-        // Strict IPv4 validation
-        if (!NetworkPreferences.isValidIpv4(rawIp)) {
-            etServerIp.setError("Enter a valid IPv4 address (e.g. 192.168.1.100)");
+        if (host.isEmpty()) {
+            etServerIp.setError("Host is required");
             etServerIp.requestFocus();
             return null;
         }
 
-        if (rawPort.isEmpty()) {
-            rawPort = "8080";
-            etServerPort.setText("8080");
-        }
-
-        try {
-            int portNum = Integer.parseInt(rawPort);
-            if (!NetworkPreferences.isValidPort(portNum)) {
-                etServerPort.setError("Invalid port (1–65535)");
-                etServerPort.requestFocus();
-                return null;
-            }
-        } catch (NumberFormatException e) {
-            etServerPort.setError("Port must be numeric");
-            etServerPort.requestFocus();
-            return null;
-        }
-
-        return "http://" + rawIp + ":" + rawPort + "/";
+        return "http://" + host + ":" + portNum + "/";
     }
 
     private interface OnTestCallback {
@@ -408,6 +323,10 @@ public class ConnectionActivity extends BaseActivity {
         }
 
         setLoading(true);
+        // Requirement 2.3: Test button changes label and icon
+        btnTestConnection.setText("Testing Connection...");
+        btnTestConnection.setIconResource(R.drawable.ic_lucide_activity);
+
         tvStatusTitle.setText("Pinging Backend...");
         tvStatusTitle.setTextColor(ContextCompat.getColor(this, R.color.md_theme_light_primary));
         tvStatusServer.setText("Testing: " + targetUrl);
@@ -436,13 +355,19 @@ public class ConnectionActivity extends BaseActivity {
 
                 if (response.isSuccessful()) {
                     lastVerifiedUrl = targetUrl;
+                    btnTestConnection.setText("Connected");
+                    btnTestConnection.setIconResource(R.drawable.ic_lucide_check_circle);
+
                     tvStatusTitle.setText("Backend Connected (" + latency + " ms)");
                     tvStatusTitle.setTextColor(ContextCompat.getColor(ConnectionActivity.this, R.color.cv_security_success));
                     tvStatusServer.setText("Target: " + targetUrl);
-                    tvStatusMessage.setText("Health check returned HTTP 200 OK. Connection is stable.");
+                    tvStatusMessage.setText("Connection is stable.");
                     Toast.makeText(ConnectionActivity.this, "Connection successful (" + latency + " ms)", Toast.LENGTH_SHORT).show();
                     if (callback != null) callback.onResult(true, targetUrl, latency);
                 } else {
+                    btnTestConnection.setText("Test Failed (Retry)");
+                    btnTestConnection.setIconResource(R.drawable.ic_lucide_alert_triangle);
+
                     tvStatusTitle.setText("Connection Error (HTTP " + response.code() + ")");
                     tvStatusTitle.setTextColor(ContextCompat.getColor(ConnectionActivity.this, R.color.status_error));
                     tvStatusMessage.setText("Server reachable but returned error " + response.code() + ". Check backend logs.");
@@ -455,6 +380,9 @@ public class ConnectionActivity extends BaseActivity {
                 setLoading(false);
                 long latency = System.currentTimeMillis() - startTime;
 
+                btnTestConnection.setText("Test Failed (Retry)");
+                btnTestConnection.setIconResource(R.drawable.ic_lucide_alert_triangle);
+
                 tvStatusTitle.setText("Connection Failed");
                 tvStatusTitle.setTextColor(ContextCompat.getColor(ConnectionActivity.this, R.color.status_error));
                 tvStatusServer.setText("Target: " + targetUrl);
@@ -466,8 +394,6 @@ public class ConnectionActivity extends BaseActivity {
 
     /**
      * Saves configuration ONLY after verified connectivity.
-     * If the current target URL has not been verified yet, auto-tests first.
-     * If test fails, preserves the last known valid URL in SharedPreferences.
      */
     private void saveAndContinue() {
         String targetUrl = buildTargetUrl();
@@ -478,13 +404,12 @@ public class ConnectionActivity extends BaseActivity {
         if (targetUrl.equals(lastVerifiedUrl)) {
             persistAndProceed(targetUrl);
         } else {
-            // Address not verified yet - test first
             Toast.makeText(this, "Testing connection before saving...", Toast.LENGTH_SHORT).show();
             testConnection((success, url, latency) -> {
                 if (success && url != null) {
                     persistAndProceed(url);
                 } else {
-                    Toast.makeText(ConnectionActivity.this, "Cannot save unverified server. Previous working URL preserved.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(ConnectionActivity.this, "Cannot connect to unverified server. Previous working URL preserved.", Toast.LENGTH_LONG).show();
                 }
             });
         }
@@ -492,10 +417,9 @@ public class ConnectionActivity extends BaseActivity {
 
     private void persistAndProceed(@NonNull String verifiedUrl) {
         ApiClient.setBaseUrl(this, verifiedUrl);
-        // Record into 5-server LRU manager
         ServerConnectionManager.getInstance(this).recordServerUsed(verifiedUrl);
 
-        Toast.makeText(this, "Connection saved: " + verifiedUrl, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Connected: " + verifiedUrl, Toast.LENGTH_SHORT).show();
         AuditLogger.log(this, "Connect Server", "SUCCESS", "Connected to " + verifiedUrl);
 
         SessionManager sm = SessionManager.getInstance(this);
@@ -515,7 +439,9 @@ public class ConnectionActivity extends BaseActivity {
     }
 
     private void setLoading(boolean loading) {
-        progressConnection.setVisibility(loading ? View.VISIBLE : View.GONE);
+        if (progressConnection != null) {
+            progressConnection.setVisibility(loading ? View.VISIBLE : View.GONE);
+        }
         btnScanQr.setEnabled(!loading);
         btnTestConnection.setEnabled(!loading);
         btnSaveConnection.setEnabled(!loading);

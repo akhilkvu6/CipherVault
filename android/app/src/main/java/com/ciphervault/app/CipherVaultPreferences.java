@@ -8,6 +8,7 @@ public class CipherVaultPreferences {
     private static final String PREF_NAME = "ciphervault_prefs";
     private static final String KEY_APPEARANCE = "appearance";
     private static final String KEY_SORT_ORDER = "files_sort_order";
+    private static final String KEY_DYNAMIC_COLOR = "dynamic_color_enabled";
 
     public enum AppearanceMode {
         SYSTEM,
@@ -17,6 +18,16 @@ public class CipherVaultPreferences {
 
     private static SharedPreferences getPrefs(Context context) {
         return context.getApplicationContext().getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+    }
+
+    public static boolean isDynamicColorEnabled(Context context) {
+        if (context == null) return true;
+        return getPrefs(context).getBoolean(KEY_DYNAMIC_COLOR, true);
+    }
+
+    public static void setDynamicColorEnabled(Context context, boolean enabled) {
+        if (context == null) return;
+        getPrefs(context).edit().putBoolean(KEY_DYNAMIC_COLOR, enabled).apply();
     }
 
     public static void saveAppearance(Context context, AppearanceMode mode) {

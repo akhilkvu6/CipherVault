@@ -61,48 +61,6 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp" />
 
-        <!-- Optional Profile Photo Selection -->
-        <FrameLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp">
-
-            <com.google.android.material.imageview.ShapeableImageView
-                android:id="@+id/ivSignupAvatar"
-                android:layout_width="84dp"
-                android:layout_height="84dp"
-                android:background="?attr/colorSurfaceContainerHigh"
-                android:contentDescription="Profile Photo"
-                android:padding="20dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/ic_lucide_user"
-                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp"
-                app:tint="?attr/colorOnSurfaceVariant" />
-
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnSelectPhoto"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="bottom|end"
-                android:contentDescription="Select Photo"
-                app:fabCustomSize="32dp"
-                app:maxImageSize="16dp"
-                app:srcCompat="@drawable/ic_lucide_camera"
-                app:tint="?attr/colorOnPrimary"
-                app:backgroundTint="?attr/colorPrimary" />
-
-        </FrameLayout>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Optional profile photo"
-            android:textColor="?attr/colorOutline"
-            android:textSize="11sp" />
-
         <!-- Signup Form Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
@@ -120,26 +78,78 @@
                 android:orientation="vertical"
                 android:padding="20dp">
 
-                <!-- Full Name -->
-                <com.google.android.material.textfield.TextInputLayout
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                <!-- 1 Unified Unit: Rounded Profile Photo + Full Name -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Full Name"
-                    app:boxCornerRadiusBottomEnd="14dp"
-                    app:boxCornerRadiusBottomStart="14dp"
-                    app:boxCornerRadiusTopEnd="14dp"
-                    app:boxCornerRadiusTopStart="14dp"
-                    app:startIconDrawable="@drawable/ic_lucide_user">
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etFullName"
-                        android:layout_width="match_parent"
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_marginEnd="10dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:strokeWidth="1.5dp">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent">
+
+                            <com.google.android.material.imageview.ShapeableImageView
+                                android:id="@+id/ivSignupAvatar"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="Profile Photo"
+                                android:scaleType="centerCrop"
+                                android:padding="10dp"
+                                android:src="@drawable/ic_lucide_user"
+                                app:tint="?attr/colorOnSurfaceVariant" />
+
+                            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                                android:id="@+id/btnSelectPhoto"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="bottom|end"
+                                android:contentDescription="Select Photo"
+                                app:fabCustomSize="24dp"
+                                app:maxImageSize="12dp"
+                                app:srcCompat="@drawable/ic_lucide_camera"
+                                app:tint="?attr/colorOnPrimary"
+                                app:backgroundTint="?attr/colorPrimary" />
+
+                        </FrameLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Full Name -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:inputType="textPersonName"
-                        android:singleLine="true"
-                        android:textSize="14sp" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        android:layout_weight="1"
+                        android:hint="Full Name"
+                        app:boxCornerRadiusBottomEnd="16dp"
+                        app:boxCornerRadiusBottomStart="16dp"
+                        app:boxCornerRadiusTopEnd="16dp"
+                        app:boxCornerRadiusTopStart="16dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etFullName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPersonName"
+                            android:singleLine="true"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
 
                 <!-- Username -->
                 <com.google.android.material.textfield.TextInputLayout
@@ -405,15 +415,7 @@
             android:textSize="13sp"
             android:textStyle="bold" />
 
-        <!-- Security Caption -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:letterSpacing="0.03"
-            android:text="@string/caption_aes_gcm"
-            android:textColor="?attr/colorOutline"
-            android:textSize="11sp" />
+
 
     </LinearLayout>
 

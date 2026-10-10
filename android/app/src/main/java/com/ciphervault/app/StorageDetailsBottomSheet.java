@@ -79,6 +79,10 @@ public final class StorageDetailsBottomSheet {
         long documents = getCategoryValue(categoryBytes,
                 "DOCUMENTS", "DOCUMENT", "PDFS", "PDF", "documents", "pdfs");
         long audio = getCategoryValue(categoryBytes, "AUDIO", "AUDIOS", "audio", "audios");
+        long media = getCategoryValue(categoryBytes, "MEDIA", "media");
+        if (videos == 0 && media > 0) {
+            videos = Math.max(0L, media - audio);
+        }
 
         long knownBytes = images + videos + documents + audio;
         long other = Math.max(0L, totalUsed - knownBytes);
@@ -94,6 +98,10 @@ public final class StorageDetailsBottomSheet {
         long documentCount = getCategoryValue(categoryCounts,
                 "DOCUMENTS", "DOCUMENT", "PDFS", "PDF", "documents", "pdfs");
         long audioCount = getCategoryValue(categoryCounts, "AUDIO", "AUDIOS", "audio", "audios");
+        long mediaCount = getCategoryValue(categoryCounts, "MEDIA", "media");
+        if (videoCount == 0 && mediaCount > 0) {
+            videoCount = Math.max(0L, mediaCount - audioCount);
+        }
 
         setCount(tvImagesCount, imageCount);
         setCount(tvVideosCount, videoCount);

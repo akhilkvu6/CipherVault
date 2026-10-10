@@ -2,6 +2,10 @@
 
     <!-- Common Material 3 Foundation: Shapes and Typography -->
     <style name="Base.Theme.CipherVault.Common" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Application-wide Typography Foundation: Default Android font (sans-serif) -->
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:fontFamily">sans-serif</item>
+
         <!-- Shape Appearance Foundation -->
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.CipherVault.Small</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.CipherVault.Medium</item>
@@ -84,4 +88,10 @@
 
     <!-- Application Theme -->
     <style name="Theme.CipherVault" parent="Base.Theme.CipherVault" />
+
+    <!-- Protected Onboarding Theme: locks typography to sans-serif to preserve approved design -->
+    <style name="Theme.CipherVault.Onboarding" parent="Theme.CipherVault">
+        <item name="fontFamily">sans-serif</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
 </resources>

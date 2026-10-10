@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 5.1 &mdash; CIPHERVAULT SYSTEM CONTEXT DIAGRAM (LEVEL 0)</text>
+  <text x="30" y="48" class="sub">Interaction boundaries between Mobile User, Host Administrator, Android Client, Backend Server, and Persistence Tier</text>
+
+  <rect x="50" y="140" width="130" height="90" class="card-peach"/>
+  <circle cx="115" cy="170" r="16" fill="#815621"/>
+  <text x="115" y="205" class="box-title">Mobile User</text>
+  <text x="115" y="218" class="box-desc">Biometric / PIN Authenticated</text>
+
+  <rect x="50" y="310" width="130" height="90" class="card-peach"/>
+  <rect x="100" y="330" width="30" height="25" rx="3" fill="#815621"/>
+  <text x="115" y="375" class="box-title">Host Administrator</text>
+  <text x="115" y="388" class="box-desc">Desktop Server Operator</text>
+
+  <rect x="250" y="80" width="410" height="360" fill="#FFFFFF" stroke="#815621" stroke-width="2" rx="10"/>
+  <text x="455" y="105" class="box-title" style="fill: #815621; font-size: 14px;">CIPHERVAULT SYSTEM BOUNDARY</text>
+
+  <rect x="280" y="130" width="160" height="85" class="card-surface"/>
+  <text x="360" y="160" class="box-title">Android Client (M3)</text>
+  <text x="360" y="178" class="box-desc">Java 21 / SDK 37</text>
+  <text x="360" y="193" class="box-desc">Retrofit 2 / Keystore</text>
+
+  <rect x="475" y="130" width="160" height="85" class="card-surface"/>
+  <text x="555" y="160" class="box-title">Spring Boot Core</text>
+  <text x="555" y="178" class="box-desc">Version 3.3.4 (Tomcat 10)</text>
+  <text x="555" y="193" class="box-desc">AES-256-GCM / ExifTool</text>
+
+  <rect x="360" y="270" width="190" height="85" class="card-surface"/>
+  <text x="455" y="300" class="box-title">Server Control Manager</text>
+  <text x="455" y="318" class="box-desc">PySide6 Desktop Utility</text>
+  <text x="455" y="333" class="box-desc">Process &amp; Network Health</text>
+
+  <rect x="720" y="130" width="140" height="85" class="card-blue"/>
+  <text x="790" y="160" class="box-title">MySQL 8.0 DB</text>
+  <text x="790" y="178" class="box-desc">Port 3306 (InnoDB)</text>
+  <text x="790" y="193" class="box-desc">Hashes &amp; Metadata</text>
+
+  <rect x="720" y="270" width="140" height="85" class="card-green"/>
+  <text x="790" y="300" class="box-title">Host Filesystem</text>
+  <text x="790" y="318" class="box-desc">AES-256-GCM Blobs</text>
+  <text x="790" y="333" class="box-desc">Isolated /storage/ path</text>
+
+  <path d="M 180 185 L 280 172" class="line"/>
+  <text x="230" y="170" class="edge-label">Touch / Pin</text>
+
+  <path d="M 180 355 L 360 320" class="line"/>
+  <text x="260" y="350" class="edge-label">Desktop Control</text>
+
+  <path d="M 440 172 L 475 172" class="line"/>
+  <text x="457" y="162" class="edge-label">REST</text>
+
+  <path d="M 455 270 L 530 215" class="dash-line"/>
+  <text x="510" y="250" class="edge-label">Port Ping</text>
+
+  <path d="M 635 172 L 720 172" class="line"/>
+  <text x="677" y="162" class="edge-label">JPA/JDBC</text>
+
+  <path d="M 635 190 L 720 285" class="line"/>
+  <text x="680" y="235" class="edge-label">File I/O</text>
+</svg>

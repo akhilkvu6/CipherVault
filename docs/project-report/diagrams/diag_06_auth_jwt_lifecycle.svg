@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 9.1 &mdash; AUTHENTICATION &amp; JWT TOKEN LIFECYCLE</text>
+  <text x="30" y="48" class="sub">Complete token lifecycle from registration and credential verification to bearer authorization and expiration handling</text>
+
+  <!-- Step 1: Registration -->
+  <rect x="50" y="80" width="230" height="110" class="card"/>
+  <circle cx="75" cy="105" r="12" fill="#815621"/>
+  <text x="75" y="109" class="step-num">1</text>
+  <text x="165" y="105" class="box-title">User Registration</text>
+  <text x="65" y="130" class="box-desc-left">&bull; User enters email, username, pwd</text>
+  <text x="65" y="145" class="box-desc-left">&bull; Backend hashes password (BCrypt)</text>
+  <text x="65" y="160" class="box-desc-left">&bull; Generates 256-bit UDEK key</text>
+  <text x="65" y="175" class="box-desc-left">&bull; Encrypts UDEK with Server KEK</text>
+
+  <!-- Step 2: Login & Issue -->
+  <rect x="335" y="80" width="230" height="110" class="card"/>
+  <circle cx="360" cy="105" r="12" fill="#815621"/>
+  <text x="360" y="109" class="step-num">2</text>
+  <text x="450" y="105" class="box-title">Authentication &amp; JWT Issue</text>
+  <text x="350" y="130" class="box-desc-left">&bull; POST /api/auth/login</text>
+  <text x="350" y="145" class="box-desc-left">&bull; BCrypt matches hash in DB</text>
+  <text x="350" y="160" class="box-desc-left">&bull; Rate limiter checks (&lt;5 fails)</text>
+  <text x="350" y="175" class="box-desc-left">&bull; Issues HS256 JWT (24-hour expiry)</text>
+
+  <!-- Step 3: Secure Storage -->
+  <rect x="620" y="80" width="230" height="110" class="card-peach"/>
+  <circle cx="645" cy="105" r="12" fill="#815621"/>
+  <text x="645" y="109" class="step-num">3</text>
+  <text x="735" y="105" class="box-title">Client-Side Storage</text>
+  <text x="635" y="130" class="box-desc-left">&bull; Client receives JWT &amp; username</text>
+  <text x="635" y="145" class="box-desc-left">&bull; Writes to EncryptedSharedPrefs</text>
+  <text x="635" y="160" class="box-desc-left">&bull; Keystore MasterKey encryption</text>
+  <text x="635" y="175" class="box-desc-left">&bull; Plaintext token never on disk</text>
+
+  <!-- Step 4: Authorized Request -->
+  <rect x="620" y="270" width="230" height="110" class="card"/>
+  <circle cx="645" cy="295" r="12" fill="#815621"/>
+  <text x="645" y="299" class="step-num">4</text>
+  <text x="735" y="295" class="box-title">Authorized Requests</text>
+  <text x="635" y="320" class="box-desc-left">&bull; Interceptor extracts token</text>
+  <text x="635" y="335" class="box-desc-left">&bull; Adds 'Authorization: Bearer &lt;jwt&gt;'</text>
+  <text x="635" y="350" class="box-desc-left">&bull; Injected across all Retrofit APIs</text>
+  <text x="635" y="365" class="box-desc-left">&bull; Valid on Vault, Search, Transfers</text>
+
+  <!-- Step 5: Backend Validation -->
+  <rect x="335" y="270" width="230" height="110" class="card-green"/>
+  <circle cx="360" cy="295" r="12" fill="#2E7D32"/>
+  <text x="360" y="299" class="step-num">5</text>
+  <text x="450" y="295" class="box-title">Server Token Validation</text>
+  <text x="350" y="320" class="box-desc-left">&bull; JwtAuthenticationFilter intercepts</text>
+  <text x="350" y="335" class="box-desc-left">&bull; Verifies HS256 HMAC signature</text>
+  <text x="350" y="350" class="box-desc-left">&bull; Checks expiry timestamp</text>
+  <text x="350" y="365" class="box-desc-left">&bull; Populates SecurityContextHolder</text>
+
+  <!-- Step 6: Expiry & Invalidation -->
+  <rect x="50" y="270" width="230" height="110" class="card-red"/>
+  <circle cx="75" cy="295" r="12" fill="#C62828"/>
+  <text x="75" y="299" class="step-num">6</text>
+  <text x="165" y="295" class="box-title">Token Expiry &amp; Revocation</text>
+  <text x="65" y="320" class="box-desc-left">&bull; Expired token returns 401 Unauthorized</text>
+  <text x="65" y="335" class="box-desc-left">&bull; Token version mismatch invalidates</text>
+  <text x="65" y="350" class="box-desc-left">&bull; Client clears EncryptedSharedPrefs</text>
+  <text x="65" y="365" class="box-desc-left">&bull; Automatic redirect to LoginActivity</text>
+
+  <path d="M 280 135 L 335 135" class="line"/>
+  <path d="M 565 135 L 620 135" class="line"/>
+  <path d="M 735 190 L 735 270" class="line"/>
+  <path d="M 620 325 L 565 325" class="line"/>
+  <path d="M 335 325 L 280 325" class="line"/>
+</svg>

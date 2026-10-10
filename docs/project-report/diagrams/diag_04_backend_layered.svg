@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 7.1 &mdash; SPRING BOOT BACKEND LAYERED ARCHITECTURE</text>
+  <text x="30" y="48" class="sub">Decomposition of Controllers, Security Filter Chain, Business Services, and JPA Repositories</text>
+
+  <!-- Layer 1: Controllers -->
+  <rect x="50" y="70" width="800" height="75" class="card-surface"/>
+  <text x="70" y="92" class="box-title" style="fill:#815621; text-anchor:start;">1. CONTROLLER &amp; REST API LAYER (Tomcat 10 / HTTP 8080)</text>
+  
+  <rect x="70" y="102" width="170" height="32" class="card"/>
+  <text x="155" y="122" class="box-title">AuthController</text>
+  <rect x="260" y="102" width="170" height="32" class="card"/>
+  <text x="345" y="122" class="box-title">FileController</text>
+  <rect x="450" y="102" width="170" height="32" class="card"/>
+  <text x="535" y="122" class="box-title">MetadataController</text>
+  <rect x="640" y="102" width="170" height="32" class="card"/>
+  <text x="725" y="122" class="box-title">UserController</text>
+
+  <!-- Layer 2: Security Filter -->
+  <rect x="50" y="160" width="800" height="65" class="card-green"/>
+  <text x="70" y="182" class="box-title" style="fill:#2E7D32; text-anchor:start;">2. SECURITY &amp; FILTER PIPELINE (Spring Security 6)</text>
+  
+  <rect x="70" y="190" width="220" height="26" class="card"/>
+  <text x="180" y="207" class="box-desc" style="font-weight:600;">JwtAuthenticationFilter</text>
+  <rect x="310" y="190" width="220" height="26" class="card"/>
+  <text x="420" y="207" class="box-desc" style="font-weight:600;">LoginRateLimiterService (5 fails/15m)</text>
+  <rect x="550" y="190" width="260" height="26" class="card"/>
+  <text x="680" y="207" class="box-desc" style="font-weight:600;">SecurityFilterChain (Stateless Session)</text>
+
+  <!-- Layer 3: Services -->
+  <rect x="50" y="240" width="800" height="95" class="card-surface"/>
+  <text x="70" y="262" class="box-title" style="fill:#815621; text-anchor:start;">3. BUSINESS SERVICE LAYER</text>
+
+  <rect x="70" y="272" width="180" height="50" class="card"/>
+  <text x="160" y="292" class="box-title">EncryptionService</text>
+  <text x="160" y="308" class="box-desc">AES-256-GCM / 16KB Stream</text>
+
+  <rect x="265" y="272" width="180" height="50" class="card"/>
+  <text x="355" y="292" class="box-title">KeyManagementService</text>
+  <text x="355" y="308" class="box-desc">PBKDF2 KEK / Per-User UDEK</text>
+
+  <rect x="460" y="272" width="180" height="50" class="card"/>
+  <text x="550" y="292" class="box-title">FileStorageService</text>
+  <text x="550" y="308" class="box-desc">Atomic Quota (10GB Limit)</text>
+
+  <rect x="655" y="272" width="175" height="50" class="card"/>
+  <text x="742" y="292" class="box-title">MetadataExtractor</text>
+  <text x="742" y="308" class="box-desc">ExifTool &amp; Java Media Parser</text>
+
+  <!-- Layer 4: Data Access & DB -->
+  <rect x="50" y="350" width="800" height="95" class="card-surface"/>
+  <text x="70" y="372" class="box-title" style="fill:#815621; text-anchor:start;">4. DATA ACCESS LAYER &amp; PERSISTENCE</text>
+
+  <rect x="70" y="382" width="230" height="50" class="card-blue"/>
+  <text x="185" y="402" class="box-title">UserRepository</text>
+  <text x="185" y="418" class="box-desc">User Auth, Storage Counter, Token Ver</text>
+
+  <rect x="320" y="382" width="250" height="50" class="card-blue"/>
+  <text x="445" y="402" class="box-title">StoredFileRepository</text>
+  <text x="445" y="418" class="box-desc">SHA-256 Unique Hash, Cascade Delete</text>
+
+  <rect x="590" y="382" width="240" height="50" class="card-blue"/>
+  <text x="710" y="402" class="box-title">FileMetadataRepository</text>
+  <text x="710" y="418" class="box-desc">JPA Criteria Search across 15+ Fields</text>
+
+  <path d="M 450 145 L 450 160" class="line"/>
+  <path d="M 450 225 L 450 240" class="line"/>
+  <path d="M 450 335 L 450 350" class="line"/>
+</svg>

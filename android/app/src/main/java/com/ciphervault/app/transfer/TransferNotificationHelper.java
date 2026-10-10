@@ -137,7 +137,7 @@ public class TransferNotificationHelper {
                     cancelIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel Batch", cancelPendingIntent);
+            builder.addAction(R.drawable.ic_lucide_x, "Cancel Batch", cancelPendingIntent);
 
         } else if (activeItem != null) {
             // Single-file transfer notification
@@ -171,7 +171,7 @@ public class TransferNotificationHelper {
                     cancelIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             );
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Cancel", cancelPendingIntent);
+            builder.addAction(R.drawable.ic_lucide_x, "Cancel", cancelPendingIntent);
 
         } else {
             builder.setContentTitle("CipherVault Transfer");

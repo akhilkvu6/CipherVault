@@ -27,10 +27,14 @@ import com.ciphervault.app.transfer.TransferType;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.tabs.TabLayout;
 
+import android.text.TextUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -358,6 +362,8 @@ public class FragmentTransfers extends Fragment implements TransferListener {
     }
 
     private class AuditLogAdapter extends RecyclerView.Adapter<AuditLogAdapter.ViewHolder> {
+        private final Set<Integer> expandedPositions = new HashSet<>();
+
         @NonNull
         @Override
         public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -374,9 +380,47 @@ public class FragmentTransfers extends Fragment implements TransferListener {
             String status = item.get("status") != null ? String.valueOf(item.get("status")) : "SUCCESS";
 
             holder.tvActivityAction.setText(action);
-            holder.tvActivityDetails.setText(details);
             holder.tvActivityTimestamp.setText(timestamp);
             holder.tvActivityStatus.setText(status);
+
+            // Action-specific outlined icons
+            String actionLower = action.toLowerCase(Locale.ROOT);
+            if (actionLower.contains("upload")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_upload);
+            } else if (actionLower.contains("download")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_download);
+            } else if (actionLower.contains("delete")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_trash_2);
+            } else if (actionLower.contains("server") || actionLower.contains("connect")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_server);
+            } else if (actionLower.contains("login") || actionLower.contains("auth") || actionLower.contains("sign in") || actionLower.contains("signup")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_user);
+            } else if (actionLower.contains("logout")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_log_out);
+            } else if (actionLower.contains("lock") || actionLower.contains("security") || actionLower.contains("biometric")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_shield_check);
+            } else if (actionLower.contains("pass") || actionLower.contains("key") || actionLower.contains("pin")) {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_key);
+            } else {
+                holder.ivActivityIcon.setImageResource(R.drawable.ic_lucide_activity);
+            }
+
+            // Expandable details row
+            boolean isExpanded = expandedPositions.contains(position);
+            holder.tvActivityDetails.setMaxLines(isExpanded ? Integer.MAX_VALUE : 1);
+            holder.tvActivityDetails.setEllipsize(isExpanded ? null : TextUtils.TruncateAt.MIDDLE);
+            holder.tvActivityDetails.setText(details);
+
+            holder.itemView.setOnClickListener(v -> {
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION) return;
+                if (expandedPositions.contains(pos)) {
+                    expandedPositions.remove(pos);
+                } else {
+                    expandedPositions.add(pos);
+                }
+                notifyItemChanged(pos);
+            });
 
             if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
                 holder.tvActivityStatus.setTextColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.status_connected));
@@ -391,6 +435,7 @@ public class FragmentTransfers extends Fragment implements TransferListener {
         }
 
         class ViewHolder extends RecyclerView.ViewHolder {
+            final ImageView ivActivityIcon;
             final TextView tvActivityAction;
             final TextView tvActivityDetails;
             final TextView tvActivityTimestamp;
@@ -398,6 +443,7 @@ public class FragmentTransfers extends Fragment implements TransferListener {
 
             ViewHolder(@NonNull View itemView) {
                 super(itemView);
+                ivActivityIcon = itemView.findViewById(R.id.ivActivityIcon);
                 tvActivityAction = itemView.findViewById(R.id.tvActivityAction);
                 tvActivityDetails = itemView.findViewById(R.id.tvActivityDetails);
                 tvActivityTimestamp = itemView.findViewById(R.id.tvActivityTimestamp);

@@ -75,7 +75,7 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
             int encColor = ThemeManager.getEncryptedColor(context);
             holder.tvEncryptionBadge.setText("Encrypted");
             holder.tvEncryptionBadge.setTextColor(encColor);
-            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
+            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lucide_lock, 0, 0, 0);
             holder.tvEncryptionBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
             holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
         } else {
@@ -86,16 +86,16 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
 
         switch (file.getCategory()) {
             case IMAGES:
-                holder.ivFileIcon.setImageResource(R.drawable.ic_file_image);
+                holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_image);
                 break;
             case VIDEOS:
-                holder.ivFileIcon.setImageResource(R.drawable.ic_file_video);
+                holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_video);
                 break;
             case PDFS:
-                holder.ivFileIcon.setImageResource(R.drawable.ic_file_pdf);
+                holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file_text);
                 break;
             default:
-                holder.ivFileIcon.setImageResource(R.drawable.ic_file_general);
+                holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file);
                 break;
         }
 
@@ -111,7 +111,10 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
         }
 
         holder.itemView.setOnClickListener(v -> {
-            FileDetailsBottomSheet.show(context, file, f -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= files.size()) return;
+            StoredFile currentFile = files.get(pos);
+            FileDetailsBottomSheet.show(context, currentFile, f -> {
                 if (downloadListener != null) {
                     downloadListener.onDownloadClick(f);
                 }
@@ -123,15 +126,19 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
         });
 
         holder.btnDownload.setOnClickListener(v -> {
+            int pos = holder.getBindingAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION || pos >= files.size()) return;
             if (downloadListener != null) {
-                downloadListener.onDownloadClick(file);
+                downloadListener.onDownloadClick(files.get(pos));
             }
         });
 
         if (holder.btnDelete != null) {
             holder.btnDelete.setOnClickListener(v -> {
+                int pos = holder.getBindingAdapterPosition();
+                if (pos == RecyclerView.NO_POSITION || pos >= files.size()) return;
                 if (deleteListener != null) {
-                    deleteListener.onDeleteClick(file);
+                    deleteListener.onDeleteClick(files.get(pos));
                 }
             });
         }

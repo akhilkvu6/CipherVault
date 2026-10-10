@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 12.1 &mdash; CORE UML CLASS DIAGRAM</text>
+  <text x="30" y="48" class="sub">Structural class relationships between Android UI Controllers, Client Models, and Spring Boot Backend Services</text>
+
+  <!-- Android Classes -->
+  <rect x="50" y="70" width="370" height="175" class="card"/>
+  <rect x="50" y="70" width="370" height="28" class="card-peach"/>
+  <text x="235" y="89" class="box-title">com.ciphervault.app.FragmentVault</text>
+  <text x="60" y="112" class="box-desc-left">- recyclerView: RecyclerView</text>
+  <text x="60" y="126" class="box-desc-left">- adapter: VaultFilesAdapter</text>
+  <text x="60" y="140" class="box-desc-left">- isMultiSelectMode: boolean</text>
+  <text x="60" y="154" class="box-desc-left">- selectedFileIds: Set&lt;Long&gt;</text>
+  <line x1="50" y1="162" x2="420" y2="162" stroke="#E6D7CD"/>
+  <text x="60" y="177" class="box-desc-left">+ showFileDetailsBottomSheet(StoredFile file): void</text>
+  <text x="60" y="191" class="box-desc-left">+ confirmAndDeleteFile(StoredFile file): void</text>
+  <text x="60" y="205" class="box-desc-left">+ toggleSelectionMode(boolean enable): void</text>
+  <text x="60" y="219" class="box-desc-left">+ loadVaultFiles(): void</text>
+
+  <rect x="50" y="265" width="370" height="185" class="card"/>
+  <rect x="50" y="265" width="370" height="28" class="card-peach"/>
+  <text x="235" y="284" class="box-title">com.ciphervault.app.FileDetailsBottomSheet</text>
+  <text x="60" y="307" class="box-desc-left">- tvOriginalFilename, tvFileSize, tvSha256: TextView</text>
+  <text x="60" y="321" class="box-desc-left">- btnBottomSheetPreview, btnBottomSheetDownload: Button</text>
+  <text x="60" y="335" class="box-desc-left">- currentFile: StoredFile</text>
+  <line x1="50" y1="343" x2="420" y2="343" stroke="#E6D7CD"/>
+  <text x="60" y="358" class="box-desc-left">+ show(FragmentManager fm, StoredFile file, Callback cb): void</text>
+  <text x="60" y="372" class="box-desc-left">+ bindForensicMetadata(FileMetadata meta): void</text>
+  <text x="60" y="386" class="box-desc-left">+ copySha256ToClipboard(): void</text>
+  <text x="60" y="400" class="box-desc-left">+ launchDecryptedViewer(): void</text>
+  <text x="60" y="414" class="box-desc-left">+ onDismiss(): void</text>
+
+  <!-- Backend Classes -->
+  <rect x="480" y="70" width="370" height="175" class="card"/>
+  <rect x="480" y="70" width="370" height="28" class="card-blue"/>
+  <text x="665" y="89" class="box-title">com.ciphervault.service.FileStorageService</text>
+  <text x="490" y="112" class="box-desc-left">- fileRepository: StoredFileRepository</text>
+  <text x="490" y="126" class="box-desc-left">- encryptionService: EncryptionService</text>
+  <text x="490" y="140" class="box-desc-left">- metadataService: MetadataExtractionService</text>
+  <line x1="480" y1="148" x2="850" y2="148" stroke="#E6D7CD"/>
+  <text x="490" y="163" class="box-desc-left">+ storeFile(MultipartFile file, User user): StoredFile</text>
+  <text x="490" y="177" class="box-desc-left">+ loadFileResource(Long fileId, Long userId): Resource</text>
+  <text x="490" y="191" class="box-desc-left">+ deleteFile(Long fileId, Long userId): void</text>
+  <text x="490" y="205" class="box-desc-left">+ checkDuplicate(String sha256, Long userId): boolean</text>
+  <text x="490" y="219" class="box-desc-left">+ enforceStorageQuota(Long userId, long size): void</text>
+
+  <rect x="480" y="265" width="370" height="185" class="card"/>
+  <rect x="480" y="265" width="370" height="28" class="card-green"/>
+  <text x="665" y="284" class="box-title">com.ciphervault.service.EncryptionService</text>
+  <text x="490" y="307" class="box-desc-left">- keyManagementService: KeyManagementService</text>
+  <text x="490" y="321" class="box-desc-left">- BUFFER_SIZE: int = 16384 (16KB)</text>
+  <line x1="480" y1="329" x2="850" y2="329" stroke="#E6D7CD"/>
+  <text x="490" y="344" class="box-desc-left">+ encryptStream(InputStream in, OutputStream out, SecretKey udek): void</text>
+  <text x="490" y="358" class="box-desc-left">+ decryptStream(InputStream in, OutputStream out, SecretKey udek): void</text>
+  <text x="490" y="372" class="box-desc-left">+ generateIv(): byte[] (12 Bytes)</text>
+  <text x="490" y="386" class="box-desc-left">+ verifyGhashTag(): boolean</text>
+  <text x="490" y="400" class="box-desc-left">+ wrapUserKey(SecretKey udek, SecretKey kek): String</text>
+  <text x="490" y="414" class="box-desc-left">+ unwrapUserKey(String wrapped, SecretKey kek): SecretKey</text>
+
+  <path d="M 235 245 L 235 265" class="line"/>
+  <path d="M 665 245 L 665 265" class="line"/>
+</svg>

@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 10.7 &mdash; FILE DELETION &amp; STORAGE QUOTA RECLAIM WORKFLOW</text>
+  <text x="30" y="48" class="sub">Atomic sequence: User confirmation &rarr; DELETE API &rarr; Database cascade &rarr; Quota decrement &rarr; Secure disk unlink</text>
+
+  <rect x="40" y="70" width="120" height="35" class="card-peach"/>
+  <text x="100" y="92" class="box-title">Vault / BottomSheet</text>
+  <line x1="100" y1="105" x2="100" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="230" y="70" width="120" height="35" class="card"/>
+  <text x="290" y="92" class="box-title">FileController</text>
+  <line x1="290" y1="105" x2="290" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="420" y="70" width="130" height="35" class="card"/>
+  <text x="485" y="92" class="box-title">FileStorageService</text>
+  <line x1="485" y1="105" x2="485" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="610" y="70" width="120" height="35" class="card-blue"/>
+  <text x="670" y="92" class="box-title">MySQL Database</text>
+  <line x1="670" y1="105" x2="670" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="760" y="70" width="110" height="35" class="card-green"/>
+  <text x="815" y="92" class="box-title">Encrypted Disk</text>
+  <line x1="815" y1="105" x2="815" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <path d="M 100 130 L 290 130" class="line"/>
+  <text x="195" y="122" class="edge-label">1. DELETE /api/files/{id} (Bearer)</text>
+
+  <path d="M 290 160 L 485 160" class="line"/>
+  <text x="387" y="152" class="edge-label">2. deleteFile(fileId, userId)</text>
+
+  <path d="M 485 190 L 670 190" class="line"/>
+  <text x="577" y="182" class="edge-label">3. Verify ownership: user_id == auth.id</text>
+
+  <path d="M 670 220 L 485 220" class="dash-line"/>
+  <text x="577" y="212" class="edge-label">4. StoredFile entity retrieved</text>
+
+  <path d="M 485 250 L 670 250" class="line"/>
+  <text x="577" y="242" class="edge-label">5. DELETE FROM stored_files WHERE id = :id</text>
+
+  <path d="M 670 280 L 670 305" stroke="#1565C0" stroke-width="1.5" fill="none"/>
+  <path d="M 670 305 L 705 305" stroke="#1565C0" stroke-width="1.5" fill="none"/>
+  <path d="M 705 305 L 705 290" stroke="#1565C0" stroke-width="1.5" fill="none"/>
+  <path d="M 705 290 L 675 290" class="line"/>
+  <text x="715" y="300" class="edge-label" style="text-anchor:start;">FK Cascade: file_metadata deleted</text>
+
+  <path d="M 485 325 L 670 325" class="line"/>
+  <text x="577" y="317" class="edge-label">6. UPDATE users SET used_storage = used_storage - :size</text>
+
+  <path d="M 485 355 L 815 355" class="line"/>
+  <text x="650" y="347" class="edge-label">7. Files.deleteIfExists(storage_path)</text>
+
+  <path d="M 485 385 L 290 385" class="dash-line"/>
+  <text x="387" y="377" class="edge-label">8. Return HTTP 200 OK</text>
+
+  <path d="M 290 415 L 100 415" class="dash-line"/>
+  <text x="195" y="407" class="edge-label">9. Dismiss Sheet &amp; Refresh Vault List</text>
+</svg>

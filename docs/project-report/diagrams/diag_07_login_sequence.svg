@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 10.1 &mdash; USER LOGIN SEQUENCE DIAGRAM</text>
+  <text x="30" y="48" class="sub">Interaction between Android UI, Network Client, Spring Security Filter, Authentication Manager, and Database</text>
+
+  <!-- Lifeline Headers -->
+  <rect x="50" y="70" width="120" height="35" class="card-peach"/>
+  <text x="110" y="92" class="box-title">Android User/UI</text>
+  <line x1="110" y1="105" x2="110" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="220" y="70" width="120" height="35" class="card"/>
+  <text x="280" y="92" class="box-title">ApiClient (Retrofit)</text>
+  <line x1="280" y1="105" x2="280" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="390" y="70" width="120" height="35" class="card"/>
+  <text x="450" y="92" class="box-title">AuthController</text>
+  <line x1="450" y1="105" x2="450" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="560" y="70" width="130" height="35" class="card"/>
+  <text x="625" y="92" class="box-title">AuthManager/BCrypt</text>
+  <line x1="625" y1="105" x2="625" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="740" y="70" width="110" height="35" class="card-blue"/>
+  <text x="795" y="92" class="box-title">MySQL Database</text>
+  <line x1="795" y1="105" x2="795" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Messages -->
+  <path d="M 110 130 L 280 130" class="line"/>
+  <text x="195" y="122" class="edge-label">1. Submit email &amp; password</text>
+
+  <path d="M 280 160 L 450 160" class="line"/>
+  <text x="365" y="152" class="edge-label">2. POST /api/auth/login</text>
+
+  <path d="M 450 190 L 625 190" class="line"/>
+  <text x="535" y="182" class="edge-label">3. authenticate(email, pwd)</text>
+
+  <path d="M 625 220 L 795 220" class="line"/>
+  <text x="710" y="212" class="edge-label">4. findByEmail(email)</text>
+
+  <path d="M 795 250 L 625 250" class="dash-line"/>
+  <text x="710" y="242" class="edge-label">5. User record + BCrypt hash</text>
+
+  <path d="M 625 280 L 450 280" class="dash-line"/>
+  <text x="535" y="272" class="edge-label">6. BCrypt.checkpw() SUCCESS</text>
+
+  <path d="M 450 310 L 450 335" stroke="#815621" stroke-width="1.5" fill="none"/>
+  <path d="M 450 335 L 480 335" stroke="#815621" stroke-width="1.5" fill="none"/>
+  <path d="M 480 335 L 480 320" stroke="#815621" stroke-width="1.5" fill="none"/>
+  <path d="M 480 320 L 455 320" class="line"/>
+  <text x="525" y="330" class="edge-label" style="text-anchor:start;">Generate HS256 JWT</text>
+
+  <path d="M 450 365 L 280 365" class="dash-line"/>
+  <text x="365" y="357" class="edge-label">7. HTTP 200 OK + JWT Token</text>
+
+  <path d="M 280 395 L 110 395" class="dash-line"/>
+  <text x="195" y="387" class="edge-label">8. Save EncryptedSharedPrefs</text>
+
+  <rect x="60" y="410" width="100" height="25" class="card-green"/>
+  <text x="110" y="427" class="box-desc" style="font-weight:bold; fill:#2E7D32;">Route to Main</text>
+</svg>

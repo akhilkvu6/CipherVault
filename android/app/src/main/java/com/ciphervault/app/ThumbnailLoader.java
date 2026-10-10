@@ -194,7 +194,7 @@ public class ThumbnailLoader {
 
             ivThumbnail.setImageDrawable(null);
             ivThumbnail.setVisibility(View.GONE);
-            ivIcon.setImageResource(R.drawable.ic_file_image);
+            ivIcon.setImageResource(R.drawable.ic_lucide_image);
             ivIcon.setVisibility(View.VISIBLE);
 
             decodeExecutor.execute(() -> {
@@ -208,7 +208,7 @@ public class ThumbnailLoader {
                             ivIcon.setVisibility(View.GONE);
                         } else {
                             ivThumbnail.setVisibility(View.GONE);
-                            ivIcon.setImageResource(R.drawable.ic_file_image);
+                            ivIcon.setImageResource(R.drawable.ic_lucide_image);
                             ivIcon.setVisibility(View.VISIBLE);
                         }
                     }
@@ -225,7 +225,7 @@ public class ThumbnailLoader {
 
             ivThumbnail.setImageDrawable(null);
             ivThumbnail.setVisibility(View.GONE);
-            ivIcon.setImageResource(R.drawable.ic_file_video);
+            ivIcon.setImageResource(R.drawable.ic_lucide_video);
             ivIcon.setVisibility(View.VISIBLE);
 
             decodeExecutor.execute(() -> {
@@ -239,7 +239,7 @@ public class ThumbnailLoader {
                             ivIcon.setVisibility(View.GONE);
                         } else {
                             ivThumbnail.setVisibility(View.GONE);
-                            ivIcon.setImageResource(R.drawable.ic_file_video);
+                            ivIcon.setImageResource(R.drawable.ic_lucide_video);
                             ivIcon.setVisibility(View.VISIBLE);
                         }
                     }
@@ -248,7 +248,7 @@ public class ThumbnailLoader {
         } else if (isPdf) {
             ivThumbnail.setImageDrawable(null);
             ivThumbnail.setVisibility(View.GONE);
-            ivIcon.setImageResource(R.drawable.ic_file_pdf);
+            ivIcon.setImageResource(R.drawable.ic_lucide_file_text);
             ivIcon.setVisibility(View.VISIBLE);
         } else if (isDoc) {
             ivThumbnail.setImageDrawable(null);
@@ -268,7 +268,7 @@ public class ThumbnailLoader {
         } else {
             ivThumbnail.setImageDrawable(null);
             ivThumbnail.setVisibility(View.GONE);
-            ivIcon.setImageResource(R.drawable.ic_file_general);
+            ivIcon.setImageResource(R.drawable.ic_lucide_file);
             ivIcon.setVisibility(View.VISIBLE);
         }
     }
@@ -339,13 +339,44 @@ public class ThumbnailLoader {
      * Extracts a video frame thumbnail via MediaMetadataRetriever, safely scaled to thumbnail bounds.
      */
     public static Bitmap extractVideoFrame(Context context, Uri uri, int reqWidth, int reqHeight) {
+        if (context == null || uri == null) {
+            return null;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && "content".equalsIgnoreCase(uri.getScheme())) {
+            try {
+                Bitmap thumb = context.getContentResolver().loadThumbnail(uri, new android.util.Size(reqWidth, reqHeight), null);
+                if (thumb != null) {
+                    return thumb;
+                }
+            } catch (Throwable ignored) {}
+        }
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         try {
             retriever.setDataSource(context, uri);
             Bitmap frame = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
                 try {
-                    frame = retriever.getScaledFrameAtTime(1000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, reqWidth, reqHeight);
+                    frame = retriever.getScaledFrameAtTime(-1, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, reqWidth, reqHeight);
+                } catch (Throwable ignored) {}
+                if (frame == null) {
+                    try {
+                        frame = retriever.getScaledFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST, reqWidth, reqHeight);
+                    } catch (Throwable ignored) {}
+                }
+                if (frame == null) {
+                    try {
+                        frame = retriever.getScaledFrameAtTime(1000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, reqWidth, reqHeight);
+                    } catch (Throwable ignored) {}
+                }
+            }
+            if (frame == null) {
+                try {
+                    frame = retriever.getFrameAtTime(-1, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+                } catch (Throwable ignored) {}
+            }
+            if (frame == null) {
+                try {
+                    frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST);
                 } catch (Throwable ignored) {}
             }
             if (frame == null) {

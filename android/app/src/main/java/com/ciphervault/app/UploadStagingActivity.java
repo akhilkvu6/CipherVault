@@ -27,9 +27,14 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 
+import android.graphics.Bitmap;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -136,7 +141,17 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
         layoutStagingEmpty = findViewById(R.id.layoutStagingEmpty);
 
         RecyclerView rvStagingFiles = findViewById(R.id.rvStagingFiles);
-        adapter = new StagingAdapter(stagedFiles, this::removeStagedFile);
+        adapter = new StagingAdapter(stagedFiles, new StagingAdapter.OnItemActionListener() {
+            @Override
+            public void onRemove(int position) {
+                removeStagedFile(position);
+            }
+
+            @Override
+            public void onPreview(int position) {
+                previewStagedFile(position);
+            }
+        });
         rvStagingFiles.setLayoutManager(new LinearLayoutManager(this));
         rvStagingFiles.setAdapter(adapter);
 
@@ -263,11 +278,165 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
     private void removeStagedFile(int position) {
         if (position >= 0 && position < stagedFiles.size() && !isUploading) {
             StagedFile removed = stagedFiles.remove(position);
-            adapter.notifyItemRemoved(position);
+            adapter.notifyDataSetChanged();
             updateQuotaMetrics();
             AuditLogger.log(this, "Delete", "SUCCESS", "Removed staged file: " + removed.name);
             Toast.makeText(this, "Deleted from staging: " + removed.name, Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void previewStagedFile(int position) {
+        if (position >= 0 && position < stagedFiles.size()) {
+            showStagedFilePreviewDialog(stagedFiles.get(position));
+        }
+    }
+
+    private void showStagedFilePreviewDialog(StagedFile file) {
+        if (file == null || isFinishing() || isDestroyed()) return;
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View sheetView = LayoutInflater.from(this).inflate(R.layout.dialog_staged_file_preview, null);
+        dialog.setContentView(sheetView);
+
+        ImageView ivImage = sheetView.findViewById(R.id.ivDialogPreviewImage);
+        View scrollText = sheetView.findViewById(R.id.scrollDialogPreviewText);
+        TextView tvText = sheetView.findViewById(R.id.tvDialogPreviewText);
+        View layoutGeneric = sheetView.findViewById(R.id.layoutDialogPreviewGeneric);
+        ImageView ivGenericIcon = sheetView.findViewById(R.id.ivDialogPreviewGenericIcon);
+        TextView tvGenericType = sheetView.findViewById(R.id.tvDialogPreviewGenericType);
+
+        TextView tvFileName = sheetView.findViewById(R.id.tvDialogPreviewFileName);
+        TextView tvFileSize = sheetView.findViewById(R.id.tvDialogPreviewFileSize);
+        TextView tvStatus = sheetView.findViewById(R.id.tvDialogPreviewStatus);
+
+        Button btnDelete = sheetView.findViewById(R.id.btnDialogPreviewDelete);
+        Button btnFullscreen = sheetView.findViewById(R.id.btnDialogPreviewFullscreen);
+        View btnClose = sheetView.findViewById(R.id.btnDialogPreviewClose);
+
+        tvFileName.setText(file.name);
+        tvFileSize.setText(FileUtils.formatStorageSize(this, file.size));
+        tvStatus.setText(file.statusReason);
+
+        String mimeType = null;
+        if ("content".equalsIgnoreCase(file.uri.getScheme())) {
+            try {
+                mimeType = getContentResolver().getType(file.uri);
+            } catch (Exception ignored) {}
+        }
+        String ext = "";
+        if (file.name != null) {
+            int dot = file.name.lastIndexOf('.');
+            if (dot >= 0) ext = file.name.substring(dot + 1).toLowerCase(Locale.US);
+        }
+        if (mimeType == null) {
+            mimeType = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
+        }
+        if (mimeType == null) mimeType = "application/octet-stream";
+
+        boolean isImage = (mimeType != null && mimeType.startsWith("image/"))
+                || ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png")
+                || ext.equals("webp") || ext.equals("heic") || ext.equals("bmp") || ext.equals("gif");
+
+        boolean isVideo = (mimeType != null && mimeType.startsWith("video/"))
+                || ext.equals("mp4") || ext.equals("mkv") || ext.equals("webm") || ext.equals("mov");
+
+        boolean isText = (mimeType != null && mimeType.startsWith("text/"))
+                || ext.equals("txt") || ext.equals("json") || ext.equals("xml")
+                || ext.equals("csv") || ext.equals("md") || ext.equals("log");
+
+        if (isImage) {
+            Bitmap bmp = ThumbnailLoader.decodeSampledBitmapFromUri(this, file.uri, 1080, 1920);
+            if (bmp != null) {
+                ivImage.setImageBitmap(bmp);
+                ivImage.setVisibility(View.VISIBLE);
+                layoutGeneric.setVisibility(View.GONE);
+                scrollText.setVisibility(View.GONE);
+            } else {
+                ivImage.setVisibility(View.GONE);
+                layoutGeneric.setVisibility(View.VISIBLE);
+                scrollText.setVisibility(View.GONE);
+                ivGenericIcon.setImageResource(R.drawable.ic_lucide_image);
+                tvGenericType.setText("Image (" + ext.toUpperCase(Locale.US) + ")");
+            }
+        } else if (isVideo) {
+            Bitmap frame = ThumbnailLoader.extractVideoFrame(this, file.uri, 720, 720);
+            if (frame != null) {
+                ivImage.setImageBitmap(frame);
+                ivImage.setVisibility(View.VISIBLE);
+                layoutGeneric.setVisibility(View.GONE);
+                scrollText.setVisibility(View.GONE);
+            } else {
+                ivImage.setVisibility(View.GONE);
+                layoutGeneric.setVisibility(View.VISIBLE);
+                scrollText.setVisibility(View.GONE);
+                ivGenericIcon.setImageResource(R.drawable.ic_lucide_video);
+                tvGenericType.setText("Video (" + ext.toUpperCase(Locale.US) + ")");
+            }
+        } else if (isText) {
+            try (InputStream is = getContentResolver().openInputStream(file.uri);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+                StringBuilder sb = new StringBuilder();
+                String line;
+                int lines = 0;
+                while ((line = br.readLine()) != null && lines < 100) {
+                    sb.append(line).append("\n");
+                    lines++;
+                }
+                tvText.setText(sb.toString());
+                scrollText.setVisibility(View.VISIBLE);
+                ivImage.setVisibility(View.GONE);
+                layoutGeneric.setVisibility(View.GONE);
+            } catch (Exception e) {
+                ivImage.setVisibility(View.GONE);
+                layoutGeneric.setVisibility(View.VISIBLE);
+                scrollText.setVisibility(View.GONE);
+                ivGenericIcon.setImageResource(R.drawable.ic_lucide_file_text);
+                tvGenericType.setText("Text File");
+            }
+        } else if ("pdf".equals(ext) || "application/pdf".equalsIgnoreCase(mimeType)) {
+            ivImage.setVisibility(View.GONE);
+            scrollText.setVisibility(View.GONE);
+            layoutGeneric.setVisibility(View.VISIBLE);
+            ivGenericIcon.setImageResource(R.drawable.ic_lucide_file_text);
+            tvGenericType.setText("PDF Document");
+        } else {
+            ivImage.setVisibility(View.GONE);
+            scrollText.setVisibility(View.GONE);
+            layoutGeneric.setVisibility(View.VISIBLE);
+            ivGenericIcon.setImageResource(R.drawable.ic_lucide_file);
+            tvGenericType.setText(ext.isEmpty() ? "Binary File" : ext.toUpperCase(Locale.US) + " File");
+        }
+
+        final String finalMimeType = mimeType;
+        btnDelete.setOnClickListener(v -> {
+            dialog.dismiss();
+            int currentPos = stagedFiles.indexOf(file);
+            if (currentPos >= 0) {
+                removeStagedFile(currentPos);
+            }
+        });
+
+        btnFullscreen.setOnClickListener(v -> {
+            dialog.dismiss();
+            Intent intent = new Intent(this, FileViewerActivity.class);
+            intent.putExtra(FileViewerActivity.EXTRA_FILE_NAME, file.name);
+            intent.putExtra(FileViewerActivity.EXTRA_FILE_SIZE, file.size);
+            intent.putExtra(FileViewerActivity.EXTRA_CONTENT_TYPE, finalMimeType);
+            intent.putExtra(FileViewerActivity.EXTRA_LOCAL_URI, file.uri.toString());
+            intent.setDataAndType(file.uri, finalMimeType);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        });
+
+        if (btnClose != null) {
+            btnClose.setOnClickListener(v -> dialog.dismiss());
+        }
+        View btnBottomClose = sheetView.findViewById(R.id.btnDialogPreviewBottomClose);
+        if (btnBottomClose != null) {
+            btnBottomClose.setOnClickListener(v -> dialog.dismiss());
+        }
+
+        dialog.show();
     }
 
     private long calculateBatchSize() {
@@ -312,6 +481,51 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
     }
 
     private void startStreamingUpload() {
+        if (isUploading) return;
+
+        List<StagedFile> duplicates = new ArrayList<>();
+        for (StagedFile f : stagedFiles) {
+            if (f.status == StagingStatus.DUPLICATE_EXCLUDED) {
+                duplicates.add(f);
+            }
+        }
+
+        if (!duplicates.isEmpty()) {
+            showDuplicateReviewDialog(duplicates);
+            return;
+        }
+
+        executeUpload();
+    }
+
+    private void showDuplicateReviewDialog(List<StagedFile> duplicates) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("The following file(s) are duplicates of existing vault items or other staged files:\n\n");
+        for (StagedFile d : duplicates) {
+            sb.append("• ").append(d.name).append("\n");
+        }
+        sb.append("\nRemove duplicates to proceed with uploading remaining files.");
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(this)
+                .setTitle("Duplicate Files (" + duplicates.size() + ")")
+                .setMessage(sb.toString().trim())
+                .setPositiveButton("Remove Duplicates", (dialog, which) -> {
+                    for (StagedFile dup : duplicates) {
+                        int pos = stagedFiles.indexOf(dup);
+                        if (pos >= 0) {
+                            stagedFiles.remove(pos);
+                            adapter.notifyItemRemoved(pos);
+                        }
+                    }
+                    updateQuotaMetrics();
+                    Toast.makeText(this, "Duplicates removed", Toast.LENGTH_SHORT).show();
+                    executeUpload();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void executeUpload() {
         List<StagedFile> toUpload = new ArrayList<>();
         List<TransferItem> transferItems = new ArrayList<>();
 
@@ -419,10 +633,10 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
             tvUploadStatusMsg.setText("Completed with " + batch.getFailedCount() + " error(s)");
             Toast.makeText(this, "Upload completed with " + batch.getFailedCount() + " error(s)", Toast.LENGTH_LONG).show();
         } else {
-            tvUploadStatusMsg.setText("Batch upload completed successfully!");
+            tvUploadStatusMsg.setText("Upload completed successfully!");
             AuditLogger.log(this, "Upload Completed", "SUCCESS", "Uploaded batch (" + batch.getTotalCount() + " files)");
             AuditLogger.log(this, "File Moved/Uploaded to Vault", "SUCCESS", "Batch indexed into vault");
-            Toast.makeText(this, "Batch upload completed!", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Uploading completed", Toast.LENGTH_LONG).show();
         }
         updateQuotaMetrics();
     }
@@ -436,15 +650,16 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
 
     private static class StagingAdapter extends RecyclerView.Adapter<StagingAdapter.ViewHolder> {
         private final List<StagedFile> items;
-        private final OnRemoveListener removeListener;
+        private final OnItemActionListener actionListener;
 
-        interface OnRemoveListener {
+        interface OnItemActionListener {
             void onRemove(int position);
+            void onPreview(int position);
         }
 
-        StagingAdapter(List<StagedFile> items, OnRemoveListener removeListener) {
+        StagingAdapter(List<StagedFile> items, OnItemActionListener actionListener) {
             this.items = items;
-            this.removeListener = removeListener;
+            this.actionListener = actionListener;
         }
 
         @NonNull
@@ -465,10 +680,26 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
 
             ThumbnailLoader.loadStagingThumbnail(ctx, file.uri, file.name, holder.ivStagingThumbnail, holder.ivStagingIcon);
 
+            // Preview clicks: both the dedicated Preview button and tapping the card
+            holder.btnPreviewStagingFile.setOnClickListener(v -> {
+                int pos = holder.getBindingAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    actionListener.onPreview(pos);
+                }
+            });
+            holder.itemView.setOnClickListener(v -> {
+                int pos = holder.getBindingAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    actionListener.onPreview(pos);
+                }
+            });
+
             switch (file.status) {
                 case READY:
                     holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.status_connected));
                     holder.progressStagingFile.setVisibility(View.GONE);
+                    holder.btnPreviewStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setEnabled(true);
                     holder.btnRemoveStagingFile.setVisibility(View.VISIBLE);
                     holder.btnRemoveStagingFile.setIconResource(R.drawable.ic_lucide_trash_2);
                     holder.btnRemoveStagingFile.setIconTint(ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.status_error)));
@@ -477,13 +708,15 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                     holder.btnRemoveStagingFile.setOnClickListener(v -> {
                         int pos = holder.getBindingAdapterPosition();
                         if (pos != RecyclerView.NO_POSITION) {
-                            removeListener.onRemove(pos);
+                            actionListener.onRemove(pos);
                         }
                     });
                     break;
                 case DUPLICATE_EXCLUDED:
                     holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.vault_unencrypted));
                     holder.progressStagingFile.setVisibility(View.GONE);
+                    holder.btnPreviewStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setEnabled(true);
                     holder.btnRemoveStagingFile.setVisibility(View.VISIBLE);
                     holder.btnRemoveStagingFile.setIconResource(R.drawable.ic_lucide_trash_2);
                     holder.btnRemoveStagingFile.setIconTint(ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.status_error)));
@@ -492,7 +725,7 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                     holder.btnRemoveStagingFile.setOnClickListener(v -> {
                         int pos = holder.getBindingAdapterPosition();
                         if (pos != RecyclerView.NO_POSITION) {
-                            removeListener.onRemove(pos);
+                            actionListener.onRemove(pos);
                         }
                     });
                     break;
@@ -500,6 +733,8 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                 case FAILED:
                     holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.status_error));
                     holder.progressStagingFile.setVisibility(View.GONE);
+                    holder.btnPreviewStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setEnabled(true);
                     holder.btnRemoveStagingFile.setVisibility(View.VISIBLE);
                     holder.btnRemoveStagingFile.setIconResource(R.drawable.ic_lucide_trash_2);
                     holder.btnRemoveStagingFile.setIconTint(ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.status_error)));
@@ -508,13 +743,15 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                     holder.btnRemoveStagingFile.setOnClickListener(v -> {
                         int pos = holder.getBindingAdapterPosition();
                         if (pos != RecyclerView.NO_POSITION) {
-                            removeListener.onRemove(pos);
+                            actionListener.onRemove(pos);
                         }
                     });
                     break;
                 case UPLOADING:
                     holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.cv_primary));
                     holder.progressStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setEnabled(true);
                     if (file.progress > 0) {
                         holder.progressStagingFile.setIndeterminate(false);
                         holder.progressStagingFile.setProgress(file.progress);
@@ -538,6 +775,8 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                 case COMPLETED:
                     holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.vault_encrypted));
                     holder.progressStagingFile.setVisibility(View.GONE);
+                    holder.btnPreviewStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setEnabled(true);
                     holder.btnRemoveStagingFile.setVisibility(View.VISIBLE);
                     holder.btnRemoveStagingFile.setIconResource(R.drawable.ic_lucide_check_circle);
                     holder.btnRemoveStagingFile.setIconTint(ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.status_connected)));
@@ -559,6 +798,7 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
             final TextView tvStagingFileName;
             final TextView tvStagingFileSize;
             final TextView tvStagingStatus;
+            final MaterialButton btnPreviewStagingFile;
             final MaterialButton btnRemoveStagingFile;
             final LinearProgressIndicator progressStagingFile;
 
@@ -569,6 +809,7 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                 tvStagingFileName = itemView.findViewById(R.id.tvStagingFileName);
                 tvStagingFileSize = itemView.findViewById(R.id.tvStagingFileSize);
                 tvStagingStatus = itemView.findViewById(R.id.tvStagingStatus);
+                btnPreviewStagingFile = itemView.findViewById(R.id.btnPreviewStagingFile);
                 btnRemoveStagingFile = itemView.findViewById(R.id.btnRemoveStagingFile);
                 progressStagingFile = itemView.findViewById(R.id.progressStagingFile);
             }

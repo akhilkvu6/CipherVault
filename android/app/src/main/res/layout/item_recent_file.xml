@@ -33,7 +33,7 @@
                 android:layout_height="24dp"
                 android:layout_gravity="center"
                 android:contentDescription="@string/app_name"
-                android:src="@drawable/ic_file_general"
+                android:src="@drawable/ic_lucide_file"
                 app:tint="?attr/colorPrimary" />
 
             <ImageView
@@ -51,7 +51,7 @@
                 android:layout_gravity="bottom|end"
                 android:layout_margin="3dp"
                 android:visibility="gone"
-                android:src="@drawable/ic_file_video"
+                android:src="@drawable/ic_lucide_video"
                 app:tint="@android:color/white" />
         </com.google.android.material.card.MaterialCardView>
 
@@ -89,7 +89,7 @@
             android:id="@+id/tvEncryptionBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:text="AES-256-GCM"
+            tools:text="Encrypted"
             android:textSize="11sp"
             android:textStyle="bold"
             android:gravity="center_vertical"

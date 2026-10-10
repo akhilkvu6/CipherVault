@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface"
+    android:padding="20dp">
+
+    <!-- Drag Handle Indicator -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="14dp"
+        android:background="?attr/colorOutlineVariant" />
+
+    <!-- Header: Title and Dismiss Button -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:src="@drawable/ic_lucide_eye"
+            app:tint="?attr/colorPrimary"
+            android:contentDescription="Preview" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:text="File Preview"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogPreviewClose"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="0dp"
+            app:icon="@drawable/ic_lucide_x"
+            app:iconSize="20dp"
+            app:iconTint="?attr/colorOnSurfaceVariant"
+            android:contentDescription="Close preview" />
+
+    </LinearLayout>
+
+    <!-- Content Card: Visual Preview Frame -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeColor="?attr/colorOutlineVariant"
+        app:strokeWidth="1dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="200dp">
+
+            <!-- High-Res Image Preview -->
+            <ImageView
+                android:id="@+id/ivDialogPreviewImage"
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:scaleType="fitCenter"
+                android:visibility="gone"
+                android:contentDescription="Staged image preview" />
+
+            <!-- Text Content Preview -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/scrollDialogPreviewText"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:padding="14dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvDialogPreviewText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="12sp" />
+
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- Document / Generic Placeholder Frame -->
+            <LinearLayout
+                android:id="@+id/layoutDialogPreviewGeneric"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:visibility="visible">
+
+                <ImageView
+                    android:id="@+id/ivDialogPreviewGenericIcon"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
+                    android:src="@drawable/ic_lucide_file"
+                    app:tint="?attr/colorPrimary"
+                    android:contentDescription="File icon" />
+
+                <TextView
+                    android:id="@+id/tvDialogPreviewGenericType"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    tools:text="PDF Document" />
+
+            </LinearLayout>
+
+        </FrameLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- File Information Metadata Card -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:cardBackgroundColor="?attr/colorSurfaceContainer"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <TextView
+                android:id="@+id/tvDialogPreviewFileName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="middle"
+                android:fontFamily="sans-serif-medium"
+                android:singleLine="true"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="sample_document.pdf" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvDialogPreviewFileSize"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp"
+                    tools:text="2.4 MB" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginHorizontal="6dp"
+                    android:text="•"
+                    android:textColor="?attr/colorOutline" />
+
+                <TextView
+                    android:id="@+id/tvDialogPreviewStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="@color/status_connected"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="Uploaded" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Action Buttons: [Delete File] and [Preview] -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:orientation="horizontal">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogPreviewDelete"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:text="Delete File"
+            android:textAllCaps="false"
+            android:textColor="@color/status_error"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:cornerRadius="24dp"
+            app:icon="@drawable/ic_lucide_trash_2"
+            app:iconSize="18dp"
+            app:iconTint="@color/status_error" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDialogPreviewFullscreen"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:text="Preview"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:cornerRadius="24dp"
+            app:icon="@drawable/ic_lucide_eye"
+            app:iconSize="18dp"
+            app:iconTint="?attr/colorPrimary" />
+
+    </LinearLayout>
+
+    <!-- Close Button below Delete and Preview -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDialogPreviewBottomClose"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="10dp"
+        android:text="Close"
+        android:textAllCaps="false"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:cornerRadius="24dp" />
+
+</LinearLayout>

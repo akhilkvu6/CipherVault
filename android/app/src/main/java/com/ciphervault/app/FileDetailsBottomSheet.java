@@ -3,6 +3,7 @@ package com.ciphervault.app;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,8 +13,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 
 import java.text.NumberFormat;
@@ -29,40 +32,75 @@ public class FileDetailsBottomSheet {
         void onDeleteRequested(StoredFile file);
     }
 
+    public interface OnPreviewRequestedListener {
+        void onPreviewRequested(StoredFile file);
+    }
+
     public static void show(@NonNull Context context, @NonNull StoredFile file, OnDownloadRequestedListener downloadListener) {
-        show(context, file, downloadListener, null);
+        show(context, file, downloadListener, null, null);
     }
 
     public static void show(@NonNull Context context, @NonNull StoredFile file, OnDownloadRequestedListener downloadListener, OnDeleteRequestedListener deleteListener) {
+        show(context, file, downloadListener, deleteListener, null);
+    }
+
+    public static void show(@NonNull Context context, @NonNull StoredFile file,
+                            @Nullable OnDownloadRequestedListener downloadListener,
+                            @Nullable OnDeleteRequestedListener deleteListener,
+                            @Nullable OnPreviewRequestedListener previewListener) {
         BottomSheetDialog dialog = new BottomSheetDialog(context);
         View view = LayoutInflater.from(context).inflate(R.layout.bottom_sheet_file_details, null);
 
         ImageView ivBottomSheetIcon = view.findViewById(R.id.ivBottomSheetIcon);
         ImageView ivBottomSheetThumbnail = view.findViewById(R.id.ivBottomSheetThumbnail);
         ImageView ivBottomSheetVideoBadge = view.findViewById(R.id.ivBottomSheetVideoBadge);
+        View cardBottomSheetPreview = view.findViewById(R.id.cardBottomSheetPreview);
         TextView tvBottomSheetFileName = view.findViewById(R.id.tvBottomSheetFileName);
         TextView tvBottomSheetBadge = view.findViewById(R.id.tvBottomSheetBadge);
         TextView tvBottomSheetHash = view.findViewById(R.id.tvBottomSheetHash);
         TextView tvBottomSheetExactSize = view.findViewById(R.id.tvBottomSheetExactSize);
         TextView tvBottomSheetAesSpec = view.findViewById(R.id.tvBottomSheetAesSpec);
         TextView tvBottomSheetMime = view.findViewById(R.id.tvBottomSheetMime);
+        Button btnBottomSheetPreview = view.findViewById(R.id.btnBottomSheetPreview);
         Button btnBottomSheetDownload = view.findViewById(R.id.btnBottomSheetDownload);
         Button btnBottomSheetDelete = view.findViewById(R.id.btnBottomSheetDelete);
         Button btnBottomSheetClose = view.findViewById(R.id.btnBottomSheetClose);
 
+        View.OnClickListener openPreviewAction = v -> {
+            dialog.dismiss();
+            if (previewListener != null) {
+                previewListener.onPreviewRequested(file);
+            } else {
+                Intent intent = new Intent(context, FileViewerActivity.class);
+                intent.putExtra(FileViewerActivity.EXTRA_FILE_ID, file.getId());
+                intent.putExtra(FileViewerActivity.EXTRA_FILE_NAME, file.getOriginalFilename());
+                intent.putExtra(FileViewerActivity.EXTRA_CONTENT_TYPE, file.getContentType());
+                intent.putExtra(FileViewerActivity.EXTRA_FILE_SIZE, file.getFileSize());
+                context.startActivity(intent);
+            }
+        };
+
+        if (cardBottomSheetPreview != null) {
+            cardBottomSheetPreview.setOnClickListener(openPreviewAction);
+        }
+
+        if (btnBottomSheetPreview != null) {
+            btnBottomSheetPreview.setOnClickListener(openPreviewAction);
+        }
+
         if (ivBottomSheetIcon != null) {
             switch (file.getCategory()) {
                 case IMAGES:
-                    ivBottomSheetIcon.setImageResource(R.drawable.ic_file_image);
+                    ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_image);
                     break;
                 case VIDEOS:
-                    ivBottomSheetIcon.setImageResource(R.drawable.ic_file_video);
+                    ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_video);
                     break;
                 case PDFS:
-                    ivBottomSheetIcon.setImageResource(R.drawable.ic_file_pdf);
+                    ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_file_text);
                     break;
                 default:
-                    ivBottomSheetIcon.setImageResource(R.drawable.ic_file_general);
+                    ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_file);
                     break;
             }
         }
@@ -83,13 +121,13 @@ public class FileDetailsBottomSheet {
         if (tvBottomSheetBadge != null) {
             if (file.isEncrypted()) {
                 int encColor = ThemeManager.getEncryptedColor(context);
-                tvBottomSheetBadge.setText("AES-256-GCM");
+                tvBottomSheetBadge.setText("Encrypted");
                 tvBottomSheetBadge.setTextColor(encColor);
-                tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lock, 0, 0, 0);
+                tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lucide_lock, 0, 0, 0);
                 tvBottomSheetBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
                 tvBottomSheetBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
             } else {
-                tvBottomSheetBadge.setText(R.string.unencrypted_badge_label);
+                tvBottomSheetBadge.setText("Uploaded");
                 tvBottomSheetBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
                 tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             }
@@ -232,6 +270,15 @@ public class FileDetailsBottomSheet {
         if (btnBottomSheetClose != null) {
             btnBottomSheetClose.setOnClickListener(v -> dialog.dismiss());
         }
+
+        dialog.setOnShowListener(dialogInterface -> {
+            BottomSheetDialog d = (BottomSheetDialog) dialogInterface;
+            BottomSheetBehavior<?> behavior = d.getBehavior();
+            if (behavior != null) {
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                behavior.setSkipCollapsed(true);
+            }
+        });
 
         dialog.setContentView(view);
         dialog.show();

@@ -37,59 +37,76 @@
             </intent-filter>
         </activity>
 
-        <!-- 2. Onboarding Activity -->
+        <!-- 2. Onboarding Activity (Protected Approved Design) -->
         <activity
             android:name=".onboarding.OnboardingActivity"
-            android:exported="false" />
+            android:theme="@style/Theme.CipherVault.Onboarding"
+            android:exported="true" />
 
         <!-- 3. Connection Activity -->
         <activity
             android:name=".ConnectionActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 3a. QR Scan Activity -->
         <activity
             android:name=".QrScanActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 4. Login Activity -->
         <activity
             android:name=".LoginActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 5. Signup Activity -->
         <activity
             android:name=".SignupActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 6. App Lock Activity -->
         <activity
             android:name=".AppLockActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 7. Main Activity -->
         <activity
             android:name=".MainActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 8. Upload Staging Activity -->
         <activity
             android:name=".UploadStagingActivity"
-            android:exported="false"
+            android:exported="true"
             android:windowSoftInputMode="adjustResize" />
 
         <!-- 9. Camera Activity -->
         <activity
             android:name=".CameraActivity"
-            android:exported="false" />
+            android:exported="true" />
 
         <!-- 10. File Viewer Activity -->
         <activity
             android:name=".FileViewerActivity"
-            android:exported="false" />
+            android:exported="true" />
+
+        <!-- 11. Dedicated Metadata Search Activity -->
+        <activity
+            android:name=".MetadataSearchActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- 12. Design System Showcase Activity -->
+        <activity
+            android:name=".UiShowcaseActivity"
+            android:exported="true" />
+
+        <!-- 13. About Activity -->
+        <activity
+            android:name=".AboutActivity"
+            android:exported="true" />
 
         <!-- File Provider -->
         <provider

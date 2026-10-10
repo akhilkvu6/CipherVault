@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 10.8 &mdash; ACTIVITY DIAGRAM FOR UPLOAD STAGING &amp; PREVIEW</text>
+  <text x="30" y="48" class="sub">Branching decision workflow in UploadStagingActivity: File staging, pre-upload preview dialog, deletion, and upload initiation</text>
+
+  <circle cx="100" cy="110" r="14" fill="#815621"/>
+  <text x="100" y="140" class="box-desc" style="font-weight:bold;">Start: Pick Files</text>
+
+  <rect x="180" y="85" width="150" height="50" class="card"/>
+  <text x="255" y="107" class="box-title">Populate Staging</text>
+  <text x="255" y="122" class="box-desc">List items with delete &amp; preview</text>
+
+  <!-- Decision diamond -->
+  <polygon points="410,110 440,85 470,110 440,135" fill="#FEDDBD" stroke="#815621" stroke-width="1.5"/>
+  <text x="440" y="148" class="edge-label">Action?</text>
+
+  <!-- Branch 1: Preview -->
+  <rect x="530" y="70" width="150" height="45" class="card"/>
+  <text x="605" y="92" class="box-title">Show Preview Dialog</text>
+  <text x="605" y="105" class="box-desc">240dp modal with metadata</text>
+
+  <!-- Branch 2: Delete -->
+  <rect x="530" y="130" width="150" height="45" class="card-red"/>
+  <text x="605" y="152" class="box-title" style="fill:#C62828;">Remove Item</text>
+  <text x="605" y="165" class="box-desc">Evict from staging queue</text>
+
+  <!-- Branch 3: Upload -->
+  <rect x="365" y="210" width="150" height="50" class="card-green"/>
+  <text x="440" y="232" class="box-title" style="fill:#2E7D32;">Tap Upload All</text>
+  <text x="440" y="247" class="box-desc">Validate batch size (&lt;1GB)</text>
+
+  <polygon points="410,310 440,285 470,310 440,335" fill="#FEDDBD" stroke="#815621" stroke-width="1.5"/>
+  <text x="440" y="348" class="edge-label">Valid?</text>
+
+  <rect x="230" y="290" width="140" height="45" class="card-red"/>
+  <text x="300" y="312" class="box-title" style="fill:#C62828;">Batch &gt; 1GB</text>
+  <text x="300" y="325" class="box-desc">Show limit warning</text>
+
+  <rect x="530" y="290" width="160" height="55" class="card"/>
+  <text x="610" y="312" class="box-title">TransferManager</text>
+  <text x="610" y="327" class="box-desc">Foreground notification service</text>
+  <text x="610" y="339" class="box-desc">Post multipart stream</text>
+
+  <rect x="530" y="380" width="160" height="45" class="card-green"/>
+  <text x="610" y="402" class="box-title" style="fill:#2E7D32;">Upload Complete</text>
+  <text x="610" y="415" class="box-desc">Clear staging &amp; open Vault</text>
+
+  <circle cx="760" cy="402" r="14" fill="#815621"/>
+  <circle cx="760" cy="402" r="10" fill="#FFFFFF"/>
+  <circle cx="760" cy="402" r="6" fill="#815621"/>
+
+  <!-- Connecting Lines -->
+  <path d="M 114 110 L 180 110" class="line"/>
+  <path d="M 330 110 L 410 110" class="line"/>
+  <path d="M 470 100 L 530 92" class="line"/>
+  <text x="500" y="88" class="edge-label">Preview</text>
+  <path d="M 470 120 L 530 145" class="line"/>
+  <text x="500" y="140" class="edge-label">Delete</text>
+  <path d="M 440 135 L 440 210" class="line"/>
+  <text x="445" y="180" class="edge-label">Upload</text>
+  <path d="M 440 260 L 440 285" class="line"/>
+  <path d="M 410 310 L 370 310" class="line"/>
+  <text x="390" y="302" class="edge-label">No</text>
+  <path d="M 470 310 L 530 310" class="line"/>
+  <text x="500" y="302" class="edge-label">Yes</text>
+  <path d="M 610 345 L 610 380" class="line"/>
+  <path d="M 690 402 L 746 402" class="line"/>
+</svg>

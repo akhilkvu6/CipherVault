@@ -1,6 +1,7 @@
 package com.ciphervault.app;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.os.Bundle;
@@ -62,6 +63,10 @@ public class FragmentHome extends Fragment implements TransferListener {
     private ApiService apiService;
     private SessionManager sessionManager;
 
+    private View cardHomeProfileAvatar;
+    private ImageView ivHomeDefaultAvatar;
+    private ImageView ivHomeProfilePhoto;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -72,6 +77,18 @@ public class FragmentHome extends Fragment implements TransferListener {
         apiService = ApiClient.getApiService(requireContext());
 
         tvHomeUsername = view.findViewById(R.id.tvHomeUsername);
+        cardHomeProfileAvatar = view.findViewById(R.id.cardHomeProfileAvatar);
+        ivHomeDefaultAvatar = view.findViewById(R.id.ivHomeDefaultAvatar);
+        ivHomeProfilePhoto = view.findViewById(R.id.ivHomeProfilePhoto);
+
+        if (cardHomeProfileAvatar != null) {
+            cardHomeProfileAvatar.setOnClickListener(v -> {
+                if (requireActivity() instanceof MainActivity) {
+                    ((MainActivity) requireActivity()).navigateToTab(3);
+                }
+            });
+        }
+
         tvStorageUsage = view.findViewById(R.id.tvStorageUsage);
         progressStorage = view.findViewById(R.id.progressStorage);
 
@@ -217,6 +234,7 @@ public class FragmentHome extends Fragment implements TransferListener {
     public void onResume() {
         super.onResume();
         setupGreeting();
+        loadHomeAvatar(null);
         loadDashboardData();
     }
 
@@ -225,7 +243,16 @@ public class FragmentHome extends Fragment implements TransferListener {
         super.onHiddenChanged(hidden);
         if (!hidden) {
             setupGreeting();
+            loadHomeAvatar(null);
             loadDashboardData();
+        }
+    }
+
+    private void loadHomeAvatar(UserProfileResponse profile) {
+        if (!isAdded() || getContext() == null) return;
+        String email = profile != null ? profile.getEmail() : (sessionManager != null ? sessionManager.getEmail() : null);
+        if (ivHomeProfilePhoto != null) {
+            ProfilePhotoHelper.loadProfilePhotoInto(requireContext(), email, apiService, ivHomeProfilePhoto, ivHomeDefaultAvatar);
         }
     }
 
@@ -279,6 +306,7 @@ public class FragmentHome extends Fragment implements TransferListener {
 
                 if (response.isSuccessful() && response.body() != null) {
                     updateProfileMetrics(response.body());
+                    loadHomeAvatar(response.body());
                 }
             }
 
@@ -412,19 +440,54 @@ public class FragmentHome extends Fragment implements TransferListener {
     private void handleFileClick(StoredFile file) {
         if (file == null || !isAdded()) return;
 
-        // Open in FileViewerActivity
-        Intent intent = new Intent(requireContext(), FileViewerActivity.class);
-        intent.putExtra(FileViewerActivity.EXTRA_FILE_ID, file.getId());
-        intent.putExtra(FileViewerActivity.EXTRA_FILE_NAME, file.getOriginalFilename());
-        intent.putExtra(FileViewerActivity.EXTRA_CONTENT_TYPE, file.getContentType());
-        intent.putExtra(FileViewerActivity.EXTRA_FILE_SIZE, file.getFileSize());
-        startActivity(intent);
+        FileDetailsBottomSheet.show(requireContext(), file,
+                this::downloadSingleFile,
+                this::handleDeleteClick);
+    }
+
+    private void downloadSingleFile(StoredFile file) {
+        if (file == null || file.getId() == null || getContext() == null) return;
+
+        if (!file.isEncrypted()) {
+            Toast.makeText(requireContext(), "Downloading " + file.getFilename() + " in background...", Toast.LENGTH_SHORT).show();
+            TransferManager.getInstance(requireContext()).enqueueDownload(file, false);
+            AuditLogger.log(requireContext(), AuditLogger.ACTION_DOWNLOAD_START, "Started download of " + file.getOriginalFilename());
+            return;
+        }
+
+        View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_download_options, null);
+        TextView tvDownloadFileName = dialogView.findViewById(R.id.tvDownloadFileName);
+        android.widget.CompoundButton cbDecryptOption = dialogView.findViewById(R.id.cbDecryptOption);
+
+        if (tvDownloadFileName != null) {
+            tvDownloadFileName.setText("Save \"" + file.getOriginalFilename() + "\" to Downloads folder.");
+        }
+        if (cbDecryptOption != null) {
+            cbDecryptOption.setChecked(true);
+        }
+
+        androidx.appcompat.app.AlertDialog downloadDialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Download File")
+                .setView(dialogView)
+                .setPositiveButton("Download", (dialog, which) -> {
+                    boolean decrypt = cbDecryptOption == null || cbDecryptOption.isChecked();
+                    Toast.makeText(requireContext(), "Downloading " + file.getFilename() + " in background...", Toast.LENGTH_SHORT).show();
+                    TransferManager.getInstance(requireContext()).enqueueDownload(file, decrypt);
+                    AuditLogger.log(requireContext(), AuditLogger.ACTION_DOWNLOAD_START, "Started download of " + file.getOriginalFilename() + " (decrypt=" + decrypt + ")");
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+
+        Button downloadPosBtn = downloadDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (downloadPosBtn != null) {
+            downloadPosBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_theme_light_primary));
+        }
     }
 
     private void handleDeleteClick(StoredFile file) {
         if (file == null || file.getId() == null || !isAdded()) return;
 
-        new MaterialAlertDialogBuilder(requireContext())
+        androidx.appcompat.app.AlertDialog deleteDialog = new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.delete_file_dialog_title)
                 .setMessage(String.format(getString(R.string.delete_file_dialog_msg), file.getOriginalFilename()))
                 .setPositiveButton(R.string.btn_delete, (dialog, which) -> {
@@ -449,6 +512,11 @@ public class FragmentHome extends Fragment implements TransferListener {
                 })
                 .setNegativeButton(R.string.btn_close, null)
                 .show();
+
+        Button deletePosBtn = deleteDialog.getButton(DialogInterface.BUTTON_POSITIVE);
+        if (deletePosBtn != null) {
+            deletePosBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_error));
+        }
     }
 
     private static class RecentFilesAdapter extends RecyclerView.Adapter<RecentFilesAdapter.ViewHolder> {
@@ -496,22 +564,25 @@ public class FragmentHome extends Fragment implements TransferListener {
 
             if (file.isEncrypted()) {
                 int encColor = ThemeManager.getEncryptedColor(context);
-                holder.tvEncryptionBadge.setText("AES-256-GCM");
+                holder.tvEncryptionBadge.setText("Encrypted");
                 holder.tvEncryptionBadge.setTextColor(encColor);
                 holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lucide_lock, 0, 0, 0);
                 holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(encColor));
                 holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             } else {
-                holder.tvEncryptionBadge.setText("Unencrypted");
+                holder.tvEncryptionBadge.setText("Uploaded");
                 holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
                 holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             }
 
             switch (file.getCategory()) {
-                case IMAGES: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_database); break;
-                case VIDEOS: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_database); break;
-                case PDFS: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_database); break;
-                default: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_database); break;
+                case IMAGES: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_image); break;
+                case VIDEOS: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_video); break;
+                case PDFS: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file_text); break;
+                case DOCUMENTS: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file_text); break;
+                case AUDIO: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_music); break;
+                case ARCHIVES: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_archive); break;
+                default: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file); break;
             }
 
             if (file.hasPreview() && file.getId() != null) {
@@ -525,7 +596,10 @@ public class FragmentHome extends Fragment implements TransferListener {
             }
 
             holder.itemView.setOnClickListener(v -> {
-                if (listener != null) listener.onItemClick(file);
+                int pos = holder.getBindingAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION && pos < list.size() && listener != null) {
+                    listener.onItemClick(list.get(pos));
+                }
             });
         }
 

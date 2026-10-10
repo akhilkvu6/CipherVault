@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:text="Transfers"
+            android:text="Log"
             android:textColor="?attr/colorOnSurface"
             android:textSize="28sp"
             android:textStyle="bold" />
@@ -30,7 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Active cryptographic transfers and security audit log"
+            android:text="Active transfers and unified security activity history"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp" />
 
@@ -55,7 +55,7 @@
         <com.google.android.material.tabs.TabItem
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Audit Log" />
+            android:text="Activity History" />
 
     </com.google.android.material.tabs.TabLayout>
 

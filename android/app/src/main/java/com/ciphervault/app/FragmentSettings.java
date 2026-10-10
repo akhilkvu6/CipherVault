@@ -185,6 +185,41 @@ public class FragmentSettings extends Fragment {
         view.findViewById(R.id.btnPurgeVault).setOnClickListener(v -> showPurgeVaultDialog());
         view.findViewById(R.id.btnDeleteAccount).setOnClickListener(v -> showDeleteAccountDialog());
 
+        View tvBuildNumber = view.findViewById(R.id.tvSettingsBuildNumber);
+        if (tvBuildNumber != null) {
+            tvBuildNumber.setOnClickListener(v -> handleBuildNumberTap());
+        }
+
+        View btnLearnMore = view.findViewById(R.id.btnLearnMoreAbout);
+        if (btnLearnMore != null) {
+            btnLearnMore.setOnClickListener(v -> startActivity(new Intent(requireContext(), AboutActivity.class)));
+        }
+
+        View btnOpenGitHub = view.findViewById(R.id.btnOpenGitHubSettings);
+        if (btnOpenGitHub != null) {
+            btnOpenGitHub.setOnClickListener(v -> {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/akhilkvu6/CipherVault")));
+                } catch (Exception e) {
+                    Toast.makeText(requireContext(), "Unable to open repository link", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        MaterialSwitch switchTransfers = view.findViewById(R.id.switchTransferNotifications);
+        if (switchTransfers != null) {
+            switchTransfers.setOnCheckedChangeListener((btn, isChecked) -> {
+                Toast.makeText(requireContext(), isChecked ? "Transfer notifications enabled" : "Transfer notifications silenced", Toast.LENGTH_SHORT).show();
+            });
+        }
+
+        MaterialSwitch switchSecurity = view.findViewById(R.id.switchSecurityAlerts);
+        if (switchSecurity != null) {
+            switchSecurity.setOnCheckedChangeListener((btn, isChecked) -> {
+                Toast.makeText(requireContext(), isChecked ? "Security alerts enabled" : "Security alerts silenced", Toast.LENGTH_SHORT).show();
+            });
+        }
+
         view.findViewById(R.id.btnSettingsSignOut).setOnClickListener(v -> handleSignOut());
 
         setupBiometricSwitch();
@@ -226,6 +261,30 @@ public class FragmentSettings extends Fragment {
             CipherVaultPreferences.saveAppearance(requireContext(), mode);
             ThemeManager.applyAppearanceMode(mode);
         });
+
+        MaterialSwitch switchDynamicColor = view.findViewById(R.id.switchDynamicColor);
+        TextView tvDynamicColorSubtitle = view.findViewById(R.id.tvDynamicColorSubtitle);
+        if (switchDynamicColor != null) {
+            boolean isSupported = com.google.android.material.color.DynamicColors.isDynamicColorAvailable();
+            switchDynamicColor.setEnabled(isSupported);
+            if (isSupported) {
+                switchDynamicColor.setChecked(CipherVaultPreferences.isDynamicColorEnabled(requireContext()));
+                if (tvDynamicColorSubtitle != null) {
+                    tvDynamicColorSubtitle.setText("Adapt app colors to system wallpaper (Material You)");
+                }
+            } else {
+                switchDynamicColor.setChecked(false);
+                if (tvDynamicColorSubtitle != null) {
+                    tvDynamicColorSubtitle.setText("Dynamic colors require Android 12+ (API 31+)");
+                }
+            }
+            switchDynamicColor.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                CipherVaultPreferences.setDynamicColorEnabled(requireContext(), isChecked);
+                if (getActivity() != null) {
+                    getActivity().recreate();
+                }
+            });
+        }
     }
 
     @Override
@@ -537,7 +596,7 @@ public class FragmentSettings extends Fragment {
 
     private void resetAvatarToDefault() {
         if (!isAdded()) return;
-        int pad = (int) (12 * getResources().getDisplayMetrics().density);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
         if (ivSettingsAvatar != null) {
             ivSettingsAvatar.setImageResource(R.drawable.ic_lucide_user);
             ivSettingsAvatar.setPadding(pad, pad, pad, pad);
@@ -747,21 +806,50 @@ public class FragmentSettings extends Fragment {
         dialog.show();
     }
 
+    private int buildTapCount = 0;
+    private long lastBuildTapTime = 0;
+
+    private void handleBuildNumberTap() {
+        long now = System.currentTimeMillis();
+        if (now - lastBuildTapTime > 3500) {
+            buildTapCount = 0;
+        }
+        lastBuildTapTime = now;
+        buildTapCount++;
+        if (buildTapCount >= 7) {
+            buildTapCount = 0;
+            Toast.makeText(requireContext(), "Developer UI Showcase unlocked!", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(requireContext(), UiShowcaseActivity.class));
+        } else if (buildTapCount >= 3) {
+            int remaining = 7 - buildTapCount;
+            Toast.makeText(requireContext(), "You are " + remaining + " steps away from developer UI showcase", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     private void showPurgeVaultDialog() {
         View dialogView = getLayoutInflater().inflate(R.layout.dialog_danger_zone, null);
         TextView tvTitle = dialogView.findViewById(R.id.tvDangerDialogTitle);
         TextView tvDesc = dialogView.findViewById(R.id.tvDangerDialogDesc);
         EditText etPassword = dialogView.findViewById(R.id.etDangerPassword);
 
-        tvTitle.setText("Purge Entire Vault");
-        tvDesc.setText("This will permanently delete all files in your encrypted vault. This action CANNOT be undone. Please confirm by entering your password.");
+        tvTitle.setText("Delete Vault Data");
+        tvDesc.setText("This will permanently delete all encrypted files, thumbnails, and transfer history stored in your vault. Your account, profile, and login credentials will remain active. This action cannot be undone. Enter your password to confirm.");
 
-        new MaterialAlertDialogBuilder(requireContext())
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setIcon(R.drawable.ic_lucide_trash_2)
                 .setView(dialogView)
-                .setPositiveButton("Purge All Data", (dialog, which) -> {
+                .setPositiveButton("Delete Vault Data", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            android.widget.Button posBtn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
+            if (posBtn != null) {
+                posBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_error));
+                posBtn.setOnClickListener(v -> {
                     String pwd = etPassword.getText().toString();
                     if (TextUtils.isEmpty(pwd)) {
-                        Toast.makeText(requireContext(), "Password is required to purge vault", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(requireContext(), "Password is required to delete vault data", Toast.LENGTH_SHORT).show();
                         return;
                     }
 
@@ -771,10 +859,11 @@ public class FragmentSettings extends Fragment {
                         @Override
                         public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
                             if (isAdded() && response.isSuccessful()) {
-                                Toast.makeText(requireContext(), "Vault purged successfully", Toast.LENGTH_LONG).show();
+                                Toast.makeText(requireContext(), "Vault data deleted successfully", Toast.LENGTH_LONG).show();
+                                dialog.dismiss();
                                 loadProfileData();
                             } else {
-                                Toast.makeText(requireContext(), "Incorrect password or purge failed", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(requireContext(), "Incorrect password or deletion failed", Toast.LENGTH_SHORT).show();
                             }
                         }
 
@@ -783,9 +872,11 @@ public class FragmentSettings extends Fragment {
                             if (isAdded()) Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                });
+            }
+        });
+
+        dialog.show();
     }
 
     private void showDeleteAccountDialog() {
@@ -795,11 +886,20 @@ public class FragmentSettings extends Fragment {
         EditText etPassword = dialogView.findViewById(R.id.etDangerPassword);
 
         tvTitle.setText("Delete Vault Account");
-        tvDesc.setText("This will permanently delete your account, authentication tokens, and all encrypted vault storage. Enter your password to proceed.");
+        tvDesc.setText("This will permanently delete your account, authentication tokens, profile photo, and all encrypted vault storage from the server. This action cannot be undone. Enter your password to confirm.");
 
-        new MaterialAlertDialogBuilder(requireContext())
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setIcon(R.drawable.ic_lucide_trash_2)
                 .setView(dialogView)
-                .setPositiveButton("Delete Account", (dialog, which) -> {
+                .setPositiveButton("Delete Account", null)
+                .setNegativeButton("Cancel", null)
+                .create();
+
+        dialog.setOnShowListener(d -> {
+            android.widget.Button posBtn = dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE);
+            if (posBtn != null) {
+                posBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.status_error));
+                posBtn.setOnClickListener(v -> {
                     String pwd = etPassword.getText().toString();
                     if (TextUtils.isEmpty(pwd)) {
                         Toast.makeText(requireContext(), "Password is required to delete account", Toast.LENGTH_SHORT).show();
@@ -813,6 +913,7 @@ public class FragmentSettings extends Fragment {
                         public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
                             if (isAdded() && response.isSuccessful()) {
                                 Toast.makeText(requireContext(), "Account deleted permanently", Toast.LENGTH_LONG).show();
+                                dialog.dismiss();
                                 sessionManager.logout();
                                 Intent intent = new Intent(requireContext(), LoginActivity.class);
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -828,9 +929,11 @@ public class FragmentSettings extends Fragment {
                             if (isAdded()) Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
-                })
-                .setNegativeButton("Cancel", null)
-                .show();
+                });
+            }
+        });
+
+        dialog.show();
     }
 
     private void showDiagnosticsDialog() {

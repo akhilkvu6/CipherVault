@@ -17,7 +17,7 @@
             android:id="@+id/toolbarStaging"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            app:navigationIcon="@drawable/ic_lucide_arrow_right"
+            app:navigationIcon="@drawable/ic_lucide_arrow_left"
             app:title="Upload Staging"
             app:titleTextAppearance="@style/TextAppearance.Material3.TitleMedium"
             app:titleTextColor="?attr/colorOnSurface" />
@@ -95,7 +95,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Upload Batch Size (1 GB Max)"
+                        android:text="Maximum Single Upload (1 GB Max)"
                         android:textColor="?attr/colorOnSurface"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -207,7 +207,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:gravity="center"
-                    android:text="Select files or take a photo to stage\nfor 16 KB AES-256-GCM chunked upload"
+                    android:text="Select files or take a photo to upload"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="13sp" />
 

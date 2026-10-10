@@ -17,7 +17,7 @@
         android:textColor="?attr/colorOnSurface"
         android:layout_marginBottom="12dp" />
 
-    <com.google.android.material.checkbox.MaterialCheckBox
+    <com.google.android.material.materialswitch.MaterialSwitch
         android:id="@+id/cbDecryptOption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

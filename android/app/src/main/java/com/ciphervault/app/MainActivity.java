@@ -148,6 +148,10 @@ public class MainActivity extends BaseActivity {
             } else if (itemId == R.id.nav_vault) {
                 switchTabFragment(1);
                 return true;
+            } else if (itemId == R.id.nav_search) {
+                Intent intent = new Intent(MainActivity.this, MetadataSearchActivity.class);
+                startActivity(intent);
+                return false;
             } else if (itemId == R.id.nav_transfers) {
                 switchTabFragment(2);
                 return true;

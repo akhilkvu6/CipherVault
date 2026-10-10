@@ -19,6 +19,9 @@ import java.util.concurrent.Executors;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
+import android.view.View;
+import android.widget.ImageView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -164,6 +167,68 @@ public class ProfilePhotoHelper {
                     public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {}
                 });
             } catch (Exception ignored) {}
+        });
+    }
+
+    public static void loadProfilePhotoInto(
+            @NonNull Context context,
+            @Nullable String email,
+            @Nullable ApiService apiService,
+            @NonNull ImageView photoView,
+            @Nullable View defaultAvatarView) {
+        if (email == null) {
+            photoView.setVisibility(View.GONE);
+            if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        Bitmap diskCached = getProfilePhoto(context, email);
+        if (diskCached != null) {
+            photoView.setImageBitmap(diskCached);
+            photoView.setVisibility(View.VISIBLE);
+            if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.GONE);
+            return;
+        }
+
+        if (apiService == null) {
+            photoView.setVisibility(View.GONE);
+            if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.VISIBLE);
+            return;
+        }
+
+        apiService.getProfilePhoto().enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                if (!response.isSuccessful() || response.body() == null) {
+                    photoView.setVisibility(View.GONE);
+                    if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.VISIBLE);
+                    return;
+                }
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try (InputStream is = response.body().byteStream()) {
+                        Bitmap bmp = BitmapFactory.decodeStream(is);
+                        if (bmp != null) {
+                            saveProfilePhoto(context, email, bmp);
+                            photoView.post(() -> {
+                                photoView.setImageBitmap(bmp);
+                                photoView.setVisibility(View.VISIBLE);
+                                if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.GONE);
+                            });
+                        }
+                    } catch (Exception ignored) {
+                        photoView.post(() -> {
+                            photoView.setVisibility(View.GONE);
+                            if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.VISIBLE);
+                        });
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                photoView.setVisibility(View.GONE);
+                if (defaultAvatarView != null) defaultAvatarView.setVisibility(View.VISIBLE);
+            }
         });
     }
 }

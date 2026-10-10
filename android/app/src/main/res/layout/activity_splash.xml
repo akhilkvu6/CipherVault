@@ -68,7 +68,7 @@
         android:layout_gravity="bottom|center_horizontal"
         android:layout_marginBottom="32dp"
         android:letterSpacing="0.03"
-        android:text="@string/caption_aes_gcm"
+        android:text="CipherVault 1.0.0"
         android:textColor="?attr/colorOutline"
         android:textSize="11sp" />
 

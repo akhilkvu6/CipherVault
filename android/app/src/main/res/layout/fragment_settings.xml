@@ -17,29 +17,31 @@
         android:paddingTop="24dp"
         android:paddingBottom="112dp">
 
-        <!-- Header -->
+        <!-- 1. Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-medium"
+            android:fontFamily="sans-serif"
+            android:textStyle="bold"
             android:text="@string/settings_title"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="28sp"
-            android:textStyle="bold" />
+            android:textSize="28sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="Account profile, cryptographic security and server configuration"
+            android:fontFamily="sans-serif"
+            android:text="Account profile, security, and server configuration"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp" />
 
-        <!-- 1. USER PROFILE SECTION -->
+        <!-- 2. USER PROFILE SECTION -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif"
             android:letterSpacing="0.08"
             android:text="USER PROFILE"
             android:textColor="?attr/colorOnSurfaceVariant"
@@ -63,83 +65,84 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- 1A. PROFILE VIEW MODE -->
+                <!-- 2A. PROFILE VIEW MODE -->
                 <LinearLayout
                     android:id="@+id/layoutProfileViewMode"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
                     android:orientation="vertical"
                     android:visibility="visible">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <!-- Prominently Centered Larger Rounded-Rectangle Photo -->
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:id="@+id/ivSettingsAvatar"
+                        android:layout_width="88dp"
+                        android:layout_height="88dp"
+                        android:background="?attr/colorPrimaryContainer"
+                        android:contentDescription="Profile avatar"
+                        android:padding="16dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_lucide_user"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.CipherVault.Medium"
+                        app:tint="?attr/colorOnPrimaryContainer" />
+
+                    <!-- Grouped Profile Information Centered -->
+                    <TextView
+                        android:id="@+id/tvSettingsName"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textSize="20sp"
+                        tools:text="Full Name" />
+
+                    <TextView
+                        android:id="@+id/tvSettingsUsername"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif"
+                        android:textColor="?attr/colorPrimary"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        tools:text="@username" />
+
+                    <!-- Read-only Email with Lock Icon -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <!-- Avatar / Photo -->
-                        <com.google.android.material.imageview.ShapeableImageView
-                            android:id="@+id/ivSettingsAvatar"
-                            android:layout_width="56dp"
-                            android:layout_height="56dp"
-                            android:background="?attr/colorPrimaryContainer"
-                            android:contentDescription="Profile avatar"
-                            android:padding="12dp"
-                            android:scaleType="centerCrop"
-                            android:src="@drawable/ic_lucide_user"
-                            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                            app:tint="?attr/colorOnPrimaryContainer" />
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:layout_marginEnd="6dp"
+                            android:contentDescription="Read only email"
+                            android:src="@drawable/ic_lucide_lock"
+                            app:tint="?attr/colorOnSurfaceVariant" />
 
-                        <LinearLayout
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tvSettingsEmail"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <!-- Full Name -->
-                            <TextView
-                                android:id="@+id/tvSettingsName"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:fontFamily="sans-serif-medium"
-                                android:textColor="?attr/colorOnSurface"
-                                android:textSize="16sp"
-                                android:textStyle="bold"
-                                tools:text="Full Name" />
-
-                            <!-- Username -->
-                            <TextView
-                                android:id="@+id/tvSettingsUsername"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorPrimary"
-                                android:textSize="13sp"
-                                android:textStyle="bold"
-                                tools:text="@username" />
-
-                            <!-- Email -->
-                            <TextView
-                                android:id="@+id/tvSettingsEmail"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:textSize="12sp"
-                                tools:text="user@ciphervault.local" />
-
-                        </LinearLayout>
+                            android:fontFamily="sans-serif"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="13sp"
+                            tools:text="user@ciphervault.local" />
 
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginVertical="14dp"
+                        android:layout_marginVertical="16dp"
                         android:background="?attr/colorOutlineVariant" />
 
-                    <!-- Profile Action Buttons (>= 48dp touch targets) -->
+                    <!-- Profile Action Buttons -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -152,6 +155,7 @@
                             android:layout_height="48dp"
                             android:layout_marginEnd="6dp"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif"
                             android:text="Edit Profile"
                             android:textAllCaps="false"
                             android:textSize="13sp"
@@ -166,6 +170,7 @@
                             android:layout_height="48dp"
                             android:layout_marginStart="6dp"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif"
                             android:text="Password"
                             android:textAllCaps="false"
                             android:textSize="13sp"
@@ -177,7 +182,7 @@
 
                 </LinearLayout>
 
-                <!-- 1B. PROFILE EDIT MODE -->
+                <!-- 2B. PROFILE EDIT MODE -->
                 <LinearLayout
                     android:id="@+id/layoutProfileEditMode"
                     android:layout_width="match_parent"
@@ -192,54 +197,56 @@
                         android:fontFamily="sans-serif-medium"
                         android:text="Edit Profile"
                         android:textColor="?attr/colorOnSurface"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
+                        android:textSize="16sp" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif"
                         android:text="Update your personal details and photo"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         android:textSize="12sp" />
 
-                    <!-- Avatar + Photo Actions -->
+                    <!-- Centered Avatar + Photo Actions -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical">
 
                         <FrameLayout
                             android:id="@+id/layoutAvatarPicker"
-                            android:layout_width="56dp"
-                            android:layout_height="56dp">
+                            android:layout_width="88dp"
+                            android:layout_height="88dp"
+                            android:clickable="true"
+                            android:focusable="true">
 
                             <com.google.android.material.imageview.ShapeableImageView
                                 android:id="@+id/ivEditAvatar"
-                                android:layout_width="56dp"
-                                android:layout_height="56dp"
+                                android:layout_width="88dp"
+                                android:layout_height="88dp"
                                 android:background="?attr/colorPrimaryContainer"
                                 android:contentDescription="Profile avatar preview"
-                                android:padding="12dp"
+                                android:padding="16dp"
                                 android:scaleType="centerCrop"
                                 android:src="@drawable/ic_lucide_user"
-                                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                                app:shapeAppearanceOverlay="@style/ShapeAppearance.CipherVault.Medium"
                                 app:tint="?attr/colorOnPrimaryContainer" />
 
                             <com.google.android.material.card.MaterialCardView
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
+                                android:layout_width="26dp"
+                                android:layout_height="26dp"
                                 android:layout_gravity="bottom|end"
                                 app:cardBackgroundColor="?attr/colorPrimary"
-                                app:cardCornerRadius="11dp"
+                                app:cardCornerRadius="13dp"
                                 app:cardElevation="2dp"
                                 app:strokeWidth="0dp">
 
                                 <ImageView
-                                    android:layout_width="14dp"
-                                    android:layout_height="14dp"
+                                    android:layout_width="16dp"
+                                    android:layout_height="16dp"
                                     android:layout_gravity="center"
                                     android:contentDescription="Camera badge"
                                     android:src="@drawable/ic_lucide_camera"
@@ -249,18 +256,19 @@
 
                         </FrameLayout>
 
+                        <!-- Change Photo & Remove Photo Buttons Underneath -->
                         <LinearLayout
-                            android:layout_width="0dp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_weight="1"
+                            android:layout_marginTop="12dp"
                             android:orientation="horizontal">
 
                             <com.google.android.material.button.MaterialButton
                                 android:id="@+id/btnChangePhoto"
                                 style="@style/Widget.Material3.Button.TonalButton"
                                 android:layout_width="wrap_content"
-                                android:layout_height="48dp"
+                                android:layout_height="44dp"
+                                android:fontFamily="sans-serif"
                                 android:text="Change Photo"
                                 android:textAllCaps="false"
                                 android:textSize="12sp"
@@ -272,9 +280,10 @@
                                 android:id="@+id/btnRemovePhoto"
                                 style="@style/Widget.Material3.Button.TextButton"
                                 android:layout_width="wrap_content"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="4dp"
-                                android:text="Remove"
+                                android:layout_height="44dp"
+                                android:layout_marginStart="8dp"
+                                android:fontFamily="sans-serif"
+                                android:text="Remove Photo"
                                 android:textColor="@color/status_error"
                                 android:textAllCaps="false"
                                 android:textSize="12sp"
@@ -293,7 +302,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
+                        android:layout_marginTop="16dp"
                         android:hint="Full Name"
                         app:boxCornerRadiusTopStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
@@ -304,6 +313,7 @@
                             android:id="@+id/etEditName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
                             android:inputType="textPersonName"
                             android:singleLine="true"
                             android:textColor="?attr/colorOnSurface"
@@ -311,7 +321,7 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Username Field with uniqueness helper -->
+                    <!-- Username Field (Helper hint only shown during editing) -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilEditUsername"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
@@ -329,6 +339,7 @@
                             android:id="@+id/etEditUsername"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
                             android:inputType="text"
                             android:singleLine="true"
                             android:textColor="?attr/colorOnSurface"
@@ -336,16 +347,16 @@
 
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <!-- Email Field (Read-only / Immutable) -->
+                    <!-- Email Field (Read-only with Lock Icon, No redundant helper text) -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilEditEmail"
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:hint="Email Address (Permanent)"
+                        android:hint="Email Address"
                         android:enabled="false"
-                        app:helperText="Email cannot be changed after registration"
+                        app:startIconDrawable="@drawable/ic_lucide_lock"
                         app:boxCornerRadiusTopStart="16dp"
                         app:boxCornerRadiusTopEnd="16dp"
                         app:boxCornerRadiusBottomStart="16dp"
@@ -356,6 +367,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:enabled="false"
+                            android:fontFamily="sans-serif"
                             android:inputType="textEmailAddress"
                             android:singleLine="true"
                             android:textColor="?attr/colorOnSurfaceVariant"
@@ -389,6 +401,7 @@
                             android:layout_height="48dp"
                             android:layout_marginEnd="6dp"
                             android:layout_weight="1"
+                            android:fontFamily="sans-serif"
                             android:text="Cancel"
                             android:textAllCaps="false"
                             android:textSize="13sp"
@@ -401,6 +414,7 @@
                             android:layout_height="48dp"
                             android:layout_marginStart="6dp"
                             android:layout_weight="1.2"
+                            android:fontFamily="sans-serif"
                             android:text="Save Changes"
                             android:textAllCaps="false"
                             android:textSize="13sp"
@@ -416,67 +430,20 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 2. STORAGE CAPACITY SECTION -->
+        <!-- 3. THEME SETTINGS SECTION -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
             android:letterSpacing="0.08"
-            android:text="STORAGE QUOTA (10 GB)"
+            android:text="THEME"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="11sp"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:strokeWidth="1dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tvSettingsUsedStorage"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    tools:text="1.2 GB used of 10 GB" />
-
-                <com.google.android.material.progressindicator.LinearProgressIndicator
-                    android:id="@+id/progressSettingsQuota"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    app:indicatorColor="?attr/colorPrimary"
-                    app:trackCornerRadius="4dp"
-                    app:trackThickness="8dp" />
-
-            </LinearLayout>
-
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- 3. APPEARANCE & THEME SECTION -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:letterSpacing="0.08"
-            android:text="APPEARANCE"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            android:textSize="11sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTheme"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -496,19 +463,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Theme Mode"
+                    android:text="Appearance"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textSize="14sp" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Material 3 adaptive dynamic colors adapt to wallpaper on Android 12+"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="12sp" />
-
+                <!-- Only the three intended theme choices -->
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupTheme"
                     android:layout_width="match_parent"
@@ -522,6 +481,7 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
                         android:text="System Default" />
 
                     <com.google.android.material.chip.Chip
@@ -529,6 +489,7 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
                         android:text="Light" />
 
                     <com.google.android.material.chip.Chip
@@ -536,19 +497,172 @@
                         style="@style/Widget.Material3.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif"
                         android:text="Dark" />
 
                 </com.google.android.material.chip.ChipGroup>
+
+                <!-- Dynamic Theming (Wallpaper-derived) -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="14dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <LinearLayout
+                    android:id="@+id/layoutDynamicColor"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Dynamic Theming"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvDynamicColorSubtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Adapt app colors to system wallpaper"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchDynamicColor"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp" />
+                </LinearLayout>
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 4. SECURITY SECTION -->
+        <!-- 4. SERVER CONNECTION SECTION -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
+            android:letterSpacing="0.08"
+            android:text="SERVER CONNECTION"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardServerConnection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvSettingsHealthStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="Backend Connected"
+                    android:textColor="?attr/colorPrimary"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:id="@+id/tvSettingsServerUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="middle"
+                    android:fontFamily="monospace"
+                    android:maxLines="1"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="12sp"
+                    tools:text="http://127.0.0.1:8080/" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSettingsChangeServer"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif"
+                        android:text="Configure Server"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        app:cornerRadius="22dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSettingsDiagnostics"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif"
+                        android:text="Diagnostics"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        app:cornerRadius="22dp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSettingsDisconnectServer"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:fontFamily="sans-serif"
+                    android:text="Disconnect Server"
+                    android:textAllCaps="false"
+                    android:textColor="?attr/colorError"
+                    android:textSize="13sp"
+                    app:icon="@drawable/ic_lucide_log_out"
+                    app:iconSize="16dp"
+                    app:iconTint="?attr/colorError"
+                    app:strokeColor="?attr/colorError"
+                    app:cornerRadius="22dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 5. SECURITY SECTION (Cipher suite text removed) -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
             android:letterSpacing="0.08"
             android:text="SECURITY"
             android:textColor="?attr/colorOnSurfaceVariant"
@@ -556,6 +670,7 @@
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSecurity"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -589,13 +704,13 @@
                             android:fontFamily="sans-serif-medium"
                             android:text="Biometric / App Lock"
                             android:textColor="?attr/colorOnSurface"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
+                            android:textSize="14sp" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
                             android:text="Require biometric unlock when opening app"
                             android:textColor="?attr/colorOnSurfaceVariant"
                             android:textSize="12sp" />
@@ -607,6 +722,76 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content" />
 
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 6. NOTIFICATIONS SECTION -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
+            android:letterSpacing="0.08"
+            android:text="NOTIFICATIONS"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSettingsNotifications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Transfer Notifications"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Progress and alerts for active file transfers"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchTransferNotifications"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true" />
                 </LinearLayout>
 
                 <View
@@ -621,41 +806,55 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <TextView
+                    <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Cipher Suite"
-                        android:textColor="?attr/colorOnSurface"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
+                        android:orientation="vertical">
 
-                    <TextView
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="Security Alerts"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Alerts for authentication and critical vault events"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/switchSecurityAlerts"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="AES-256-GCM / PBKDF2"
-                        android:textColor="@color/vault_encrypted"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
+                        android:checked="true" />
                 </LinearLayout>
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 4. SERVER CONNECTION SECTION -->
+        <!-- 7. OTHER EXISTING SETTINGS: STORAGE QUOTA -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
             android:letterSpacing="0.08"
-            android:text="SERVER CONNECTION"
+            android:text="STORAGE QUOTA"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="11sp"
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardStorageQuota"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -672,83 +871,151 @@
                 android:padding="16dp">
 
                 <TextView
-                    android:id="@+id/tvSettingsHealthStatus"
+                    android:id="@+id/tvSettingsUsedStorage"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Backend Connected"
-                    android:textColor="?attr/colorPrimary"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:fontFamily="sans-serif-medium"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="15sp"
+                    tools:text="1.2 GB used of 10 GB" />
 
-                <TextView
-                    android:id="@+id/tvSettingsServerUrl"
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressSettingsQuota"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:ellipsize="middle"
-                    android:fontFamily="monospace"
-                    android:maxLines="1"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="12sp"
-                    tools:text="http://127.0.0.1:8080/" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSettingsChangeServer"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_marginEnd="6dp"
-                        android:layout_weight="1"
-                        android:text="Configure Server"
-                        android:textAllCaps="false"
-                        android:textSize="12sp"
-                        app:cornerRadius="22dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSettingsDiagnostics"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_marginStart="6dp"
-                        android:layout_weight="1"
-                        android:text="Diagnostics"
-                        android:textAllCaps="false"
-                        android:textSize="12sp"
-                        app:cornerRadius="22dp" />
-
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSettingsDisconnectServer"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
                     android:layout_marginTop="10dp"
-                    android:text="Disconnect Server"
-                    android:textAllCaps="false"
-                    android:textColor="?attr/colorError"
-                    android:textSize="13sp"
-                    app:icon="@drawable/ic_lucide_log_out"
-                    app:iconSize="16dp"
-                    app:iconTint="?attr/colorError"
-                    app:strokeColor="?attr/colorError"
-                    app:cornerRadius="22dp" />
+                    app:indicatorColor="?attr/colorPrimary"
+                    app:trackCornerRadius="4dp"
+                    app:trackThickness="8dp" />
 
             </LinearLayout>
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 5. DANGER ZONE -->
+        <!-- 8. ABOUT CIPHERVAULT -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
+            android:letterSpacing="0.08"
+            android:text="ABOUT CIPHERVAULT"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardSettingsAbout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="?attr/colorSurfaceContainerLow"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.imageview.ShapeableImageView
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:background="?attr/colorPrimaryContainer"
+                        android:contentDescription="CipherVault Shield"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_lucide_shield_check"
+                        app:shapeAppearanceOverlay="@style/ShapeAppearance.CipherVault.Medium"
+                        app:tint="?attr/colorOnPrimaryContainer" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="CipherVault 1.0.0"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textSize="15sp" />
+
+                        <TextView
+                            android:id="@+id/tvSettingsBuildNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif"
+                            android:text="Version 1.0.0 (Build 1)"
+                            android:textColor="?attr/colorOnSurfaceVariant"
+                            android:textSize="12sp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnLearnMoreAbout"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif"
+                        android:text="Learn More"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        app:cornerRadius="22dp"
+                        app:icon="@drawable/ic_lucide_shield_check"
+                        app:iconGravity="textStart"
+                        app:iconSize="16dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenGitHubSettings"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:fontFamily="sans-serif"
+                        android:text="GitHub"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        app:cornerRadius="22dp"
+                        app:icon="@drawable/ic_lucide_external_link"
+                        app:iconGravity="textStart"
+                        app:iconSize="16dp" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 9. DANGER ZONE -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:fontFamily="sans-serif"
             android:letterSpacing="0.08"
             android:text="DANGER ZONE"
             android:textColor="@color/status_error"
@@ -756,6 +1023,7 @@
             android:textStyle="bold" />
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDangerZone"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -775,23 +1043,23 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:text="Irreversible Vault Operations"
+                    android:text="Delete Vault Data"
                     android:textColor="@color/status_error"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
+                    android:textSize="15sp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="3dp"
-                    android:text="All destructive actions require entering your vault password"
+                    android:fontFamily="sans-serif"
+                    android:text="Permanently delete files from your encrypted vault or remove account"
                     android:textColor="?attr/colorOnSurfaceVariant"
                     android:textSize="12sp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="14dp"
                     android:orientation="horizontal">
 
                     <com.google.android.material.button.MaterialButton
@@ -801,11 +1069,16 @@
                         android:layout_height="44dp"
                         android:layout_marginEnd="6dp"
                         android:layout_weight="1"
-                        android:text="Purge Vault"
+                        android:fontFamily="sans-serif"
+                        android:text="Delete Vault Data"
                         android:textAllCaps="false"
                         android:textColor="@color/status_error"
                         android:textSize="12sp"
                         app:cornerRadius="22dp"
+                        app:icon="@drawable/ic_lucide_trash_2"
+                        app:iconGravity="textStart"
+                        app:iconSize="16dp"
+                        app:iconTint="@color/status_error"
                         app:strokeColor="@color/status_error" />
 
                     <com.google.android.material.button.MaterialButton
@@ -815,11 +1088,16 @@
                         android:layout_height="44dp"
                         android:layout_marginStart="6dp"
                         android:layout_weight="1"
+                        android:fontFamily="sans-serif"
                         android:text="Delete Account"
                         android:textAllCaps="false"
                         android:textColor="@color/status_error"
                         android:textSize="12sp"
                         app:cornerRadius="22dp"
+                        app:icon="@drawable/ic_lucide_trash_2"
+                        app:iconGravity="textStart"
+                        app:iconSize="16dp"
+                        app:iconTint="@color/status_error"
                         app:strokeColor="@color/status_error" />
 
                 </LinearLayout>
@@ -828,20 +1106,20 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- 6. SESSION & SIGN OUT -->
+        <!-- 10. SESSION & SIGN OUT -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSettingsSignOut"
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif"
             android:text="Sign Out"
             android:textAllCaps="false"
             android:textColor="@color/status_error"
             android:textSize="14sp"
-            android:textStyle="bold"
             app:cornerRadius="25dp"
-            app:icon="@drawable/ic_lucide_unlock"
+            app:icon="@drawable/ic_lucide_log_out"
             app:iconGravity="textStart"
             app:iconTint="@color/status_error" />
 

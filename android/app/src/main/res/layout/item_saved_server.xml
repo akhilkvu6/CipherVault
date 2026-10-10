@@ -18,16 +18,14 @@
         android:orientation="horizontal"
         android:padding="12dp">
 
-        <TextView
-            android:id="@+id/tvServerRank"
+        <ImageView
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:background="@drawable/bg_circle_translucent"
-            android:gravity="center"
-            android:textColor="?attr/colorPrimary"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            tools:text="#1" />
+            android:padding="6dp"
+            android:src="@drawable/ic_lucide_server"
+            app:tint="?attr/colorPrimary"
+            android:contentDescription="Server" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -62,21 +60,11 @@
             style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="36dp"
-            android:layout_marginEnd="4dp"
-            android:paddingHorizontal="12dp"
+            android:paddingHorizontal="14dp"
             android:text="Select"
             android:textAllCaps="false"
-            android:textSize="11sp"
+            android:textSize="12sp"
             app:cornerRadius="18dp" />
-
-        <ImageButton
-            android:id="@+id/btnForgetSavedServer"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Forget Server"
-            android:src="@drawable/ic_lucide_x"
-            app:tint="?attr/colorError" />
 
     </LinearLayout>
 

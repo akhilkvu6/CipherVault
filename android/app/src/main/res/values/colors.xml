@@ -4,108 +4,109 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- CipherVault Semantic Color Tokens — Light Fallback -->
-    <color name="md_theme_light_primary">#006684</color>
+    <!-- CipherVault Warm Heritage Color Tokens — Light (Source of Truth: screen_conn_opened.png) -->
+    <color name="md_theme_light_primary">#815621</color>
     <color name="md_theme_light_onPrimary">#FFFFFF</color>
-    <color name="md_theme_light_primaryContainer">#BEE9FF</color>
-    <color name="md_theme_light_onPrimaryContainer">#001F2A</color>
+    <color name="md_theme_light_primaryContainer">#FEDDBD</color>
+    <color name="md_theme_light_onPrimaryContainer">#2C1700</color>
 
-    <color name="md_theme_light_secondary">#4D616C</color>
+    <color name="md_theme_light_secondary">#725B42</color>
     <color name="md_theme_light_onSecondary">#FFFFFF</color>
-    <color name="md_theme_light_secondaryContainer">#CFE6F2</color>
-    <color name="md_theme_light_onSecondaryContainer">#071E26</color>
+    <color name="md_theme_light_secondaryContainer">#FDDCBC</color>
+    <color name="md_theme_light_onSecondaryContainer">#291800</color>
 
-    <color name="md_theme_light_tertiary">#5D5B7D</color>
+    <color name="md_theme_light_tertiary">#5D5F3D</color>
     <color name="md_theme_light_onTertiary">#FFFFFF</color>
-    <color name="md_theme_light_tertiaryContainer">#E3DFFF</color>
-    <color name="md_theme_light_onTertiaryContainer">#1A1836</color>
+    <color name="md_theme_light_tertiaryContainer">#E2E4B7</color>
+    <color name="md_theme_light_onTertiaryContainer">#1A1C02</color>
 
     <color name="md_theme_light_error">#BA1A1A</color>
     <color name="md_theme_light_onError">#FFFFFF</color>
     <color name="md_theme_light_errorContainer">#FFDAD6</color>
     <color name="md_theme_light_onErrorContainer">#410002</color>
 
-    <color name="md_theme_light_background">#FBFDFE</color>
-    <color name="md_theme_light_onBackground">#191C1E</color>
+    <!-- Warm Light Beige/Greige Background and Soft Cream Surfaces -->
+    <color name="md_theme_light_background">#FFF8F4</color>
+    <color name="md_theme_light_onBackground">#221B13</color>
 
-    <color name="md_theme_light_surface">#FBFDFE</color>
-    <color name="md_theme_light_onSurface">#191C1E</color>
-    <color name="md_theme_light_surfaceVariant">#DCE4E8</color>
-    <color name="md_theme_light_onSurfaceVariant">#40484C</color>
+    <color name="md_theme_light_surface">#FFF8F4</color>
+    <color name="md_theme_light_onSurface">#221B13</color>
+    <color name="md_theme_light_surfaceVariant">#F3DFD1</color>
+    <color name="md_theme_light_onSurfaceVariant">#524438</color>
 
-    <color name="md_theme_light_outline">#70787D</color>
-    <color name="md_theme_light_outlineVariant">#BFC8CC</color>
+    <color name="md_theme_light_outline">#847466</color>
+    <color name="md_theme_light_outlineVariant">#D7C3B5</color>
 
     <!-- Light Surface Hierarchy -->
     <color name="md_theme_light_surfaceContainerLowest">#FFFFFF</color>
-    <color name="md_theme_light_surfaceContainerLow">#F4F6F8</color>
-    <color name="md_theme_light_surfaceContainer">#EEF1F3</color>
-    <color name="md_theme_light_surfaceContainerHigh">#E8EBEE</color>
-    <color name="md_theme_light_surfaceContainerHighest">#E2E6E8</color>
+    <color name="md_theme_light_surfaceContainerLow">#FFF1E8</color>
+    <color name="md_theme_light_surfaceContainer">#FAECE1</color>
+    <color name="md_theme_light_surfaceContainerHigh">#F5E6DA</color>
+    <color name="md_theme_light_surfaceContainerHighest">#EFE0D4</color>
 
-    <color name="md_theme_light_inverseSurface">#2E3133</color>
-    <color name="md_theme_light_inverseOnSurface">#EFF1F2</color>
-    <color name="md_theme_light_inversePrimary">#63D3FF</color>
-    <color name="md_theme_light_surfaceDim">#D9DBDD</color>
-    <color name="md_theme_light_surfaceBright">#FBFDFE</color>
+    <color name="md_theme_light_inverseSurface">#382F28</color>
+    <color name="md_theme_light_inverseOnSurface">#FDEEE4</color>
+    <color name="md_theme_light_inversePrimary">#F6BD81</color>
+    <color name="md_theme_light_surfaceDim">#E7D8CC</color>
+    <color name="md_theme_light_surfaceBright">#FFF8F4</color>
 
-    <!-- CipherVault Semantic Color Tokens — Dark Fallback -->
-    <color name="md_theme_dark_primary">#63D3FF</color>
-    <color name="md_theme_dark_onPrimary">#003546</color>
-    <color name="md_theme_dark_primaryContainer">#004D64</color>
-    <color name="md_theme_dark_onPrimaryContainer">#BEE9FF</color>
+    <!-- CipherVault Warm Heritage Color Tokens — Dark (Deep Warm Espresso) -->
+    <color name="md_theme_dark_primary">#F6BD81</color>
+    <color name="md_theme_dark_onPrimary">#482900</color>
+    <color name="md_theme_dark_primaryContainer">#653E08</color>
+    <color name="md_theme_dark_onPrimaryContainer">#FEDDBD</color>
 
-    <color name="md_theme_dark_secondary">#B4CAD6</color>
-    <color name="md_theme_dark_onSecondary">#1F333C</color>
-    <color name="md_theme_dark_secondaryContainer">#354A53</color>
-    <color name="md_theme_dark_onSecondaryContainer">#CFE6F2</color>
+    <color name="md_theme_dark_secondary">#E0C1A3</color>
+    <color name="md_theme_dark_onSecondary">#402D17</color>
+    <color name="md_theme_dark_secondaryContainer">#58432C</color>
+    <color name="md_theme_dark_onSecondaryContainer">#FDDCBC</color>
 
-    <color name="md_theme_dark_tertiary">#C6C2EA</color>
-    <color name="md_theme_dark_onTertiary">#2F2D4D</color>
-    <color name="md_theme_dark_tertiaryContainer">#454364</color>
-    <color name="md_theme_dark_onTertiaryContainer">#E3DFFF</color>
+    <color name="md_theme_dark_tertiary">#C6C89D</color>
+    <color name="md_theme_dark_onTertiary">#2F3113</color>
+    <color name="md_theme_dark_tertiaryContainer">#454827</color>
+    <color name="md_theme_dark_onTertiaryContainer">#E2E4B7</color>
 
     <color name="md_theme_dark_error">#FFB4AB</color>
     <color name="md_theme_dark_onError">#690005</color>
     <color name="md_theme_dark_errorContainer">#93000A</color>
     <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
 
-    <color name="md_theme_dark_background">#101416</color>
-    <color name="md_theme_dark_onBackground">#E1E3E5</color>
+    <color name="md_theme_dark_background">#19120C</color>
+    <color name="md_theme_dark_onBackground">#EFE0D4</color>
 
-    <color name="md_theme_dark_surface">#101416</color>
-    <color name="md_theme_dark_onSurface">#E1E3E5</color>
-    <color name="md_theme_dark_surfaceVariant">#40484C</color>
-    <color name="md_theme_dark_onSurfaceVariant">#BFC8CC</color>
+    <color name="md_theme_dark_surface">#19120C</color>
+    <color name="md_theme_dark_onSurface">#EFE0D4</color>
+    <color name="md_theme_dark_surfaceVariant">#524438</color>
+    <color name="md_theme_dark_onSurfaceVariant">#D7C3B5</color>
 
-    <color name="md_theme_dark_outline">#8A9296</color>
-    <color name="md_theme_dark_outlineVariant">#40484C</color>
+    <color name="md_theme_dark_outline">#9F8D80</color>
+    <color name="md_theme_dark_outlineVariant">#524438</color>
 
     <!-- Dark Surface Hierarchy -->
-    <color name="md_theme_dark_surfaceContainerLowest">#0B0F11</color>
-    <color name="md_theme_dark_surfaceContainerLow">#191C1E</color>
-    <color name="md_theme_dark_surfaceContainer">#1D2022</color>
-    <color name="md_theme_dark_surfaceContainerHigh">#272B2D</color>
-    <color name="md_theme_dark_surfaceContainerHighest">#323538</color>
+    <color name="md_theme_dark_surfaceContainerLowest">#140D08</color>
+    <color name="md_theme_dark_surfaceContainerLow">#221A14</color>
+    <color name="md_theme_dark_surfaceContainer">#261E17</color>
+    <color name="md_theme_dark_surfaceContainerHigh">#312821</color>
+    <color name="md_theme_dark_surfaceContainerHighest">#3D332C</color>
 
-    <color name="md_theme_dark_inverseSurface">#E1E3E5</color>
-    <color name="md_theme_dark_inverseOnSurface">#2E3133</color>
-    <color name="md_theme_dark_inversePrimary">#006684</color>
-    <color name="md_theme_dark_surfaceDim">#101416</color>
-    <color name="md_theme_dark_surfaceBright">#36393C</color>
+    <color name="md_theme_dark_inverseSurface">#EFE0D4</color>
+    <color name="md_theme_dark_inverseOnSurface">#382F28</color>
+    <color name="md_theme_dark_inversePrimary">#815621</color>
+    <color name="md_theme_dark_surfaceDim">#19120C</color>
+    <color name="md_theme_dark_surfaceBright">#413730</color>
 
     <!-- Specific feature tokens -->
-    <color name="vault_unencrypted">#FFBA1A1A</color>
-    <color name="vault_encrypted">#FF006684</color>
-    <color name="cv_text_secondary">#FF70787D</color>
-    <color name="cv_primary">#FF006684</color>
-    <color name="cv_surface">#FFFBFDFE</color>
-    <color name="cv_surface_variant">#FFDCE4E8</color>
-    <color name="cv_border">#FFBFC8CC</color>
-    <color name="cv_text_primary">#FF191C1E</color>
-    <color name="cv_security_success">#FF2E7D32</color>
-    <color name="cv_indicator_active">#FF006684</color>
-    <color name="cv_indicator_inactive">#FFBFC8CC</color>
-    <color name="status_connected">#FF2E7D32</color>
-    <color name="status_error">#FFBA1A1A</color>
+    <color name="vault_unencrypted">#BA1A1A</color>
+    <color name="vault_encrypted">#815621</color>
+    <color name="cv_text_secondary">#847466</color>
+    <color name="cv_primary">#815621</color>
+    <color name="cv_surface">#FFF1E8</color>
+    <color name="cv_surface_variant">#F5E6DA</color>
+    <color name="cv_border">#D7C3B5</color>
+    <color name="cv_text_primary">#221B13</color>
+    <color name="cv_security_success">#2E7D32</color>
+    <color name="cv_indicator_active">#815621</color>
+    <color name="cv_indicator_inactive">#D7C3B5</color>
+    <color name="status_connected">#2E7D32</color>
+    <color name="status_error">#BA1A1A</color>
 </resources>

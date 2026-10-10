@@ -199,7 +199,7 @@
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/ic_file_image"
+                    android:src="@drawable/ic_lucide_image"
                     app:tint="?attr/colorPrimary"
                     android:contentDescription="Images" />
 
@@ -252,7 +252,7 @@
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/ic_file_video"
+                    android:src="@drawable/ic_lucide_video"
                     app:tint="?attr/colorPrimary"
                     android:contentDescription="Videos" />
 
@@ -305,7 +305,7 @@
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/ic_file_pdf"
+                    android:src="@drawable/ic_lucide_file_text"
                     app:tint="?attr/colorPrimary"
                     android:contentDescription="Documents" />
 
@@ -358,7 +358,7 @@
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/ic_file_general"
+                    android:src="@drawable/ic_lucide_music"
                     app:tint="?attr/colorPrimary"
                     android:contentDescription="Audio" />
 
@@ -411,7 +411,7 @@
                 <ImageView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/ic_file_general"
+                    android:src="@drawable/ic_lucide_file"
                     app:tint="?attr/colorPrimary"
                     android:contentDescription="Other files" />
 

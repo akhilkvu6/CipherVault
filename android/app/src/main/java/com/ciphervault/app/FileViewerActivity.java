@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,11 +43,13 @@ public class FileViewerActivity extends BaseActivity {
     public static final String EXTRA_FILE_NAME = "extra_file_name";
     public static final String EXTRA_CONTENT_TYPE = "extra_content_type";
     public static final String EXTRA_FILE_SIZE = "extra_file_size";
+    public static final String EXTRA_LOCAL_URI = "extra_local_uri";
 
     private Long fileId;
     private String fileName;
     private String contentType;
     private Long fileSize;
+    private Uri localUri;
 
     private View layoutDecrypting;
     private ImageView ivViewerImage;
@@ -66,9 +69,6 @@ public class FileViewerActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Security: Prevent screenshots and screen recording of decrypted vault contents
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
-
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_file_viewer);
 
@@ -77,7 +77,22 @@ public class FileViewerActivity extends BaseActivity {
         contentType = getIntent().getStringExtra(EXTRA_CONTENT_TYPE);
         fileSize = getIntent().getLongExtra(EXTRA_FILE_SIZE, 0L);
 
-        if (fileName == null) fileName = "Decrypted File";
+        String localUriStr = getIntent().getStringExtra(EXTRA_LOCAL_URI);
+        if (localUriStr != null) {
+            localUri = Uri.parse(localUriStr);
+        } else if (getIntent().getData() != null) {
+            localUri = getIntent().getData();
+        }
+
+        if (localUri != null) {
+            // Local staged unencrypted file: clear FLAG_SECURE so user can preview and verify normally
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SECURE);
+        } else {
+            // Security: Prevent screenshots and screen recording of decrypted vault contents
+            getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE);
+        }
+
+        if (fileName == null) fileName = "File Preview";
         if (contentType == null) contentType = "application/octet-stream";
 
         MaterialToolbar toolbar = findViewById(R.id.toolbarViewer);
@@ -95,7 +110,9 @@ public class FileViewerActivity extends BaseActivity {
         btnOpenExternal = findViewById(R.id.btnOpenExternal);
         btnOpenExternal.setOnClickListener(v -> openExternalFile());
 
-        if (fileId != null && fileId > 0) {
+        if (localUri != null) {
+            displayLocalContent(localUri);
+        } else if (fileId != null && fileId > 0) {
             startStreamingDecryption();
         } else {
             Toast.makeText(this, "Invalid file ID", Toast.LENGTH_SHORT).show();
@@ -212,12 +229,79 @@ public class FileViewerActivity extends BaseActivity {
         tvGenericFileSize.setText(FileUtils.formatStorageSize(this, file.length()) + " • " + contentType);
     }
 
-    private void openExternalFile() {
-        if (tempDecryptedFile == null || !tempDecryptedFile.exists()) return;
+    private void displayLocalContent(Uri uri) {
+        if (isFinishing() || isDestroyed()) return;
 
-        Uri uri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", tempDecryptedFile);
+        layoutDecrypting.setVisibility(View.GONE);
+
+        String mime = contentType != null ? contentType.toLowerCase() : "";
+        if (mime.isEmpty() || "application/octet-stream".equals(mime)) {
+            try {
+                String resolved = getContentResolver().getType(uri);
+                if (resolved != null) mime = resolved.toLowerCase();
+            } catch (Exception ignored) {}
+        }
+        String name = fileName != null ? fileName.toLowerCase() : "";
+
+        if (mime.startsWith("image/") || name.endsWith(".jpg") || name.endsWith(".jpeg")
+                || name.endsWith(".png") || name.endsWith(".webp") || name.endsWith(".gif") || name.endsWith(".bmp")) {
+            // Display Image
+            Bitmap bitmap = ThumbnailLoader.decodeSampledBitmapFromUri(this, uri, 1440, 2560);
+            if (bitmap != null) {
+                ivViewerImage.setImageBitmap(bitmap);
+                ivViewerImage.setVisibility(View.VISIBLE);
+                return;
+            }
+        }
+
+        if (mime.startsWith("video/") || mime.startsWith("audio/")
+                || name.endsWith(".mp4") || name.endsWith(".mkv") || name.endsWith(".mp3")
+                || name.endsWith(".wav") || name.endsWith(".aac") || name.endsWith(".m4a")) {
+            // Play Media via Media3 ExoPlayer
+            playerView.setVisibility(View.VISIBLE);
+            exoPlayer = new ExoPlayer.Builder(this).build();
+            playerView.setPlayer(exoPlayer);
+
+            MediaItem mediaItem = MediaItem.fromUri(uri);
+            exoPlayer.setMediaItem(mediaItem);
+            exoPlayer.prepare();
+            exoPlayer.play();
+            return;
+        }
+
+        if (mime.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".json")
+                || name.endsWith(".xml") || name.endsWith(".csv") || name.endsWith(".md") || name.endsWith(".log")) {
+            // Display Text
+            try (InputStream is = getContentResolver().openInputStream(uri);
+                 BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+                StringBuilder text = new StringBuilder();
+                String line;
+                int lineCount = 0;
+                while ((line = br.readLine()) != null && lineCount < 2000) {
+                    text.append(line).append("\n");
+                    lineCount++;
+                }
+                tvViewerTextContent.setText(text.toString());
+                scrollViewerText.setVisibility(View.VISIBLE);
+                return;
+            } catch (Exception ignored) {}
+        }
+
+        // Generic File View
+        layoutViewerGeneric.setVisibility(View.VISIBLE);
+        tvGenericFileName.setText(fileName);
+        tvGenericFileSize.setText(FileUtils.formatStorageSize(this, fileSize > 0 ? fileSize : 0L) + (!mime.isEmpty() ? " • " + mime : ""));
+    }
+
+    private void openExternalFile() {
+        Uri uriToOpen = localUri;
+        if (uriToOpen == null && tempDecryptedFile != null && tempDecryptedFile.exists()) {
+            uriToOpen = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", tempDecryptedFile);
+        }
+        if (uriToOpen == null) return;
+
         Intent viewIntent = new Intent(Intent.ACTION_VIEW);
-        viewIntent.setDataAndType(uri, contentType != null ? contentType : "*/*");
+        viewIntent.setDataAndType(uriToOpen, contentType != null ? contentType : "*/*");
         viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         try {
             startActivity(viewIntent);

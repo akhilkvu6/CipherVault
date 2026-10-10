@@ -45,24 +45,38 @@
             android:layout_height="1dp"
             android:layout_weight="1" />
 
-        <ImageButton
-            android:id="@+id/btnFlashToggle"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/bg_circle_translucent"
-            android:contentDescription="Toggle Flash"
-            android:src="@drawable/ic_lucide_zap"
-            app:tint="@android:color/white" />
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggleGroupRatio"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
 
-        <ImageButton
-            android:id="@+id/btnSwitchCamera"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="12dp"
-            android:background="@drawable/bg_circle_translucent"
-            android:contentDescription="Switch camera"
-            android:src="@drawable/ic_lucide_switch_camera"
-            app:tint="@android:color/white" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRatio34"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="3:4"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="0dp"
+                app:strokeColor="@android:color/white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRatio169"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="9:16"
+                android:textSize="12sp"
+                android:textColor="@android:color/white"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="0dp"
+                app:strokeColor="@android:color/white" />
+
+        </com.google.android.material.button.MaterialButtonToggleGroup>
 
     </LinearLayout>
 
@@ -86,17 +100,54 @@
             android:textColor="@android:color/white"
             android:textSize="12sp" />
 
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/btnCapturePhoto"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:contentDescription="Capture Photo"
-            app:backgroundTint="@android:color/white"
-            app:fabCustomSize="72dp"
-            app:maxImageSize="32dp"
-            app:rippleColor="?attr/colorPrimary"
-            app:srcCompat="@drawable/ic_lucide_camera"
-            app:tint="?attr/colorPrimary" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="36dp">
+
+            <ImageButton
+                android:id="@+id/btnSwitchCamera"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_circle_translucent"
+                android:contentDescription="Switch camera"
+                android:src="@drawable/ic_lucide_switch_camera"
+                app:tint="@android:color/white" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnCapturePhoto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Capture Photo"
+                app:backgroundTint="@android:color/white"
+                app:fabCustomSize="72dp"
+                app:maxImageSize="32dp"
+                app:rippleColor="?attr/colorPrimary"
+                app:srcCompat="@drawable/ic_lucide_camera"
+                app:tint="?attr/colorPrimary" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <ImageButton
+                android:id="@+id/btnFlashToggle"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_circle_translucent"
+                android:contentDescription="Toggle Flash"
+                android:src="@drawable/ic_lucide_zap"
+                app:tint="@android:color/white" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 10.2 &mdash; END-TO-END FILE UPLOAD &amp; ENCRYPTION SEQUENCE</text>
+  <text x="30" y="48" class="sub">Streaming upload pipeline: SHA-256 validation, duplicate avoidance, AES-256-GCM chunked encryption, and metadata extraction</text>
+
+  <!-- Lifelines -->
+  <rect x="30" y="70" width="110" height="35" class="card-peach"/>
+  <text x="85" y="92" class="box-title">UploadStaging</text>
+  <line x1="85" y1="105" x2="85" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="170" y="70" width="110" height="35" class="card"/>
+  <text x="225" y="92" class="box-title">TransferManager</text>
+  <line x1="225" y1="105" x2="225" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="310" y="70" width="110" height="35" class="card"/>
+  <text x="365" y="92" class="box-title">FileController</text>
+  <line x1="365" y1="105" x2="365" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="450" y="70" width="120" height="35" class="card"/>
+  <text x="510" y="92" class="box-title">EncryptionService</text>
+  <line x1="510" y1="105" x2="510" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="600" y="70" width="120" height="35" class="card"/>
+  <text x="660" y="92" class="box-title">MetadataExtractor</text>
+  <line x1="660" y1="105" x2="660" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <rect x="750" y="70" width="110" height="35" class="card-blue"/>
+  <text x="805" y="92" class="box-title">MySQL &amp; Disk</text>
+  <line x1="805" y1="105" x2="805" y2="440" stroke="#E6D7CD" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+  <!-- Messages -->
+  <path d="M 85 130 L 225 130" class="line"/>
+  <text x="155" y="122" class="edge-label">1. Start upload (staged)</text>
+
+  <path d="M 225 160 L 365 160" class="line"/>
+  <text x="295" y="152" class="edge-label">2. POST /api/files/upload</text>
+
+  <path d="M 365 190 L 805 190" class="line"/>
+  <text x="585" y="182" class="edge-label">3. Check duplicate (sha256_hash + user_id)</text>
+
+  <path d="M 805 220 L 365 220" class="dash-line"/>
+  <text x="585" y="212" class="edge-label">4. Unique verified &amp; Quota OK</text>
+
+  <path d="M 365 250 L 510 250" class="line"/>
+  <text x="435" y="242" class="edge-label">5. Stream to CipherOutputStream</text>
+
+  <path d="M 510 280 L 805 280" class="line"/>
+  <text x="660" y="272" class="edge-label">6. Write AES-GCM blob: [IV] + [Cipher] + [Tag]</text>
+
+  <path d="M 365 310 L 660 310" class="line"/>
+  <text x="510" y="302" class="edge-label">7. Extract EXIF / codecs / tags</text>
+
+  <path d="M 660 340 L 805 340" class="line"/>
+  <text x="730" y="332" class="edge-label">8. Save stored_files &amp; file_metadata</text>
+
+  <path d="M 805 370 L 365 370" class="dash-line"/>
+  <text x="585" y="362" class="edge-label">9. DB transaction committed</text>
+
+  <path d="M 365 400 L 225 400" class="dash-line"/>
+  <text x="295" y="392" class="edge-label">10. HTTP 200 OK + StoredFile DTO</text>
+
+  <path d="M 225 425 L 85 425" class="dash-line"/>
+  <text x="155" y="417" class="edge-label">11. Update Transfer &amp; Refresh Vault</text>
+</svg>

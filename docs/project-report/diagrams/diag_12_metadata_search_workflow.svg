@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 10.5 &mdash; FORENSIC METADATA EXTRACTION &amp; SEARCH PIPELINE</text>
+  <text x="30" y="48" class="sub">Pipeline: Upload ingestion &rarr; EXIF/codec forensic extraction &rarr; MySQL indexing &rarr; Dynamic suggestion chips &rarr; JPA search</text>
+
+  <rect x="50" y="80" width="370" height="360" class="card-surface"/>
+  <text x="235" y="105" class="box-title" style="fill:#815621;">PHASE 1: INGESTION &amp; FORENSIC EXTRACTION</text>
+
+  <rect x="70" y="125" width="330" height="60" class="card"/>
+  <text x="235" y="147" class="box-title">Upload Completed &amp; Decrypted Head Cached</text>
+  <text x="235" y="162" class="box-desc">First 64KB inspected for Magic Bytes &amp; TIFF/EXIF headers</text>
+  <text x="235" y="174" class="box-desc">ExifTool / Pure Java Media Framework invoked</text>
+
+  <rect x="70" y="200" width="330" height="110" class="card-peach"/>
+  <text x="235" y="222" class="box-title">Extracted Forensic Fields</text>
+  <text x="85" y="242" class="box-desc-left">&bull; Photos: Camera Make, Model, ISO, Exposure, Focal Length, GPS</text>
+  <text x="85" y="258" class="box-desc-left">&bull; Videos: Resolution, Frame Rate, Video Codec, Audio Codec, Bitrate</text>
+  <text x="85" y="274" class="box-desc-left">&bull; Audio: Artist, Album, Title, Genre, Release Year</text>
+  <text x="85" y="290" class="box-desc-left">&bull; Documents: Author, Creator, Subject, Keywords, Modified Date</text>
+
+  <rect x="70" y="325" width="330" height="60" class="card-blue"/>
+  <text x="235" y="347" class="box-title">Persist in file_metadata Table</text>
+  <text x="235" y="362" class="box-desc">One-to-One FK constraint to stored_files (ON DELETE CASCADE)</text>
+  <text x="235" y="374" class="box-desc">B-Tree indexes created on make, model, codec, author, title</text>
+
+  <!-- Search Phase -->
+  <rect x="480" y="80" width="370" height="360" class="card-surface"/>
+  <text x="665" y="105" class="box-title" style="fill:#815621;">PHASE 2: DYNAMIC SEARCH &amp; RETRIEVAL</text>
+
+  <rect x="500" y="125" width="330" height="65" class="card"/>
+  <text x="665" y="147" class="box-title">Client Dynamic Suggestion Chips</text>
+  <text x="665" y="162" class="box-desc">GET /api/metadata/suggestions fetches distinct tags</text>
+  <text x="665" y="174" class="box-desc">Pills: [PDF] [1280x960] [Google] [JPEG] [H.264]</text>
+
+  <rect x="500" y="205" width="330" height="65" class="card-peach"/>
+  <text x="665" y="227" class="box-title">Client Search Input &amp; Chip Tap</text>
+  <text x="665" y="242" class="box-desc">User enters query or selects suggestion pill</text>
+  <text x="665" y="254" class="box-desc">GET /api/metadata/search?query=...&amp;category=...</text>
+
+  <rect x="500" y="285" width="330" height="70" class="card-blue"/>
+  <text x="665" y="307" class="box-title">JPA Criteria Multi-Attribute Query</text>
+  <text x="665" y="322" class="box-desc">Searches filename OR camera_model OR author OR codecs</text>
+  <text x="665" y="335" class="box-desc">Scoped strictly to authenticated user_id</text>
+
+  <rect x="500" y="370" width="330" height="55" class="card-green"/>
+  <text x="665" y="392" class="box-title">Results Rendered in FilesAdapter</text>
+  <text x="665" y="407" class="box-desc">Click opens FileDetailsBottomSheet with full forensic metadata</text>
+
+  <path d="M 400 355 L 500 320" class="line"/>
+</svg>

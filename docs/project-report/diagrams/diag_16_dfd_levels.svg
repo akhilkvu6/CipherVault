@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 5.4 &mdash; DATA FLOW DIAGRAMS (LEVEL 0 CONTEXT &amp; LEVEL 1 DECOMPOSITION)</text>
+  <text x="30" y="48" class="sub">Structured flow of data items across functional processes, external entities, and data stores</text>
+
+  <!-- DFD Level 0 -->
+  <rect x="40" y="70" width="820" height="150" class="card-surface"/>
+  <text x="60" y="92" class="box-title" style="fill:#815621; text-anchor:start;">DFD LEVEL 0: CONTEXT LEVEL</text>
+
+  <rect x="60" y="115" width="120" height="70" class="card-peach"/>
+  <text x="120" y="147" class="box-title">Mobile User</text>
+  <text x="120" y="162" class="box-desc">Entity</text>
+
+  <circle cx="450" cy="150" r="45" fill="#FFFFFF" stroke="#815621" stroke-width="2"/>
+  <text x="450" y="147" class="box-title">0.0</text>
+  <text x="450" y="160" class="box-title" style="font-size:11px;">CipherVault</text>
+
+  <rect x="720" y="115" width="120" height="70" class="card-blue"/>
+  <text x="780" y="147" class="box-title">Persistence Store</text>
+  <text x="780" y="162" class="box-desc">DB + Disk</text>
+
+  <path d="M 180 140 L 405 140" class="line"/>
+  <text x="290" y="132" class="edge-label">Uploads, Auth, Search</text>
+
+  <path d="M 405 160 L 180 160" class="line"/>
+  <text x="290" y="175" class="edge-label">Files, Tokens, Metadata</text>
+
+  <path d="M 495 140 L 720 140" class="line"/>
+  <text x="605" y="132" class="edge-label">Encrypted Blobs &amp; Index</text>
+
+  <path d="M 720 160 L 495 160" class="line"/>
+  <text x="605" y="175" class="edge-label">Stored File Records</text>
+
+  <!-- DFD Level 1 -->
+  <rect x="40" y="240" width="820" height="220" class="card-surface"/>
+  <text x="60" y="262" class="box-title" style="fill:#815621; text-anchor:start;">DFD LEVEL 1: PROCESS DECOMPOSITION</text>
+
+  <circle cx="110" cy="330" r="30" fill="#FFFFFF" stroke="#815621" stroke-width="1.8"/>
+  <text x="110" y="327" class="box-title" style="font-size:10px;">1.0</text>
+  <text x="110" y="339" class="box-desc" style="font-weight:600;">Auth</text>
+
+  <circle cx="280" cy="330" r="30" fill="#FFFFFF" stroke="#815621" stroke-width="1.8"/>
+  <text x="280" y="327" class="box-title" style="font-size:10px;">2.0</text>
+  <text x="280" y="339" class="box-desc" style="font-weight:600;">Staging</text>
+
+  <circle cx="450" cy="330" r="30" fill="#FFFFFF" stroke="#815621" stroke-width="1.8"/>
+  <text x="450" y="327" class="box-title" style="font-size:10px;">3.0</text>
+  <text x="450" y="339" class="box-desc" style="font-weight:600;">Encrypt</text>
+
+  <circle cx="620" cy="330" r="30" fill="#FFFFFF" stroke="#815621" stroke-width="1.8"/>
+  <text x="620" y="327" class="box-title" style="font-size:10px;">4.0</text>
+  <text x="620" y="339" class="box-desc" style="font-weight:600;">Search</text>
+
+  <circle cx="780" cy="330" r="30" fill="#FFFFFF" stroke="#815621" stroke-width="1.8"/>
+  <text x="780" y="327" class="box-title" style="font-size:10px;">5.0</text>
+  <text x="780" y="339" class="box-desc" style="font-weight:600;">Decrypt</text>
+
+  <!-- Data stores -->
+  <line x1="240" y1="410" x2="320" y2="410" stroke="#815621" stroke-width="2"/>
+  <line x1="240" y1="430" x2="320" y2="430" stroke="#815621" stroke-width="2"/>
+  <text x="280" y="424" class="box-desc" style="font-weight:bold;">D1: users</text>
+
+  <line x1="410" y1="410" x2="490" y2="410" stroke="#815621" stroke-width="2"/>
+  <line x1="410" y1="430" x2="490" y2="430" stroke="#815621" stroke-width="2"/>
+  <text x="450" y="424" class="box-desc" style="font-weight:bold;">D2: files</text>
+
+  <line x1="580" y1="410" x2="660" y2="410" stroke="#815621" stroke-width="2"/>
+  <line x1="580" y1="430" x2="660" y2="430" stroke="#815621" stroke-width="2"/>
+  <text x="620" y="424" class="box-desc" style="font-weight:bold;">D3: metadata</text>
+
+  <path d="M 140 330 L 250 330" class="line"/>
+  <path d="M 310 330 L 420 330" class="line"/>
+  <path d="M 480 330 L 590 330" class="line"/>
+  <path d="M 650 330 L 750 330" class="line"/>
+  <path d="M 110 360 L 240 420" class="dash-line"/>
+  <path d="M 450 360 L 450 410" class="dash-line"/>
+  <path d="M 620 360 L 620 410" class="dash-line"/>
+</svg>

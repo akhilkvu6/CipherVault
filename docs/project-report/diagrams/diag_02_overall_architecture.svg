@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 5.2 &mdash; MULTI-TIER SYSTEM ARCHITECTURE</text>
+  <text x="30" y="48" class="sub">Layered abstraction from Client Edge (Material 3 Native) down to Encrypted Storage &amp; Relational Indexing</text>
+
+  <rect x="30" y="65" width="260" height="395" class="card-surface"/>
+  <text x="160" y="90" class="box-title" style="fill:#815621;">TIER 1: PRESENTATION &amp; CLIENT</text>
+  
+  <rect x="45" y="105" width="230" height="75" class="card"/>
+  <text x="160" y="125" class="box-title">UI Activities &amp; Fragments</text>
+  <text x="55" y="145" class="box-desc-left">&bull; MainActivity (Home, Vault, Transfers, Settings)</text>
+  <text x="55" y="160" class="box-desc-left">&bull; UploadStagingActivity &amp; FileDetailsBottomSheet</text>
+
+  <rect x="45" y="190" width="230" height="75" class="card"/>
+  <text x="160" y="210" class="box-title">Theme &amp; Hardware Security</text>
+  <text x="55" y="230" class="box-desc-left">&bull; DynamicColors (Monet Engine) + Warm Heritage</text>
+  <text x="55" y="245" class="box-desc-left">&bull; MasterKey AES256_GCM / EncryptedSharedPrefs</text>
+
+  <rect x="45" y="275" width="230" height="85" class="card"/>
+  <text x="160" y="295" class="box-title">Network &amp; Foreground Engine</text>
+  <text x="55" y="315" class="box-desc-left">&bull; OkHttp 4.12 Connection Pool (60s Timeout)</text>
+  <text x="55" y="330" class="box-desc-left">&bull; TransferManager (Foreground Notification Service)</text>
+  <text x="55" y="345" class="box-desc-left">&bull; Chunked Streaming I/O (up to 2GB payload)</text>
+
+  <rect x="320" y="65" width="260" height="395" class="card-surface"/>
+  <text x="450" y="90" class="box-title" style="fill:#815621;">TIER 2: SPRING BOOT 3.3.4 CORE</text>
+
+  <rect x="335" y="105" width="230" height="75" class="card"/>
+  <text x="450" y="125" class="box-title">REST API &amp; Security Filter</text>
+  <text x="345" y="145" class="box-desc-left">&bull; Stateless JwtAuthenticationFilter (HS256)</text>
+  <text x="345" y="160" class="box-desc-left">&bull; Auth, File, Metadata, &amp; User Controllers</text>
+
+  <rect x="335" y="190" width="230" height="80" class="card"/>
+  <text x="450" y="210" class="box-title">Cryptographic Engine</text>
+  <text x="345" y="230" class="box-desc-left">&bull; KeyManagementService (PBKDF2 KEK)</text>
+  <text x="345" y="245" class="box-desc-left">&bull; EncryptionService (AES-256-GCM Envelope)</text>
+  <text x="345" y="260" class="box-desc-left">&bull; CipherOutputStream 16KB Streaming Pipeline</text>
+
+  <rect x="335" y="280" width="230" height="80" class="card"/>
+  <text x="450" y="300" class="box-title">Storage &amp; Metadata Engine</text>
+  <text x="345" y="320" class="box-desc-left">&bull; FileStorageService (Atomic 10GB Quotas)</text>
+  <text x="345" y="335" class="box-desc-left">&bull; MetadataExtractionService (ExifTool / Java)</text>
+  <text x="345" y="350" class="box-desc-left">&bull; MediaPreviewService (Decrypted Thumbnails)</text>
+
+  <rect x="610" y="65" width="260" height="395" class="card-surface"/>
+  <text x="740" y="90" class="box-title" style="fill:#815621;">TIER 3: PERSISTENCE &amp; STORAGE</text>
+
+  <rect x="625" y="105" width="230" height="110" class="card"/>
+  <text x="740" y="125" class="box-title">MySQL 8.0 Relational DB</text>
+  <text x="635" y="145" class="box-desc-left">&bull; users (quotas, UDEK key, token version)</text>
+  <text x="635" y="160" class="box-desc-left">&bull; stored_files (sha256_hash, uq_user_sha256)</text>
+  <text x="635" y="175" class="box-desc-left">&bull; file_metadata (exif, camera, codecs, tags)</text>
+  <text x="635" y="190" class="box-desc-left">&bull; B-Tree indexes on user_id, hashes, dates</text>
+
+  <rect x="625" y="225" width="230" height="100" class="card"/>
+  <text x="740" y="245" class="box-title">Encrypted File Store</text>
+  <text x="635" y="265" class="box-desc-left">&bull; storage/encrypted/ (AES-256-GCM Blobs)</text>
+  <text x="635" y="280" class="box-desc-left">&bull; [12B Nonce] + [Ciphertext] + [16B GHASH Tag]</text>
+  <text x="635" y="295" class="box-desc-left">&bull; Isolated /previews/ &amp; /uploads/ staging</text>
+
+  <rect x="625" y="335" width="230" height="110" class="card"/>
+  <text x="740" y="355" class="box-title">PySide6 Desktop Manager</text>
+  <text x="635" y="375" class="box-desc-left">&bull; Process Supervisor (Spring Boot PID monitor)</text>
+  <text x="635" y="390" class="box-desc-left">&bull; Port 8080 &amp; 3306 Health Probes</text>
+  <text x="635" y="405" class="box-desc-left">&bull; Live Log Stream Tailing &amp; ADB Reverse</text>
+
+  <path d="M 275 315 L 335 145" class="line"/>
+  <path d="M 565 145 L 625 155" class="line"/>
+  <path d="M 565 230 L 625 275" class="line"/>
+</svg>

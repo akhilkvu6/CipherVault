@@ -52,22 +52,39 @@
             </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHomeProfileAvatar"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                app:cardCornerRadius="20dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
-                app:strokeWidth="1dp"
+                app:strokeWidth="1.5dp"
                 app:strokeColor="?attr/colorOutlineVariant"
                 app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="Security Status"
-                    android:src="@drawable/ic_lucide_shield_check"
-                    app:tint="?attr/colorPrimary" />
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
 
+                    <ImageView
+                        android:id="@+id/ivHomeDefaultAvatar"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="Profile"
+                        android:src="@drawable/ic_lucide_user"
+                        app:tint="?attr/colorPrimary" />
+
+                    <ImageView
+                        android:id="@+id/ivHomeProfilePhoto"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:visibility="gone"
+                        android:contentDescription="Profile Photo" />
+                </FrameLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
@@ -112,7 +129,7 @@
                     <ImageView
                         android:layout_width="16dp"
                         android:layout_height="16dp"
-                        android:src="@drawable/ic_chevron_right"
+                        android:src="@drawable/ic_lucide_chevron_right"
                         app:tint="?attr/colorOnSurfaceVariant"
                         android:contentDescription="@string/storage_details_title" />
                 </LinearLayout>

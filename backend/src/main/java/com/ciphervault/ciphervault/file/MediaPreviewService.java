@@ -308,7 +308,7 @@ public class MediaPreviewService {
                                 ffmpegPath,
                                 sourceFile,
                                 tempOutput,
-                                "00:00:01"
+                                "00:00:00"
                         );
 
                 if (!success
@@ -320,7 +320,7 @@ public class MediaPreviewService {
                                     ffmpegPath,
                                     sourceFile,
                                     tempOutput,
-                                    "00:00:00"
+                                    "00:00:01"
                             );
                 }
 
@@ -415,7 +415,7 @@ public class MediaPreviewService {
                 picture =
                         FrameGrab.getFrameFromFile(
                                 file,
-                                1
+                                0
                         );
             } catch (Exception ignored) {
             }
@@ -425,7 +425,7 @@ public class MediaPreviewService {
                     picture =
                             FrameGrab.getFrameFromFile(
                                     file,
-                                    0
+                                    1
                             );
                 } catch (Exception ignored) {
                 }

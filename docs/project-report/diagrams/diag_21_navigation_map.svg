@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 6.2 &mdash; ANDROID CLIENT NAVIGATION STATE MACHINE</text>
+  <text x="30" y="48" class="sub">Complete screen graph: Splash, Onboarding (1-5), Server Setup, AppLock, Bottom Navigation Tabs, Staging, and Viewers</text>
+
+  <rect x="40" y="80" width="90" height="35" class="card"/>
+  <text x="85" y="102" class="box-title">Splash</text>
+
+  <rect x="160" y="80" width="120" height="35" class="card-peach"/>
+  <text x="220" y="102" class="box-title">Onboarding (1-5)</text>
+
+  <rect x="310" y="80" width="120" height="35" class="card"/>
+  <text x="370" y="102" class="box-title">Server Connection</text>
+
+  <rect x="460" y="80" width="100" height="35" class="card"/>
+  <text x="510" y="102" class="box-title">QR Scanner</text>
+
+  <rect x="590" y="80" width="110" height="35" class="card"/>
+  <text x="645" y="102" class="box-title">Login / Signup</text>
+
+  <rect x="730" y="80" width="120" height="35" class="card-green"/>
+  <text x="790" y="102" class="box-title">AppLock (Bio/PIN)</text>
+
+  <!-- Bottom Nav Tabs Container -->
+  <rect x="40" y="170" width="810" height="150" class="card-surface"/>
+  <text x="445" y="195" class="box-title" style="fill:#815621; font-size:13px;">MAIN ACTIVITY &mdash; BOTTOM NAVIGATION BAR</text>
+
+  <rect x="60" y="215" width="170" height="85" class="card"/>
+  <text x="145" y="240" class="box-title">FragmentHome</text>
+  <text x="145" y="258" class="box-desc">Account Quota Progress</text>
+  <text x="145" y="272" class="box-desc">Recent Uploads Carousel</text>
+  <text x="145" y="285" class="box-desc">Quick Staging FAB</text>
+
+  <rect x="255" y="215" width="170" height="85" class="card-peach"/>
+  <text x="340" y="240" class="box-title">FragmentVault</text>
+  <text x="340" y="258" class="box-desc">Grid / List Layout Toggle</text>
+  <text x="340" y="272" class="box-desc">Sort (Date, Size, Name)</text>
+  <text x="340" y="285" class="box-desc">Multi-Select Batch Delete</text>
+
+  <rect x="450" y="215" width="170" height="85" class="card"/>
+  <text x="535" y="240" class="box-title">FragmentTransfers</text>
+  <text x="535" y="258" class="box-desc">Live Upload / Download</text>
+  <text x="535" y="272" class="box-desc">Active Progress Bars</text>
+  <text x="535" y="285" class="box-desc">Audit Log History</text>
+
+  <rect x="645" y="215" width="185" height="85" class="card"/>
+  <text x="737" y="240" class="box-title">FragmentSettings</text>
+  <text x="737" y="258" class="box-desc">Dynamic Wallpaper Theme</text>
+  <text x="737" y="272" class="box-desc">Profile Editor Mode</text>
+  <text x="737" y="285" class="box-desc">UI Showcase Easter Egg</text>
+
+  <!-- Sub-screens -->
+  <rect x="60" y="360" width="170" height="85" class="card"/>
+  <text x="145" y="385" class="box-title">UploadStagingActivity</text>
+  <text x="145" y="403" class="box-desc">File selection &amp; camera</text>
+  <text x="145" y="417" class="box-desc">Pre-upload preview dialog</text>
+  <text x="145" y="430" class="box-desc">Staged item deletion</text>
+
+  <rect x="255" y="360" width="170" height="85" class="card-peach"/>
+  <text x="340" y="385" class="box-title">FileDetailsSheet</text>
+  <text x="340" y="403" class="box-desc">NestedScrollView expandable</text>
+  <text x="340" y="417" class="box-desc">EXIF &amp; SHA-256 Hash copy</text>
+  <text x="340" y="430" class="box-desc">Preview, Download, Delete</text>
+
+  <rect x="450" y="360" width="170" height="85" class="card-green"/>
+  <text x="535" y="385" class="box-title">FileViewerActivity</text>
+  <text x="535" y="403" class="box-desc">Full-Screen Decrypted View</text>
+  <text x="535" y="417" class="box-desc">Pinch-to-zoom images</text>
+  <text x="535" y="430" class="box-desc">FLAG_SECURE protection</text>
+
+  <rect x="645" y="360" width="185" height="85" class="card-blue"/>
+  <text x="737" y="385" class="box-title">MetadataSearch</text>
+  <text x="737" y="403" class="box-desc">Dynamic Suggestion Chips</text>
+  <text x="737" y="417" class="box-desc">Multi-field Criteria search</text>
+  <text x="737" y="430" class="box-desc">Click &rarr; FileDetailsSheet</text>
+
+  <!-- Connectors -->
+  <path d="M 130 97 L 160 97" class="line"/>
+  <path d="M 280 97 L 310 97" class="line"/>
+  <path d="M 430 97 L 460 97" class="line"/>
+  <path d="M 560 97 L 590 97" class="line"/>
+  <path d="M 700 97 L 730 97" class="line"/>
+  <path d="M 790 115 L 790 170" class="line"/>
+
+  <path d="M 145 300 L 145 360" class="line"/>
+  <path d="M 340 300 L 340 360" class="line"/>
+  <path d="M 340 400 L 450 400" class="line"/>
+  <path d="M 645 400 L 425 400" class="line"/>
+</svg>

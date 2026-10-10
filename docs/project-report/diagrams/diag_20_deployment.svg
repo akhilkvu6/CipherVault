@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 5.5 &mdash; PHYSICAL DEPLOYMENT &amp; NETWORK TOPOLOGY</text>
+  <text x="30" y="48" class="sub">Hardware execution nodes, network transport channels, port bindings, and storage mounts</text>
+
+  <!-- Node 1: Mobile Device -->
+  <rect x="50" y="80" width="280" height="360" class="card-surface"/>
+  <text x="190" y="105" class="box-title" style="fill:#815621;">&laquo;device&raquo; Android Hardware Node</text>
+  <text x="190" y="120" class="box-desc">Pixel 10 Pro XL / Physical Device (API 37)</text>
+
+  <rect x="70" y="140" width="240" height="110" class="card-peach"/>
+  <text x="190" y="162" class="box-title">&laquo;execution environment&raquo;</text>
+  <text x="190" y="177" class="box-title">ART / Android 17</text>
+  <text x="80" y="200" class="box-desc-left">&bull; CipherVault App (v2.4.0)</text>
+  <text x="80" y="215" class="box-desc-left">&bull; Android Keystore (MasterKey)</text>
+  <text x="80" y="230" class="box-desc-left">&bull; EncryptedSharedPreferences</text>
+
+  <rect x="70" y="270" width="240" height="70" class="card"/>
+  <text x="190" y="292" class="box-title">&laquo;hardware&raquo; StrongBox / TEE</text>
+  <text x="80" y="312" class="box-desc-left">&bull; Hardware AES-256 Key Vault</text>
+  <text x="80" y="325" class="box-desc-left">&bull; Biometric Sensor Subsystem</text>
+
+  <!-- Network Transport -->
+  <rect x="360" y="180" width="180" height="160" class="card"/>
+  <text x="450" y="205" class="box-title">NETWORK LINK</text>
+  <text x="450" y="225" class="box-desc">Wi-Fi LAN / ADB Reverse</text>
+  <text x="450" y="245" class="box-desc" style="font-weight:600;">TCP Port 8080</text>
+  <text x="450" y="265" class="box-desc">HTTP/1.1 REST Protocol</text>
+  <text x="450" y="285" class="box-desc">Chunked Streaming (2GB)</text>
+  <text x="450" y="305" class="box-desc">TLS in Production</text>
+
+  <!-- Node 2: Host PC -->
+  <rect x="570" y="80" width="280" height="360" class="card-surface"/>
+  <text x="710" y="105" class="box-title" style="fill:#815621;">&laquo;device&raquo; Host Server PC</text>
+  <text x="710" y="120" class="box-desc">Windows 11 Enterprise (x86_64)</text>
+
+  <rect x="590" y="135" width="240" height="100" class="card"/>
+  <text x="710" y="157" class="box-title">&laquo;execution environment&raquo;</text>
+  <text x="710" y="172" class="box-title">OpenJDK 21 LTS JVM</text>
+  <text x="600" y="195" class="box-desc-left">&bull; Spring Boot 3.3.4 (PID 18212)</text>
+  <text x="600" y="210" class="box-desc-left">&bull; Embedded Tomcat 10.1 (0.0.0.0:8080)</text>
+  <text x="600" y="225" class="box-desc-left">&bull; AES-256-GCM Streaming Engine</text>
+
+  <rect x="590" y="245" width="240" height="85" class="card-blue"/>
+  <text x="710" y="267" class="box-title">&laquo;database&raquo; MySQL 8.0</text>
+  <text x="600" y="287" class="box-desc-left">&bull; Port 3306 (InnoDB Engine)</text>
+  <text x="600" y="302" class="box-desc-left">&bull; ciphervault DB (Users, Files, Meta)</text>
+  <text x="600" y="317" class="box-desc-left">&bull; B-Tree Index on Hashes</text>
+
+  <rect x="590" y="340" width="240" height="85" class="card-green"/>
+  <text x="710" y="362" class="box-title">&laquo;storage&raquo; Host Filesystem</text>
+  <text x="600" y="382" class="box-desc-left">&bull; storage/encrypted/ (AES Blobs)</text>
+  <text x="600" y="397" class="box-desc-left">&bull; storage/previews/ (Thumbs)</text>
+  <text x="600" y="412" class="box-desc-left">&bull; storage/uploads/ (Staging)</text>
+
+  <!-- Connectors -->
+  <path d="M 310 230 L 360 230" class="line"/>
+  <path d="M 540 230 L 590 185" class="line"/>
+</svg>

@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 10.4 &mdash; SHA-256 CRYPTOGRAPHIC INTEGRITY &amp; DUPLICATE DETECTION</text>
+  <text x="30" y="48" class="sub">Two-stage verification: Client-side cryptographic hash computation and server-side atomic unique constraint enforcement</text>
+
+  <rect x="50" y="80" width="240" height="360" class="card-surface"/>
+  <text x="170" y="105" class="box-title" style="fill:#815621;">STAGE 1: CLIENT COMPUTATION</text>
+
+  <rect x="70" y="125" width="200" height="60" class="card"/>
+  <text x="170" y="147" class="box-title">File Selection</text>
+  <text x="170" y="162" class="box-desc">File picked from Android Storage</text>
+  <text x="170" y="174" class="box-desc">ContentResolver Uri stream opened</text>
+
+  <rect x="70" y="200" width="200" height="70" class="card-peach"/>
+  <text x="170" y="222" class="box-title">MessageDigest SHA-256</text>
+  <text x="170" y="238" class="box-desc">Streaming block hash (8KB buffer)</text>
+  <text x="170" y="252" class="box-desc">Prevents reading full file to RAM</text>
+  <text x="170" y="264" class="box-desc">Produces 64-char Hex Digest</text>
+
+  <rect x="70" y="290" width="200" height="60" class="card"/>
+  <text x="170" y="312" class="box-title">Multipart Header</text>
+  <text x="170" y="328" class="box-desc">Hash attached to upload request</text>
+  <text x="170" y="340" class="box-desc">Header: X-File-SHA256: &lt;hash&gt;</text>
+
+  <!-- Stage 2: Server -->
+  <rect x="330" y="80" width="520" height="360" class="card-surface"/>
+  <text x="590" y="105" class="box-title" style="fill:#815621;">STAGE 2: SERVER VERIFICATION &amp; DEDUPLICATION</text>
+
+  <rect x="350" y="125" width="220" height="65" class="card"/>
+  <text x="460" y="147" class="box-title">Receive &amp; Stream Ingestion</text>
+  <text x="460" y="162" class="box-desc">DigestInputStream calculates hash</text>
+  <text x="460" y="176" class="box-desc">Validates stream hash matches header</text>
+
+  <rect x="350" y="210" width="220" height="75" class="card-blue"/>
+  <text x="460" y="232" class="box-title">Database Deduplication Query</text>
+  <text x="460" y="248" class="box-desc">SELECT id FROM stored_files</text>
+  <text x="460" y="262" class="box-desc">WHERE user_id = :uid</text>
+  <text x="460" y="274" class="box-desc">AND sha256_hash = :hash</text>
+
+  <!-- Decisions -->
+  <rect x="610" y="140" width="220" height="90" class="card-red"/>
+  <text x="720" y="162" class="box-title" style="fill:#C62828;">DUPLICATE DETECTED</text>
+  <text x="720" y="178" class="box-desc">Record exists under user account</text>
+  <text x="720" y="192" class="box-desc">&bull; Return HTTP 409 Conflict</text>
+  <text x="720" y="206" class="box-desc">&bull; Disk storage quota conserved</text>
+  <text x="720" y="218" class="box-desc">&bull; Client displays duplicate prompt</text>
+
+  <rect x="610" y="250" width="220" height="90" class="card-green"/>
+  <text x="720" y="272" class="box-title" style="fill:#2E7D32;">UNIQUE FILE VERIFIED</text>
+  <text x="720" y="288" class="box-desc">Hash is novel for this user</text>
+  <text x="720" y="302" class="box-desc">&bull; Proceed to AES-256-GCM write</text>
+  <text x="720" y="316" class="box-desc">&bull; Enforce uq_user_sha256 constraint</text>
+  <text x="720" y="328" class="box-desc">&bull; Return HTTP 200 OK</text>
+
+  <path d="M 270 320 L 350 160" class="line"/>
+  <path d="M 460 190 L 460 210" class="line"/>
+  <path d="M 570 230 L 610 185" class="line"/>
+  <text x="590" y="200" class="edge-label">Exists</text>
+  <path d="M 570 260 L 610 290" class="line"/>
+  <text x="590" y="280" class="edge-label">Novel</text>
+</svg>

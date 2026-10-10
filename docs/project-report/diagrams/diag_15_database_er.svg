@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 8.1 &mdash; DATABASE ENTITY-RELATIONSHIP (ER) DIAGRAM</text>
+  <text x="30" y="48" class="sub">Relational schema topology for MySQL 8.0: Primary keys, Foreign key cascades, and unique cryptographic constraints</text>
+
+  <!-- Table 1: users -->
+  <rect x="40" y="70" width="240" height="380" class="card"/>
+  <rect x="40" y="70" width="240" height="35" class="card-peach"/>
+  <text x="160" y="92" class="box-title">users</text>
+  
+  <text x="50" y="125" class="box-desc-left">&bull; <tspan font-weight="bold">id</tspan>: BIGINT (PK, AUTO_INC)</text>
+  <text x="50" y="145" class="box-desc-left">&bull; <tspan font-weight="bold">name</tspan>: VARCHAR(255) NOT NULL</text>
+  <text x="50" y="165" class="box-desc-left">&bull; <tspan font-weight="bold">username</tspan>: VARCHAR(255) UNIQUE</text>
+  <text x="50" y="185" class="box-desc-left">&bull; <tspan font-weight="bold">email</tspan>: VARCHAR(255) UNIQUE</text>
+  <text x="50" y="205" class="box-desc-left">&bull; <tspan font-weight="bold">password</tspan>: VARCHAR(255) (BCrypt)</text>
+  <text x="50" y="225" class="box-desc-left">&bull; <tspan font-weight="bold">storage_limit</tspan>: BIGINT (10GB def)</text>
+  <text x="50" y="245" class="box-desc-left">&bull; <tspan font-weight="bold">used_storage</tspan>: BIGINT DEFAULT 0</text>
+  <text x="50" y="265" class="box-desc-left">&bull; <tspan font-weight="bold">user_key</tspan>: VARCHAR(512) (Wrapped UDEK)</text>
+  <text x="50" y="285" class="box-desc-left">&bull; <tspan font-weight="bold">token_version</tspan>: BIGINT DEFAULT 0</text>
+  <text x="50" y="305" class="box-desc-left">&bull; <tspan font-weight="bold">profile_photo_path</tspan>: VARCHAR(512)</text>
+  <text x="50" y="325" class="box-desc-left">&bull; <tspan font-weight="bold">created_at</tspan>: DATETIME NOT NULL</text>
+
+  <!-- Table 2: stored_files -->
+  <rect x="330" y="70" width="250" height="380" class="card"/>
+  <rect x="330" y="70" width="250" height="35" class="card-peach"/>
+  <text x="455" y="92" class="box-title">stored_files</text>
+
+  <text x="340" y="125" class="box-desc-left">&bull; <tspan font-weight="bold">id</tspan>: BIGINT (PK, AUTO_INC)</text>
+  <text x="340" y="145" class="box-desc-left">&bull; <tspan font-weight="bold">user_id</tspan>: BIGINT (FK &rarr; users.id)</text>
+  <text x="340" y="165" class="box-desc-left">&bull; <tspan font-weight="bold">original_filename</tspan>: VARCHAR(255)</text>
+  <text x="340" y="185" class="box-desc-left">&bull; <tspan font-weight="bold">stored_filename</tspan>: VARCHAR(255)</text>
+  <text x="340" y="205" class="box-desc-left">&bull; <tspan font-weight="bold">file_size</tspan>: BIGINT NOT NULL</text>
+  <text x="340" y="225" class="box-desc-left">&bull; <tspan font-weight="bold">content_type</tspan>: VARCHAR(255)</text>
+  <text x="340" y="245" class="box-desc-left">&bull; <tspan font-weight="bold">sha256_hash</tspan>: VARCHAR(64) NOT NULL</text>
+  <text x="340" y="265" class="box-desc-left">&bull; <tspan font-weight="bold">storage_path</tspan>: VARCHAR(512)</text>
+  <text x="340" y="285" class="box-desc-left">&bull; <tspan font-weight="bold">encrypted</tspan>: BOOLEAN DEFAULT TRUE</text>
+  <text x="340" y="305" class="box-desc-left">&bull; <tspan font-weight="bold">has_preview</tspan>: BOOLEAN DEFAULT FALSE</text>
+  <text x="340" y="325" class="box-desc-left">&bull; <tspan font-weight="bold">preview_path</tspan>: VARCHAR(512)</text>
+  <text x="340" y="345" class="box-desc-left">&bull; <tspan font-weight="bold">created_at</tspan>: DATETIME NOT NULL</text>
+  <text x="340" y="375" class="box-desc-left" style="fill:#2E7D32; font-weight:bold;">CONSTRAINT: uq_user_sha256 (user_id, hash)</text>
+  <text x="340" y="395" class="box-desc-left" style="fill:#1565C0;">INDEX: idx_files_user (user_id)</text>
+
+  <!-- Table 3: file_metadata -->
+  <rect x="630" y="70" width="240" height="380" class="card"/>
+  <rect x="630" y="70" width="240" height="35" class="card-peach"/>
+  <text x="750" y="92" class="box-title">file_metadata</text>
+
+  <text x="640" y="125" class="box-desc-left">&bull; <tspan font-weight="bold">id</tspan>: BIGINT (PK, AUTO_INC)</text>
+  <text x="640" y="145" class="box-desc-left">&bull; <tspan font-weight="bold">file_id</tspan>: BIGINT UNIQUE (FK &rarr; stored_files)</text>
+  <text x="640" y="165" class="box-desc-left">&bull; <tspan font-weight="bold">camera_make</tspan>: VARCHAR(255)</text>
+  <text x="640" y="185" class="box-desc-left">&bull; <tspan font-weight="bold">camera_model</tspan>: VARCHAR(255)</text>
+  <text x="640" y="205" class="box-desc-left">&bull; <tspan font-weight="bold">iso / exposure_time / f_number</tspan></text>
+  <text x="640" y="225" class="box-desc-left">&bull; <tspan font-weight="bold">width, height, resolution</tspan></text>
+  <text x="640" y="245" class="box-desc-left">&bull; <tspan font-weight="bold">duration, video_codec, audio_codec</tspan></text>
+  <text x="640" y="265" class="box-desc-left">&bull; <tspan font-weight="bold">title, artist, album, genre</tspan></text>
+  <text x="640" y="285" class="box-desc-left">&bull; <tspan font-weight="bold">author, creator, subject</tspan></text>
+  <text x="640" y="305" class="box-desc-left">&bull; <tspan font-weight="bold">keywords, doc_created_date</tspan></text>
+  <text x="640" y="325" class="box-desc-left">&bull; <tspan font-weight="bold">raw_metadata_json</tspan>: TEXT</text>
+  <text x="640" y="355" class="box-desc-left" style="fill:#2E7D32; font-weight:bold;">FK: ON DELETE CASCADE</text>
+
+  <!-- Connectors -->
+  <path d="M 280 145 L 330 145" class="line"/>
+  <text x="305" y="137" class="edge-label">1 : N</text>
+
+  <path d="M 580 145 L 630 145" class="line"/>
+  <text x="605" y="137" class="edge-label">1 : 1</text>
+</svg>

@@ -52,6 +52,8 @@ public class CameraActivity extends BaseActivity {
     private View layoutCaptureControls;
     private View layoutPostCaptureControls;
     private ImageButton btnFlashToggle;
+    private com.google.android.material.button.MaterialButtonToggleGroup toggleGroupRatio;
+    private int currentAspectRatio = AspectRatio.RATIO_4_3;
 
     private ProcessCameraProvider cameraProvider;
     private ImageCapture imageCapture;
@@ -86,6 +88,20 @@ public class CameraActivity extends BaseActivity {
         layoutCaptureControls = findViewById(R.id.layoutCaptureControls);
         layoutPostCaptureControls = findViewById(R.id.layoutPostCaptureControls);
         btnFlashToggle = findViewById(R.id.btnFlashToggle);
+        toggleGroupRatio = findViewById(R.id.toggleGroupRatio);
+
+        if (toggleGroupRatio != null) {
+            toggleGroupRatio.check(R.id.btnRatio34);
+            toggleGroupRatio.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+                if (!isChecked) return;
+                if (checkedId == R.id.btnRatio34) {
+                    currentAspectRatio = AspectRatio.RATIO_4_3;
+                } else if (checkedId == R.id.btnRatio169) {
+                    currentAspectRatio = AspectRatio.RATIO_16_9;
+                }
+                bindCameraUseCases();
+            });
+        }
 
         findViewById(R.id.btnCloseCamera).setOnClickListener(v -> finish());
         findViewById(R.id.btnSwitchCamera).setOnClickListener(v -> switchCameraLens());
@@ -121,14 +137,14 @@ public class CameraActivity extends BaseActivity {
                 .requireLensFacing(lensFacing)
                 .build();
 
-        // Use 4:3 / 3:4 aspect ratio centered for high-fidelity photo capture
+        // Use selected aspect ratio (3:4 or 9:16) for both cameras
         Preview preview = new Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .setTargetAspectRatio(currentAspectRatio)
                 .build();
         preview.setSurfaceProvider(viewFinder.getSurfaceProvider());
 
         imageCapture = new ImageCapture.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .setTargetAspectRatio(currentAspectRatio)
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .setFlashMode(isTorchOn ? ImageCapture.FLASH_MODE_ON : ImageCapture.FLASH_MODE_OFF)
                 .build();

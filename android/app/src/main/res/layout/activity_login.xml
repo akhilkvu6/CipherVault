@@ -104,6 +104,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:hint="Email Address"
+                    app:startIconDrawable="@drawable/ic_lucide_mail"
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
@@ -127,6 +128,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
                     android:hint="Password"
+                    app:startIconDrawable="@drawable/ic_lucide_lock"
                     app:boxCornerRadiusTopStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
@@ -184,16 +186,7 @@
             android:fontFamily="sans-serif-medium"
             android:textStyle="bold" />
 
-        <!-- Security Caption -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:gravity="center"
-            android:text="@string/caption_aes_gcm"
-            android:textColor="?attr/colorOutline"
-            android:textSize="11sp"
-            android:letterSpacing="0.03" />
+
 
     </LinearLayout>
 

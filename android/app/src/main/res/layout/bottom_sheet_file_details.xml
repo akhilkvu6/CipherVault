@@ -1,32 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingHorizontal="24dp"
-    android:paddingTop="12dp"
-    android:paddingBottom="28dp"
+    android:fillViewport="true"
     android:background="?attr/colorSurfaceContainerLow">
 
-    <!-- BottomSheet Drag Handle -->
-    <View
-        android:layout_width="36dp"
-        android:layout_height="4dp"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp"
-        android:background="@drawable/bg_bottom_sheet_handle" />
-
-    <!-- Large Prominent Preview Surface (210dp, fitCenter, maintains aspect ratio) -->
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="210dp"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="1dp"
-        app:strokeColor="?attr/colorOutlineVariant"
-        app:cardBackgroundColor="?attr/colorSurfaceContainer">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingHorizontal="24dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="28dp">
+
+        <!-- BottomSheet Drag Handle -->
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_bottom_sheet_handle" />
+
+        <!-- Large Prominent Preview Surface (210dp, fitCenter, maintains aspect ratio) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardBottomSheetPreview"
+            android:layout_width="match_parent"
+            android:layout_height="210dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:cardBackgroundColor="?attr/colorSurfaceContainer">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -38,7 +47,7 @@
                 android:layout_height="64dp"
                 android:layout_gravity="center"
                 android:contentDescription="@string/app_name"
-                android:src="@drawable/ic_file_general"
+                android:src="@drawable/ic_lucide_file"
                 app:tint="?attr/colorOnSecondaryContainer" />
 
             <ImageView
@@ -56,7 +65,7 @@
                 android:layout_height="44dp"
                 android:layout_gravity="center"
                 android:visibility="gone"
-                android:src="@drawable/ic_file_video"
+                android:src="@drawable/ic_lucide_video"
                 app:tint="@android:color/white" />
         </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
@@ -85,7 +94,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            tools:text="AES-256-GCM"
+            tools:text="Encrypted"
             android:textSize="12sp"
             android:textStyle="bold"
             android:gravity="center_vertical"
@@ -451,15 +460,30 @@
         android:orientation="vertical">
 
         <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnBottomSheetPreview"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Preview / Decrypt File"
+            android:textAllCaps="false"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            app:cornerRadius="25dp"
+            app:icon="@drawable/ic_lucide_eye"
+            app:iconSize="18dp"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnBottomSheetDownload"
             android:layout_width="match_parent"
             android:layout_height="50dp"
+            android:layout_marginTop="8dp"
             android:text="@string/btn_download"
             android:textAllCaps="false"
             android:textSize="14sp"
             android:textStyle="bold"
             app:cornerRadius="25dp"
-            app:icon="@drawable/ic_download"
+            app:icon="@drawable/ic_lucide_download"
             app:iconSize="18dp"
             app:iconGravity="textStart" />
 
@@ -475,7 +499,7 @@
             android:textAllCaps="false"
             android:textSize="14sp"
             app:cornerRadius="24dp"
-            app:icon="@drawable/ic_delete"
+            app:icon="@drawable/ic_lucide_trash_2"
             app:iconSize="18dp"
             app:iconTint="@color/status_error"
             app:iconGravity="textStart" />
@@ -492,3 +516,4 @@
             app:cornerRadius="22dp" />
     </LinearLayout>
 </LinearLayout>
+</androidx.core.widget.NestedScrollView>

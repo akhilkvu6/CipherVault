@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 15.1 &mdash; CURRENT IMPLEMENTATION VS. PROPOSED FUTURE ARCHITECTURE</text>
+  <text x="30" y="48" class="sub">Evolutionary architectural roadmap from single-node self-hosted prototype to high-availability enterprise cloud vault</text>
+
+  <!-- Current Architecture -->
+  <rect x="40" y="70" width="380" height="385" class="card-surface"/>
+  <text x="230" y="95" class="box-title" style="fill:#815621;">CURRENT ARCHITECTURE (VERIFIED v2.4.0)</text>
+
+  <rect x="60" y="115" width="340" height="60" class="card"/>
+  <text x="230" y="137" class="box-title">Client Tier</text>
+  <text x="70" y="155" class="box-desc-left">&bull; Android Client (Material 3, SDK 37)</text>
+  <text x="70" y="167" class="box-desc-left">&bull; Manual IP/Port connection, AppLock, Transfers</text>
+
+  <rect x="60" y="185" width="340" height="65" class="card"/>
+  <text x="230" y="207" class="box-title">Application Core</text>
+  <text x="70" y="225" class="box-desc-left">&bull; Single-instance Spring Boot 3.3.4 (Tomcat 10)</text>
+  <text x="70" y="237" class="box-desc-left">&bull; Envelope encryption (PBKDF2 Server KEK + UDEK)</text>
+
+  <rect x="60" y="260" width="340" height="60" class="card"/>
+  <text x="230" y="282" class="box-title">Persistence &amp; Storage</text>
+  <text x="70" y="300" class="box-desc-left">&bull; Standalone MySQL 8.0 on localhost:3306</text>
+  <text x="70" y="312" class="box-desc-left">&bull; Local host disk encrypted blob directory</text>
+
+  <rect x="60" y="330" width="340" height="110" class="card-peach"/>
+  <text x="230" y="352" class="box-title">Key Architectural Constraints</text>
+  <text x="70" y="372" class="box-desc-left">&bull; Single Point of Failure (Host PC offline &rarr; Vault down)</text>
+  <text x="70" y="387" class="box-desc-left">&bull; No seed phrase recovery (lost password &rarr; data lost)</text>
+  <text x="70" y="402" class="box-desc-left">&bull; Non-resumable streaming (drop midway &rarr; restart)</text>
+  <text x="70" y="417" class="box-desc-left">&bull; Flat vault list (no nested hierarchical folders)</text>
+
+  <!-- Proposed Future Architecture -->
+  <rect x="480" y="70" width="380" height="385" class="card-surface"/>
+  <text x="670" y="95" class="box-title" style="fill:#2E7D32;">PROPOSED FUTURE ARCHITECTURE (ROADMAP)</text>
+
+  <rect x="500" y="115" width="340" height="60" class="card-green"/>
+  <text x="670" y="137" class="box-title">Hardened Client Tier</text>
+  <text x="510" y="155" class="box-desc-left">&bull; BIP-39 12/24-word Mnemonic Seed Phrase Backup</text>
+  <text x="510" y="167" class="box-desc-left">&bull; Duress / Decoy Vault PIN mode &amp; Auto-destruct</text>
+
+  <rect x="500" y="185" width="340" height="65" class="card-green"/>
+  <text x="670" y="207" class="box-title">High-Availability Backend Cluster</text>
+  <text x="510" y="225" class="box-desc-left">&bull; Distributed Spring Boot microservices behind Nginx</text>
+  <text x="510" y="237" class="box-desc-left">&bull; Resumable chunked transfers (TUS / Byte-range protocol)</text>
+
+  <rect x="500" y="260" width="340" height="60" class="card-green"/>
+  <text x="670" y="282" class="box-title">Distributed Object Storage</text>
+  <text x="510" y="300" class="box-desc-left">&bull; MinIO / S3-compatible multi-node encrypted chunks</text>
+  <text x="510" y="312" class="box-desc-left">&bull; Master-Replica MySQL cluster with automated failover</text>
+
+  <rect x="500" y="330" width="340" height="110" class="card-blue"/>
+  <text x="670" y="352" class="box-title">Advanced Security &amp; Automation</text>
+  <text x="510" y="372" class="box-desc-left">&bull; Background Camera Auto-Sync (WorkManager)</text>
+  <text x="510" y="387" class="box-desc-left">&bull; In-app ExoPlayer encrypted video stream pipeline</text>
+  <text x="510" y="402" class="box-desc-left">&bull; Hierarchical virtual encrypted folder tree</text>
+  <text x="510" y="417" class="box-desc-left">&bull; End-to-end encrypted ephemeral share links</text>
+
+  <path d="M 420 262 L 480 262" class="line"/>
+</svg>

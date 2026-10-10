@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 9.3 &mdash; SECURITY TRUST BOUNDARIES &amp; STRIDE THREAT MODEL</text>
+  <text x="30" y="48" class="sub">Trust boundaries, attack vectors, and verified cryptographic mitigations across Client, Network, and Server domains</text>
+
+  <!-- Zone 1: Client -->
+  <rect x="50" y="75" width="240" height="375" fill="#FFFFFF" stroke="#2E7D32" stroke-width="2" rx="8"/>
+  <text x="170" y="100" class="box-title" style="fill:#2E7D32;">TRUST BOUNDARY 1: CLIENT</text>
+
+  <rect x="65" y="115" width="210" height="70" class="card"/>
+  <text x="170" y="135" class="box-title">Threat: Token Theft</text>
+  <text x="75" y="153" class="box-desc-left">&bull; ADB backup / Root extraction</text>
+  <text x="75" y="168" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: MasterKey Keystore</text>
+
+  <rect x="65" y="195" width="210" height="70" class="card"/>
+  <text x="170" y="215" class="box-title">Threat: Unauthorized Access</text>
+  <text x="75" y="233" class="box-desc-left">&bull; Device shoulder surfing / theft</text>
+  <text x="75" y="248" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: Cold AppLock Overlay</text>
+
+  <rect x="65" y="275" width="210" height="70" class="card"/>
+  <text x="170" y="295" class="box-title">Threat: Screenshot Scraping</text>
+  <text x="75" y="313" class="box-desc-left">&bull; Background screen recorder</text>
+  <text x="75" y="328" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: FLAG_SECURE window</text>
+
+  <rect x="65" y="355" width="210" height="80" class="card"/>
+  <text x="170" y="375" class="box-title">Threat: Memory Scavenging</text>
+  <text x="75" y="393" class="box-desc-left">&bull; Heap inspection / core dump</text>
+  <text x="75" y="408" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: In-memory streaming,</text>
+  <text x="75" y="420" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Bitmap recycle on exit</text>
+
+  <!-- Zone 2: Network -->
+  <rect x="330" y="75" width="240" height="375" fill="#FFFFFF" stroke="#1565C0" stroke-width="2" rx="8"/>
+  <text x="450" y="100" class="box-title" style="fill:#1565C0;">TRUST BOUNDARY 2: NETWORK</text>
+
+  <rect x="345" y="115" width="210" height="95" class="card"/>
+  <text x="450" y="135" class="box-title">Threat: MITM Eavesdropping</text>
+  <text x="355" y="153" class="box-desc-left">&bull; Wi-Fi packet sniffing</text>
+  <text x="355" y="168" class="box-desc-left">&bull; Cleartext traffic interception</text>
+  <text x="355" y="185" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: TLS / HTTPS required in</text>
+  <text x="355" y="198" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">prod network_security_config</text>
+
+  <rect x="345" y="225" width="210" height="95" class="card"/>
+  <text x="450" y="245" class="box-title">Threat: Replay Attacks</text>
+  <text x="355" y="263" class="box-desc-left">&bull; Replaying captured request</text>
+  <text x="355" y="278" class="box-desc-left">&bull; Expired token reuse</text>
+  <text x="355" y="295" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: Short-lived JWT (24h)</text>
+  <text x="355" y="308" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">+ unique token_version</text>
+
+  <rect x="345" y="335" width="210" height="100" class="card"/>
+  <text x="450" y="355" class="box-title">Threat: DoS Stream Flooding</text>
+  <text x="355" y="373" class="box-desc-left">&bull; Infinite payload upload</text>
+  <text x="355" y="388" class="box-desc-left">&bull; Network buffer exhaustion</text>
+  <text x="355" y="405" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: Max upload limit 2GB,</text>
+  <text x="355" y="418" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">OkHttp 60s read/write timeout</text>
+
+  <!-- Zone 3: Server -->
+  <rect x="610" y="75" width="240" height="375" fill="#FFFFFF" stroke="#815621" stroke-width="2" rx="8"/>
+  <text x="730" y="100" class="box-title" style="fill:#815621;">TRUST BOUNDARY 3: SERVER</text>
+
+  <rect x="625" y="115" width="210" height="70" class="card"/>
+  <text x="730" y="135" class="box-title">Threat: Ciphertext Tampering</text>
+  <text x="635" y="153" class="box-desc-left">&bull; Bit-flipping attacks on disk</text>
+  <text x="635" y="168" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: AES-GCM GHASH Tag</text>
+
+  <rect x="625" y="195" width="210" height="70" class="card"/>
+  <text x="730" y="215" class="box-title">Threat: Master Key Leak</text>
+  <text x="635" y="233" class="box-desc-left">&bull; Hardcoded key in repo</text>
+  <text x="635" y="248" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: Env var enforcement</text>
+
+  <rect x="625" y="275" width="210" height="70" class="card"/>
+  <text x="730" y="295" class="box-title">Threat: Brute-Force Auth</text>
+  <text x="635" y="313" class="box-desc-left">&bull; Automated credential stuffing</text>
+  <text x="635" y="328" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: LoginRateLimiter (5/15m)</text>
+
+  <rect x="625" y="355" width="210" height="80" class="card"/>
+  <text x="730" y="375" class="box-title">Threat: Quota Exhaustion</text>
+  <text x="635" y="393" class="box-desc-left">&bull; Filling host disk to 100%</text>
+  <text x="635" y="408" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">Mitigation: Atomic DB checks,</text>
+  <text x="635" y="420" class="box-desc-left" style="fill:#2E7D32; font-weight:600;">10GB ceiling per user</text>
+</svg>

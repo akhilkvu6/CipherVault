@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 480" width="900" height="480">
+  
+  <defs>
+    <style>
+    .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 15px; font-weight: bold; fill: #815621; }
+    .sub { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; fill: #705D53; }
+    .box-title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; font-weight: bold; fill: #2D241E; text-anchor: middle; }
+    .box-desc { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; text-anchor: middle; }
+    .box-desc-left { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #705D53; }
+    .step-num { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10px; font-weight: bold; fill: #FFFFFF; text-anchor: middle; }
+    .edge-label { font-family: 'Segoe UI', Arial, sans-serif; font-size: 9.5px; fill: #815621; font-weight: 600; text-anchor: middle; }
+    .line { stroke: #815621; stroke-width: 1.6; fill: none; marker-end: url(#arrow); }
+    .dash-line { stroke: #705D53; stroke-width: 1.4; stroke-dasharray: 4,4; fill: none; marker-end: url(#arrow-gray); }
+    .card { fill: #FFFFFF; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-peach { fill: #FEDDBD; stroke: #815621; stroke-width: 1.5; rx: 6; }
+    .card-surface { fill: #FFF1E8; stroke: #E6D7CD; stroke-width: 1.2; rx: 6; }
+    .card-green { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; rx: 6; }
+    .card-blue { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; rx: 6; }
+    .card-red { fill: #FFEBEE; stroke: #C62828; stroke-width: 1.5; rx: 6; }
+</style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#815621"/>
+    </marker>
+    <marker id="arrow-gray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#705D53"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 9 5 L 0 9 z" fill="#2E7D32"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#FFF8F4"/>
+  <text x="30" y="32" class="title">FIGURE 9.2 &mdash; ENVELOPE ENCRYPTION &amp; DISK STORAGE WORKFLOW</text>
+  <text x="30" y="48" class="sub">Key hierarchy: Master Secret &rarr; Server KEK &rarr; User Data Key (UDEK) &rarr; AES-256-GCM Authenticated Ciphertext Blob</text>
+
+  <!-- KEK Derivation -->
+  <rect x="50" y="80" width="370" height="150" class="card-surface"/>
+  <text x="235" y="105" class="box-title" style="fill:#815621;">LAYER 1: KEY ENCRYPTION KEY (KEK) DERIVATION</text>
+  
+  <rect x="70" y="120" width="130" height="40" class="card"/>
+  <text x="135" y="145" class="box-desc" style="font-weight:600;">Server Master Secret</text>
+
+  <rect x="70" y="170" width="130" height="40" class="card"/>
+  <text x="135" y="195" class="box-desc" style="font-weight:600;">Static Salt (16 Bytes)</text>
+
+  <rect x="230" y="140" width="170" height="55" class="card-peach"/>
+  <text x="315" y="162" class="box-title">PBKDF2-HMAC-SHA256</text>
+  <text x="315" y="178" class="box-desc">65,536 Iterations &rarr; 256-bit KEK</text>
+
+  <path d="M 200 140 L 230 160" class="line"/>
+  <path d="M 200 190 L 230 175" class="line"/>
+
+  <!-- UDEK Wrapping -->
+  <rect x="480" y="80" width="370" height="150" class="card-surface"/>
+  <text x="665" y="105" class="box-title" style="fill:#815621;">LAYER 2: USER DATA ENCRYPTION KEY (UDEK)</text>
+
+  <rect x="500" y="125" width="150" height="45" class="card-green"/>
+  <text x="575" y="147" class="box-title">Generate UDEK</text>
+  <text x="575" y="160" class="box-desc">SecureRandom 256-bit AES</text>
+
+  <rect x="680" y="125" width="150" height="45" class="card-peach"/>
+  <text x="755" y="147" class="box-title">Wrapped UDEK</text>
+  <text x="755" y="160" class="box-desc">Encrypted with Server KEK</text>
+
+  <rect x="590" y="185" width="160" height="35" class="card-blue"/>
+  <text x="670" y="205" class="box-desc" style="font-weight:600;">Persisted in users.user_key</text>
+
+  <path d="M 400 168 L 500 148" class="line"/>
+  <path d="M 650 148 L 680 148" class="line"/>
+  <path d="M 755 170 L 670 185" class="line"/>
+
+  <!-- Payload Encryption -->
+  <rect x="50" y="260" width="800" height="190" class="card-surface"/>
+  <text x="450" y="285" class="box-title" style="fill:#815621;">LAYER 3: FILE PAYLOAD ENCRYPTION (AES-256-GCM STREAMING)</text>
+
+  <rect x="70" y="305" width="150" height="45" class="card"/>
+  <text x="145" y="325" class="box-title">Plaintext Stream</text>
+  <text x="145" y="340" class="box-desc">User File (up to 2GB)</text>
+
+  <rect x="70" y="365" width="150" height="45" class="card"/>
+  <text x="145" y="385" class="box-title">Secure Random IV</text>
+  <text x="145" y="400" class="box-desc">12 Bytes Unique Nonce</text>
+
+  <rect x="250" y="330" width="180" height="60" class="card-peach"/>
+  <text x="340" y="355" class="box-title">CipherOutputStream</text>
+  <text x="340" y="372" class="box-desc">AES/GCM/NoPadding (16KB)</text>
+
+  <!-- Output Blob Format -->
+  <rect x="460" y="320" width="370" height="80" fill="#FFFFFF" stroke="#2E7D32" stroke-width="2" rx="8"/>
+  <text x="645" y="345" class="box-title" style="fill:#2E7D32;">PHYSICAL ENCRYPTED BLOB ON DISK</text>
+  
+  <rect x="475" y="360" width="90" height="30" class="card-peach"/>
+  <text x="520" y="380" class="box-desc" style="font-weight:600;">12B Nonce</text>
+
+  <rect x="575" y="360" width="140" height="30" class="card"/>
+  <text x="645" y="380" class="box-desc" style="font-weight:600;">N Bytes Ciphertext</text>
+
+  <rect x="725" y="360" width="90" height="30" class="card-green"/>
+  <text x="770" y="380" class="box-desc" style="font-weight:600;">16B GHASH Tag</text>
+
+  <path d="M 220 327 L 250 350" class="line"/>
+  <path d="M 220 387 L 250 370" class="line"/>
+  <path d="M 430 360 L 460 360" class="line"/>
+</svg>
