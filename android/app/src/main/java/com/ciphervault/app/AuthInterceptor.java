@@ -28,12 +28,13 @@ public class AuthInterceptor implements Interceptor {
             }
         }
 
-        Request.Builder requestBuilder = chain.request().newBuilder();
+        Request originalRequest = chain.request();
+        Request.Builder requestBuilder = originalRequest.newBuilder();
 
-        if (token != null && !token.isEmpty()) {
+        if (originalRequest.header("Authorization") == null && token != null && !token.trim().isEmpty()) {
             requestBuilder.addHeader(
                     "Authorization",
-                    "Bearer " + token
+                    "Bearer " + token.trim()
             );
         }
 
@@ -41,8 +42,13 @@ public class AuthInterceptor implements Interceptor {
                 requestBuilder.build()
         );
 
-        if (response.code() == 401 && token != null && !token.isEmpty() && context != null) {
+        if (response.code() == 401 && token != null && !token.trim().isEmpty() && context != null) {
             AuditLogger.log(context, "Session Expired", "FAILED", "Authorization token expired or invalid (HTTP 401)");
+            try {
+                SessionManager.getInstance(context).logout();
+            } catch (Throwable t) {
+                Log.w("AuthInterceptor", "Could not clear session on 401: " + t.getMessage());
+            }
         }
 
         return response;

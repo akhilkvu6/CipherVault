@@ -251,17 +251,34 @@ public class AppLockActivity extends BaseActivity {
     private void handleSignOut() {
         AuditLogger.AuditEntry logoutEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGOUT, "SUCCESS", "User signed out from lock screen", null);
         AuditLogger.logEvent(this, logoutEntry);
-        try {
-            apiService.logout().enqueue(new Callback<Map<String, Object>>() {
-                @Override
-                public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {}
 
-                @Override
-                public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {}
-            });
-        } catch (Exception ignored) {}
+        String currentToken = sessionManager != null ? sessionManager.getToken() : null;
+        if (currentToken != null && !currentToken.trim().isEmpty()) {
+            try {
+                String authHeader = "Bearer " + currentToken.trim();
+                apiService.logout(authHeader).enqueue(new Callback<Map<String, Object>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {}
 
-        sessionManager.logout();
+                    @Override
+                    public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {}
+                });
+            } catch (Exception ignored) {}
+        } else {
+            try {
+                apiService.logout().enqueue(new Callback<Map<String, Object>>() {
+                    @Override
+                    public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {}
+
+                    @Override
+                    public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {}
+                });
+            } catch (Exception ignored) {}
+        }
+
+        if (sessionManager != null) {
+            sessionManager.logout();
+        }
         Toast.makeText(this, "Signed out successfully", Toast.LENGTH_SHORT).show();
 
         Intent intent = new Intent(this, LoginActivity.class);

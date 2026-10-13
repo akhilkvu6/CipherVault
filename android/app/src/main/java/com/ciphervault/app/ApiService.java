@@ -35,6 +35,9 @@ public interface ApiService {
     @POST("api/auth/logout")
     Call<Map<String, Object>> logout();
 
+    @POST("api/auth/logout")
+    Call<Map<String, Object>> logout(@retrofit2.http.Header("Authorization") String authHeader);
+
     @PUT("api/user/name")
     Call<Map<String, Object>> updateName(@Body Map<String, String> request);
 

@@ -17,11 +17,12 @@ public class SessionManager {
     private static final String TAG = "SessionManager";
     private static final String PREF_NAME = "CipherVaultSession";
     private static final String ENCRYPTED_PREF_NAME = "CipherVaultEncryptedSession";
-    private static final String KEY_TOKEN = "token";
-    private static final String KEY_USERNAME = "username";
-    private static final String KEY_NAME = "name";
-    private static final String KEY_EMAIL = "email";
-    private static final String KEY_BIOMETRIC = "biometric_enabled";
+    public static final String KEY_TOKEN = "token";
+    public static final String KEY_USERNAME = "username";
+    public static final String KEY_NAME = "name";
+    public static final String KEY_EMAIL = "email";
+    public static final String KEY_BIOMETRIC = "biometric_enabled";
+    public static final String KEY_MIGRATION_COMPLETED = "legacy_session_migrated";
     public static final long DEFAULT_LIMIT = 10737418240L; // 10 GB in bytes (10 * 1024 * 1024 * 1024)
 
     private static volatile SharedPreferences sSecurePreferences;
@@ -44,10 +45,17 @@ public class SessionManager {
     }
 
     public SessionManager(Context context) {
+        this(context, getOrCreatePreferences(context));
+    }
+
+    // Constructor for testing with mock or specific SharedPreferences
+    SessionManager(Context context, SharedPreferences prefs) {
         this.appContext = context != null ? context.getApplicationContext() : null;
-        this.preferences = getOrCreatePreferences(context);
-        if (sCachedToken == null && this.preferences != null) {
+        this.preferences = prefs;
+        if (this.preferences != null) {
             sCachedToken = safelyGetString(this.preferences, KEY_TOKEN, null);
+        } else {
+            sCachedToken = null;
         }
     }
 
@@ -85,24 +93,41 @@ public class SessionManager {
                 securePref = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
             } else {
                 try {
+                    boolean alreadyMigrated = securePref.getBoolean(KEY_MIGRATION_COMPLETED, false);
                     SharedPreferences legacyPref = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-                    if (legacyPref.contains(KEY_TOKEN) && !securePref.contains(KEY_TOKEN)) {
+
+                    if (!alreadyMigrated && legacyPref.contains(KEY_TOKEN) && !securePref.contains(KEY_TOKEN)) {
                         String token = safelyGetString(legacyPref, KEY_TOKEN, null);
-                        String username = safelyGetString(legacyPref, KEY_USERNAME, null);
-                        String email = safelyGetString(legacyPref, KEY_EMAIL, null);
+                        if (token != null && !token.trim().isEmpty() && !isTokenExpired(token)) {
+                            String username = safelyGetString(legacyPref, KEY_USERNAME, null);
+                            String email = safelyGetString(legacyPref, KEY_EMAIL, null);
+                            String name = safelyGetString(legacyPref, KEY_NAME, null);
 
-                        SharedPreferences.Editor editor = securePref.edit();
-                        if (token != null) editor.putString(KEY_TOKEN, token);
-                        if (username != null) editor.putString(KEY_USERNAME, username);
-                        if (email != null) editor.putString(KEY_EMAIL, email);
-                        editor.apply();
+                            SharedPreferences.Editor editor = securePref.edit();
+                            editor.putString(KEY_TOKEN, token);
+                            if (username != null) editor.putString(KEY_USERNAME, username);
+                            if (email != null) editor.putString(KEY_EMAIL, email);
+                            if (name != null) editor.putString(KEY_NAME, name);
+                            editor.putBoolean(KEY_MIGRATION_COMPLETED, true);
+                            editor.commit();
+                            Log.i(TAG, "Migrated valid legacy session into EncryptedSharedPreferences.");
+                        } else {
+                            securePref.edit().putBoolean(KEY_MIGRATION_COMPLETED, true).commit();
+                        }
+                    } else if (!alreadyMigrated) {
+                        securePref.edit().putBoolean(KEY_MIGRATION_COMPLETED, true).commit();
+                    }
 
+                    // Always synchronously purge legacy preferences so old sessions cannot resurrect
+                    if (legacyPref.contains(KEY_TOKEN) || legacyPref.contains(KEY_USERNAME)) {
                         legacyPref.edit()
                                 .remove(KEY_TOKEN)
                                 .remove(KEY_USERNAME)
                                 .remove(KEY_EMAIL)
-                                .apply();
-                        Log.i(TAG, "Migrated legacy session into EncryptedSharedPreferences.");
+                                .remove(KEY_NAME)
+                                .remove(KEY_BIOMETRIC)
+                                .clear()
+                                .commit();
                     }
                 } catch (Throwable e) {
                     Log.w(TAG, "Legacy migration skipped: " + e.getMessage());
@@ -159,26 +184,33 @@ public class SessionManager {
         if (email != null && !email.trim().isEmpty()) {
             editor.putString(KEY_EMAIL, email.trim());
         }
-        editor.apply();
+        editor.commit();
+
+        if (appContext != null) {
+            try {
+                appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+                        .edit().clear().commit();
+            } catch (Throwable ignored) {}
+        }
     }
 
     public void saveName(String name) {
         if (preferences == null) return;
         if (name != null && !name.trim().isEmpty()) {
-            preferences.edit().putString(KEY_NAME, name.trim()).apply();
+            preferences.edit().putString(KEY_NAME, name.trim()).commit();
         }
     }
 
     public void saveUsername(String username) {
         if (preferences == null) return;
         if (username != null && !username.trim().isEmpty()) {
-            preferences.edit().putString(KEY_USERNAME, username.trim()).apply();
+            preferences.edit().putString(KEY_USERNAME, username.trim()).commit();
         }
     }
 
     public void setBiometricEnabled(boolean enabled) {
         if (preferences == null) return;
-        preferences.edit().putBoolean(KEY_BIOMETRIC, enabled).apply();
+        preferences.edit().putBoolean(KEY_BIOMETRIC, enabled).commit();
     }
 
     public boolean isBiometricEnabled() {
@@ -201,21 +233,25 @@ public class SessionManager {
     public void saveEmail(String email) {
         if (preferences == null) return;
         if (email != null && !email.trim().isEmpty()) {
-            preferences.edit().putString(KEY_EMAIL, email.trim()).apply();
+            preferences.edit().putString(KEY_EMAIL, email.trim()).commit();
         }
     }
 
     public void saveAuthToken(String token) {
         sCachedToken = token;
         if (preferences == null || token == null) return;
-        preferences.edit().putString(KEY_TOKEN, token).apply();
+        preferences.edit().putString(KEY_TOKEN, token).commit();
     }
 
     public String getToken() {
-        if (sCachedToken != null && !sCachedToken.isEmpty()) {
+        if (sCachedToken != null && !sCachedToken.trim().isEmpty()) {
             return sCachedToken;
         }
-        sCachedToken = safelyGetString(preferences, KEY_TOKEN, null);
+        String token = safelyGetString(preferences, KEY_TOKEN, null);
+        if (token != null && token.trim().isEmpty()) {
+            token = null;
+        }
+        sCachedToken = token;
         return sCachedToken;
     }
 
@@ -235,11 +271,20 @@ public class SessionManager {
             try {
                 String[] parts = token.split("\\.");
                 if (parts.length >= 2) {
-                    byte[] decodedBytes = Base64.decode(parts[1], Base64.URL_SAFE);
-                    String payloadJson = new String(decodedBytes, StandardCharsets.UTF_8);
-                    JSONObject obj = new JSONObject(payloadJson);
-                    if (obj.has("sub")) {
-                        return obj.getString("sub");
+                    byte[] decodedBytes = decodeBase64Url(parts[1]);
+                    if (decodedBytes != null && decodedBytes.length > 0) {
+                        String payloadJson = new String(decodedBytes, StandardCharsets.UTF_8);
+                        try {
+                            com.google.gson.JsonObject obj = new com.google.gson.Gson().fromJson(payloadJson, com.google.gson.JsonObject.class);
+                            if (obj != null && obj.has("sub") && !obj.get("sub").isJsonNull()) {
+                                return obj.get("sub").getAsString();
+                            }
+                        } catch (Throwable gsonEx) {
+                            JSONObject obj = new JSONObject(payloadJson);
+                            if (obj.has("sub")) {
+                                return obj.getString("sub");
+                            }
+                        }
                     }
                 }
             } catch (Throwable ignored) {}
@@ -253,7 +298,15 @@ public class SessionManager {
 
     public boolean isLoggedIn() {
         String token = getToken();
-        return token != null && !token.isEmpty();
+        if (token == null || token.trim().isEmpty()) {
+            return false;
+        }
+        if (isTokenExpired(token)) {
+            Log.i(TAG, "Stored session token is expired. Purging session.");
+            logout();
+            return false;
+        }
+        return true;
     }
 
     public void logout() {
@@ -262,13 +315,107 @@ public class SessionManager {
             AuditLogger.AuditEntry logoutEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGOUT, "SUCCESS", "User session ended / signed out", null);
             AuditLogger.logEvent(appContext, logoutEntry);
         }
-        if (preferences == null) return;
-        try {
-            preferences.edit().clear().apply();
-        } catch (Throwable ignored) {}
+        if (preferences != null) {
+            try {
+                SharedPreferences.Editor editor = preferences.edit();
+                editor.remove(KEY_TOKEN)
+                        .remove(KEY_USERNAME)
+                        .remove(KEY_NAME)
+                        .remove(KEY_EMAIL)
+                        .remove(KEY_BIOMETRIC);
+                try {
+                    java.util.Map<String, ?> all = preferences.getAll();
+                    if (all != null) {
+                        for (String k : all.keySet()) {
+                            if (!KEY_MIGRATION_COMPLETED.equals(k)) {
+                                editor.remove(k);
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {}
+                editor.clear();
+                editor.putBoolean(KEY_MIGRATION_COMPLETED, true);
+                editor.commit();
+            } catch (Throwable ignored) {}
+        }
+        if (appContext != null) {
+            try {
+                SharedPreferences legacyPref = appContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+                legacyPref.edit()
+                        .remove(KEY_TOKEN)
+                        .remove(KEY_USERNAME)
+                        .remove(KEY_NAME)
+                        .remove(KEY_EMAIL)
+                        .remove(KEY_BIOMETRIC)
+                        .clear()
+                        .commit();
+            } catch (Throwable ignored) {}
+
+            try {
+                SharedPreferences secPref = appContext.getSharedPreferences("ciphervault_secure_session", Context.MODE_PRIVATE);
+                secPref.edit().clear().commit();
+            } catch (Throwable ignored) {}
+        }
+        synchronized (INIT_LOCK) {
+            sCachedToken = null;
+            sInstance = null;
+        }
     }
 
     public void clearSession() {
         logout();
+    }
+
+    public static boolean isTokenExpired(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return true;
+        }
+        if (!token.contains(".")) {
+            // Non-JWT token (e.g. test mock) - treat as non-expired
+            return false;
+        }
+        try {
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) {
+                return true;
+            }
+            byte[] decodedBytes = decodeBase64Url(parts[1]);
+            if (decodedBytes == null || decodedBytes.length == 0) {
+                return true;
+            }
+            String payloadJson = new String(decodedBytes, StandardCharsets.UTF_8);
+            try {
+                com.google.gson.JsonObject obj = new com.google.gson.Gson().fromJson(payloadJson, com.google.gson.JsonObject.class);
+                if (obj != null && obj.has("exp") && !obj.get("exp").isJsonNull()) {
+                    long expSec = obj.get("exp").getAsLong();
+                    long nowSec = System.currentTimeMillis() / 1000L;
+                    return nowSec >= expSec;
+                }
+            } catch (Throwable gsonEx) {
+                JSONObject obj = new JSONObject(payloadJson);
+                if (obj.has("exp")) {
+                    long expSec = obj.getLong("exp");
+                    long nowSec = System.currentTimeMillis() / 1000L;
+                    return nowSec >= expSec;
+                }
+            }
+            return false;
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to parse token expiration: " + t.getMessage());
+            return true;
+        }
+    }
+
+    private static byte[] decodeBase64Url(String input) {
+        if (input == null || input.trim().isEmpty()) return new byte[0];
+        try {
+            return java.util.Base64.getUrlDecoder().decode(input.trim());
+        } catch (Throwable t1) {
+            try {
+                return Base64.decode(input.trim(), Base64.URL_SAFE);
+            } catch (Throwable t2) {
+                return new byte[0];
+            }
+        }
     }
 }

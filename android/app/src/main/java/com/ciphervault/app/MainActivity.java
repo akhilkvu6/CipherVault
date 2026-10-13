@@ -288,6 +288,20 @@ public class MainActivity extends BaseActivity {
         tx.commit();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (sessionManager == null) {
+            sessionManager = new SessionManager(this);
+        }
+        if (!sessionManager.isLoggedIn()) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        }
+    }
+
     public void navigateToTab(int index) {
         selectTab(index);
     }

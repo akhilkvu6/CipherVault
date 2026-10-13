@@ -50,7 +50,7 @@ public class SessionManager {
                     .putString(KEY_ENCRYPTED_TOKEN, encryptedToken)
                     .putString(KEY_USERNAME, username != null ? username : "")
                     .putString(KEY_NAME, name != null ? name : "")
-                    .apply();
+                    .commit();
         } catch (Exception e) {
             // Never log sensitive tokens
             clearSession();
@@ -92,7 +92,7 @@ public class SessionManager {
                 .remove(KEY_ENCRYPTED_TOKEN)
                 .remove(KEY_USERNAME)
                 .remove(KEY_NAME)
-                .apply();
+                .commit();
     }
 
     public void setOnSessionInvalidatedListener(OnSessionInvalidatedListener listener) {
