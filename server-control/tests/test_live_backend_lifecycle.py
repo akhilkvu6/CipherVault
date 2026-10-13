@@ -51,7 +51,7 @@ def run_lifecycle_test():
     elapsed = time.time() - start_time
     if became_running:
         print(f"SUCCESS: Backend became RUNNING in {elapsed:.1f}s!")
-        print(f"   Status Pill: {win._status_pill.text()}")
+        print(f"   Status Pill: {win._status_pill.text().encode('ascii', 'replace').decode('ascii')}")
         print(f"   Start Btn Enabled: {win._btn_start.isEnabled()}")
         print(f"   Stop Btn Enabled: {win._btn_stop.isEnabled()}")
         print(f"   Restart Btn Enabled: {win._btn_restart.isEnabled()}")
@@ -79,7 +79,7 @@ def run_lifecycle_test():
     stop_elapsed = time.time() - stop_start
     if became_stopped:
         print(f"SUCCESS: Backend returned to STOPPED in {stop_elapsed:.1f}s!")
-        print(f"   Status Pill: {win._status_pill.text()}")
+        print(f"   Status Pill: {win._status_pill.text().encode('ascii', 'replace').decode('ascii')}")
         print(f"   Start Btn Enabled: {win._btn_start.isEnabled()}")
         print(f"   Stop Btn Enabled: {win._btn_stop.isEnabled()}")
     else:

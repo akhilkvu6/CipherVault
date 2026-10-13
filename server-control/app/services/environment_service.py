@@ -70,7 +70,7 @@ class EnvironmentService:
     def check_port_listener(port: int = 8080) -> tuple[bool, int | None, str | None]:
         """Returns (is_listening, pid, process_name)."""
         try:
-            for conn in psutil.net_connections(kind="inet"):
+            for conn in psutil.net_connections(kind="tcp"):
                 if conn.laddr.port == port and conn.status == psutil.CONN_LISTEN:
                     pid = conn.pid
                     name = None

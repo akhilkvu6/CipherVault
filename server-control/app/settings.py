@@ -7,7 +7,7 @@ DEFAULT_SETTINGS = {
     "theme": "system",
     "backend_port": 8080,
     "health_interval": 10,
-    "auto_start_backend": True,
+    "auto_start_backend": False,
     "auto_enable_adb_reverse": False,
     "show_wifi": True,
     "show_ethernet": True,
@@ -63,7 +63,7 @@ class SettingsManager:
 
     @property
     def auto_start_backend(self) -> bool:
-        return self._data.get("auto_start_backend", True)
+        return self._data.get("auto_start_backend", False)
 
     @property
     def auto_enable_adb_reverse(self) -> bool:

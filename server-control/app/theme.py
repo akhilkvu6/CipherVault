@@ -101,6 +101,16 @@ QLabel#statusPillRunning {
     padding: 3px 10px;
 }
 
+QLabel#statusPillExternal {
+    background-color: #002B38;
+    border: 1px solid #006684;
+    border-radius: 12px;
+    color: #63D3FF;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+}
+
 QLabel#statusPillStopped {
     background-color: #381A1B;
     border: 1px solid #852221;
@@ -322,6 +332,16 @@ QLabel#statusPillRunning {
     border: 1px solid #86EFAC;
     border-radius: 12px;
     color: #166534;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+}
+
+QLabel#statusPillExternal {
+    background-color: #E0F2FE;
+    border: 1px solid #7DD3FC;
+    border-radius: 12px;
+    color: #0369A1;
     font-size: 11px;
     font-weight: 700;
     padding: 3px 10px;

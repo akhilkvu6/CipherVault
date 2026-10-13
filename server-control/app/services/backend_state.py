@@ -11,6 +11,7 @@ class BackendState:
     STARTING = "STARTING"
     RUNNING = "RUNNING"
     ONLINE = "ONLINE"                # Semantic synonym for RUNNING
+    RUNNING_EXTERNAL = "RUNNING_EXTERNAL"  # Pre-existing / external backend instance
     STOPPING = "STOPPING"
     RESTARTING = "RESTARTING"
     OFFLINE = "OFFLINE"              # Semantic synonym for STOPPED
@@ -23,6 +24,7 @@ class BackendState:
         STARTING,
         RUNNING,
         ONLINE,
+        RUNNING_EXTERNAL,
         STOPPING,
         RESTARTING,
         OFFLINE,
@@ -34,7 +36,7 @@ class BackendState:
     @classmethod
     def is_active(cls, state: str) -> bool:
         """Returns True if backend is active and healthy."""
-        return state in (cls.RUNNING, cls.ONLINE)
+        return state in (cls.RUNNING, cls.ONLINE, cls.RUNNING_EXTERNAL)
 
     @classmethod
     def is_inactive(cls, state: str) -> bool:

@@ -1,13 +1,14 @@
 import os
+import re
 import webbrowser
 import threading
 import qrcode
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QTextEdit, QFrame, QApplication, QCheckBox
+    QPushButton, QTextEdit, QFrame, QApplication, QCheckBox, QMessageBox
 )
 from PySide6.QtCore import Qt, QTimer, Slot, Signal
-from PySide6.QtGui import QCloseEvent, QImage, QPixmap
+from PySide6.QtGui import QCloseEvent, QImage, QPixmap, QTextCursor
 
 from .icons import get_tabler_icon
 from .settings import settings
@@ -15,6 +16,7 @@ from .theme import apply_theme
 from .services.backend_service import BackendService
 from .services.backend_state import BackendState
 from .services.network_service import NetworkService
+from .services.environment_service import EnvironmentService, get_project_root
 from .services.log_service import app_logger
 
 
@@ -38,6 +40,10 @@ class MainWindow(QMainWindow):
         self._backend_state = BackendState.STOPPED
         self._health_check_in_progress = False
 
+        self._external_pid: int | None = None
+        self._external_log_tailer_active: bool = False
+        self._log_file_pos: int = 0
+
         # Backend runner service
         self._backend_service = BackendService(self)
         self._backend_service.log_line.connect(self._on_log_line)
@@ -47,6 +53,11 @@ class MainWindow(QMainWindow):
 
         self._init_ui()
         self._refresh_network()
+
+        # External log tailing timer (1.0s interval)
+        self._log_tail_timer = QTimer(self)
+        self._log_tail_timer.setInterval(1000)
+        self._log_tail_timer.timeout.connect(self._poll_external_log_file)
 
         # Polling timer for status, IP shifts, and health (every 2.5s)
         self._poll_timer = QTimer(self)
@@ -281,6 +292,7 @@ class MainWindow(QMainWindow):
         self._log_box.setObjectName("logBox")
         self._log_box.setReadOnly(True)
         self._log_box.setPlaceholderText("Spring Boot log output will appear here...")
+        self._log_box.document().setMaximumBlockCount(2000)
         logs_layout.addWidget(self._log_box)
 
         main_layout.addWidget(logs_card)
@@ -396,10 +408,24 @@ class MainWindow(QMainWindow):
         self._health_check_in_progress = False
         try:
             if success:
-                self._lbl_health_telemetry.setText(f"● Backend Health: {msg} • Latency {latency:.0f} ms")
-                self._lbl_health_telemetry.setStyleSheet("color: #166534; font-size: 11px; font-weight: 600;")
-                if not BackendState.is_active(self._backend_state):
-                    self._update_state(BackendState.RUNNING, f"Active on port {self._current_port}")
+                if self._backend_service.owns_process:
+                    pid_desc = f"Managed (PID {self._backend_service.pid})" if self._backend_service.pid else "Managed"
+                    self._lbl_health_telemetry.setText(f"● Backend Health: {msg} • Latency {latency:.0f} ms • {pid_desc}")
+                    self._lbl_health_telemetry.setStyleSheet("color: #166534; font-size: 11px; font-weight: 600;")
+                    if self._backend_state != BackendState.RUNNING:
+                        self._update_state(BackendState.RUNNING, f"Active on port {self._current_port}")
+                else:
+                    # External / Pre-existing CipherVault backend
+                    if not self._external_pid:
+                        _, ext_pid, _ = EnvironmentService.check_port_listener(self._current_port)
+                        self._external_pid = ext_pid
+                    pid_desc = f"External Process (PID {self._external_pid or 'Unknown'})"
+                    self._lbl_health_telemetry.setText(f"● Backend Health: {msg} • Latency {latency:.0f} ms • {pid_desc}")
+                    self._lbl_health_telemetry.setStyleSheet("color: #0369A1; font-size: 11px; font-weight: 600;")
+                    if self._backend_state != BackendState.RUNNING_EXTERNAL:
+                        self._update_state(BackendState.RUNNING_EXTERNAL, f"External process active on port {self._current_port}")
+                    if not self._external_log_tailer_active:
+                        self._attach_external_logging(self._external_pid)
             else:
                 binding, _ = NetworkService.check_backend_binding(port=self._current_port)
                 if binding in ("all", "localhost", "specific"):
@@ -414,6 +440,10 @@ class MainWindow(QMainWindow):
                             self._update_state(BackendState.FOREIGN_SERVICE, "Port occupied by another application")
                 else:
                     # Port is free
+                    if self._external_log_tailer_active:
+                        self._detach_external_logging()
+                    self._external_pid = None
+
                     if self._backend_state == BackendState.STARTING:
                         self._lbl_health_telemetry.setText("◌ Backend: Launching Spring Boot...")
                         self._lbl_health_telemetry.setStyleSheet("color: #B45309; font-size: 11px; font-weight: 600;")
@@ -435,9 +465,19 @@ class MainWindow(QMainWindow):
         self._backend_state = state
         app_logger.log("state", f"Transition to {state}: {reason}")
 
-        if BackendState.is_active(state):
-            self._status_pill.setText(f"● ONLINE ({self._current_port})")
-            self._status_pill.setObjectName("statusPillRunning")
+        if state in (BackendState.RUNNING, BackendState.ONLINE):
+            if self._backend_service.owns_process:
+                self._status_pill.setText("● ONLINE (Managed)")
+                self._status_pill.setObjectName("statusPillRunning")
+            else:
+                self._status_pill.setText("● ONLINE (External)")
+                self._status_pill.setObjectName("statusPillExternal")
+            self._btn_start.setEnabled(False)
+            self._btn_stop.setEnabled(True)
+            self._btn_restart.setEnabled(True)
+        elif state == BackendState.RUNNING_EXTERNAL:
+            self._status_pill.setText("● ONLINE (External)")
+            self._status_pill.setObjectName("statusPillExternal")
             self._btn_start.setEnabled(False)
             self._btn_stop.setEnabled(True)
             self._btn_restart.setEnabled(True)
@@ -484,37 +524,159 @@ class MainWindow(QMainWindow):
 
     @Slot(str)
     def _on_log_line(self, line: str):
-        self._log_box.append(line)
+        clean = re.sub(r'\x1b\[[0-9;]*[mK]', '', line)
+        self._log_box.append(clean)
         if self._chk_autoscroll.isChecked():
             cursor = self._log_box.textCursor()
-            cursor.movePosition(cursor.MoveOperation.End)
+            cursor.movePosition(QTextCursor.MoveOperation.End)
             self._log_box.setTextCursor(cursor)
+            self._log_box.ensureCursorVisible()
 
     @Slot(str, str)
     def _on_state_changed(self, state: str, detail: str):
+        if self._backend_state == BackendState.RESTARTING and state == BackendState.STOPPED:
+            return
         self._update_state(state, detail)
 
-    def _start_server(self):
-        if self._backend_state in (BackendState.STARTING, BackendState.RUNNING, BackendState.ONLINE, BackendState.RESTARTING):
+    def _attach_external_logging(self, pid: int | None):
+        """Attaches live persistent log streaming for external Spring Boot backend."""
+        if self._external_log_tailer_active:
             return
+        self._external_log_tailer_active = True
+        root = get_project_root()
+        log_file = os.path.join(root, "backend", "logs", "ciphervault.log")
+
+        self._log_box.clear()
+        pid_desc = f"PID {pid}" if pid else "external process"
+        self._log_box.append(f"[ATTACHED] Connected to active CipherVault backend on port {self._current_port} ({pid_desc}).")
+        self._log_box.append("[ATTACHED] Process was started externally outside this Server Control session.")
+
+        if os.path.isfile(log_file):
+            self._log_box.append("[ATTACHED] Streaming persistent log file: backend/logs/ciphervault.log")
+            self._log_box.append("-" * 70)
+            try:
+                with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+                    lines = f.readlines()
+                    for line in lines[-60:]:
+                        clean = line.rstrip("\r\n")
+                        if clean:
+                            self._log_box.append(clean)
+                    self._log_file_pos = f.tell()
+            except Exception as e:
+                self._log_box.append(f"[ATTACHED] Could not read log file: {e}")
+            self._log_tail_timer.start()
+        else:
+            self._log_box.append("[NOTE] Live standard output streaming is only available when started via Server Control.")
+            self._log_box.append("[NOTE] To view live terminal logs here, stop the external server and click 'Start Server'.")
+
+    def _detach_external_logging(self):
+        """Stops log tailer for external backend."""
+        self._external_log_tailer_active = False
+        if hasattr(self, "_log_tail_timer") and self._log_tail_timer.isActive():
+            self._log_tail_timer.stop()
+
+    def _poll_external_log_file(self):
+        """Periodically reads new log entries appended by external Spring Boot instance."""
+        if not self._external_log_tailer_active:
+            return
+        root = get_project_root()
+        log_file = os.path.join(root, "backend", "logs", "ciphervault.log")
+        if not os.path.isfile(log_file):
+            return
+        try:
+            with open(log_file, "r", encoding="utf-8", errors="replace") as f:
+                f.seek(self._log_file_pos)
+                new_data = f.read()
+                self._log_file_pos = f.tell()
+                if new_data:
+                    for line in new_data.splitlines():
+                        clean = line.rstrip("\r\n")
+                        if clean:
+                            self._on_log_line(clean)
+        except Exception:
+            pass
+
+    def _start_server(self):
+        if self._backend_state in (
+            BackendState.STARTING, BackendState.RUNNING, BackendState.ONLINE,
+            BackendState.RUNNING_EXTERNAL, BackendState.RESTARTING
+        ):
+            return
+        self._detach_external_logging()
+        self._log_box.clear()
         self._log_box.append(">>> Starting Spring Boot backend...")
         self._update_state(BackendState.STARTING, "Starting Spring Boot...")
         self._backend_service.start_backend()
 
-    def _stop_server(self):
+    def _stop_server(self, confirm: bool = True):
         if self._backend_state in (BackendState.STOPPING, BackendState.STOPPED, BackendState.OFFLINE):
             return
-        self._log_box.append(">>> Stopping backend...")
-        self._update_state(BackendState.STOPPING, "Stopping...")
-        self._backend_service.stop_backend()
 
-    def _restart_server(self):
+        if self._backend_service.owns_process:
+            self._log_box.append(">>> Stopping backend...")
+            self._update_state(BackendState.STOPPING, "Stopping...")
+            self._backend_service.stop_backend()
+        elif self._backend_state == BackendState.RUNNING_EXTERNAL or self._external_pid is not None:
+            ext_pid = self._external_pid
+            if not ext_pid:
+                _, ext_pid, _ = EnvironmentService.check_port_listener(self._current_port)
+                self._external_pid = ext_pid
+
+            if confirm:
+                reply = QMessageBox.question(
+                    self,
+                    "Stop External Backend?",
+                    f"The CipherVault backend on port {self._current_port} (PID: {ext_pid or 'Unknown'}) was started outside Server Control.\n\n"
+                    "Do you want to terminate this external process to free port 8080?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No
+                )
+                if reply != QMessageBox.StandardButton.Yes:
+                    return
+
+            self._detach_external_logging()
+            self._log_box.append(f">>> Stopping external backend process (PID {ext_pid or 'Unknown'})...")
+            self._update_state(BackendState.STOPPING, "Stopping external backend...")
+            if ext_pid:
+                BackendService.stop_process_by_pid(ext_pid)
+            self._external_pid = None
+            self._update_state(BackendState.STOPPED, "External backend stopped by user")
+            QTimer.singleShot(1500, self._on_poll)
+
+    def _restart_server(self, confirm: bool = True):
         if self._backend_state in (BackendState.STARTING, BackendState.STOPPING, BackendState.RESTARTING):
             return
-        self._log_box.append(">>> Restarting backend...")
-        self._update_state(BackendState.RESTARTING, "Restarting...")
-        self._backend_service.stop_backend()
-        QTimer.singleShot(2500, self._start_server)
+
+        if self._backend_service.owns_process:
+            self._log_box.append(">>> Restarting backend...")
+            self._update_state(BackendState.RESTARTING, "Restarting...")
+            self._backend_service.stop_backend()
+            QTimer.singleShot(2500, self._start_server)
+        elif self._backend_state == BackendState.RUNNING_EXTERNAL or self._external_pid is not None:
+            ext_pid = self._external_pid
+            if not ext_pid:
+                _, ext_pid, _ = EnvironmentService.check_port_listener(self._current_port)
+                self._external_pid = ext_pid
+
+            if confirm:
+                reply = QMessageBox.question(
+                    self,
+                    "Restart Backend?",
+                    f"The CipherVault backend on port {self._current_port} (PID: {ext_pid or 'Unknown'}) was started outside Server Control.\n\n"
+                    "Do you want to terminate the external process and restart it under Server Control management?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No
+                )
+                if reply != QMessageBox.StandardButton.Yes:
+                    return
+
+            self._detach_external_logging()
+            self._log_box.append(f">>> Stopping external backend process (PID {ext_pid or 'Unknown'})...")
+            self._update_state(BackendState.RESTARTING, "Restarting backend under Server Control...")
+            if ext_pid:
+                BackendService.stop_process_by_pid(ext_pid)
+            self._external_pid = None
+            QTimer.singleShot(2000, self._start_server)
 
     def _copy_url(self):
         url = self._lbl_full_url.text()
@@ -538,8 +700,10 @@ class MainWindow(QMainWindow):
         try:
             if hasattr(self, "_poll_timer") and self._poll_timer.isActive():
                 self._poll_timer.stop()
+            if hasattr(self, "_log_tail_timer") and self._log_tail_timer.isActive():
+                self._log_tail_timer.stop()
             if self._backend_service.owns_process:
                 self._backend_service.stop_backend()
         except Exception as e:
             app_logger.log("error", f"Error during closeEvent: {e}")
-            event.accept()
+        event.accept()

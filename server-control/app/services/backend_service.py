@@ -38,10 +38,16 @@ class BackendService(QThread):
     @property
     def ownership_label(self) -> str:
         if self._owns_process:
-            return "Managed by Server Manager"
+            return "Managed by Server Control"
         elif self._pid is not None:
-            return "External process"
+            return f"External process (PID {self._pid})"
         return "Not running"
+
+    @classmethod
+    def stop_process_by_pid(cls, pid: int) -> bool:
+        """Kills a process tree safely by PID (for external or managed processes)."""
+        app_logger.log("backend", f"Terminating process tree for PID {pid}")
+        return cls._kill_process_tree(pid)
 
     def start_backend(self):
         if self.isRunning():
@@ -50,7 +56,7 @@ class BackendService(QThread):
         self.start()
 
     def stop_backend(self):
-        """Stops the backend process if owned by Server Manager or attached. Non-blocking."""
+        """Stops the backend process if owned by Server Control. Non-blocking."""
         self._running = False
         target_pid = None
         if self._process and self._owns_process:
@@ -62,8 +68,13 @@ class BackendService(QThread):
             app_logger.log("backend", f"Terminating backend process tree (PID {target_pid})")
             self._kill_process_tree(target_pid)
 
+        jvm_pid = self._info.get("jvm_pid")
+        if jvm_pid and jvm_pid != target_pid:
+            self._kill_process_tree(jvm_pid)
+
         self._owns_process = False
         self._pid = None
+        self.log_line.emit(">>> Backend process terminated by user (Exit code: 0)")
         self.state_changed.emit(BackendState.STOPPED, "Backend stopped by user")
 
     def run(self):
@@ -103,13 +114,14 @@ class BackendService(QThread):
 
         self.state_changed.emit(BackendState.STARTING, "Launching Spring Boot...")
 
-        # 3. Launch process with cmd /c on Windows
+        # 3. Launch process with cmd /c on Windows (line buffered)
         try:
             self._process = subprocess.Popen(
                 ["cmd", "/c", mvnw, "spring-boot:run"],
                 cwd=backend_dir,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
+                bufsize=1,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
@@ -143,26 +155,39 @@ class BackendService(QThread):
         self._pid = None
 
         if was_user_stopped:
+            self.log_line.emit(f">>> Backend process terminated (Exit code: {exit_code})")
             self.state_changed.emit(BackendState.STOPPED, "Backend stopped by user")
             app_logger.log("backend", "Backend stopped normally")
         elif exit_code == 0:
             err_msg = self._last_error or "Backend process terminated unexpectedly (exit code 0)"
+            self.log_line.emit(f">>> Backend process terminated unexpectedly (Exit code: 0)")
             self.state_changed.emit(BackendState.ERROR, err_msg)
             app_logger.log("backend", f"Backend process terminated unexpectedly: {err_msg}")
         else:
             err_msg = self._last_error or f"Backend exited with error code {exit_code}"
+            self.log_line.emit(f">>> Backend process terminated (Exit code: {exit_code})")
             self.state_changed.emit(BackendState.ERROR, err_msg)
             app_logger.log("backend", f"Backend exited with code {exit_code}: {err_msg}")
 
     def _stream_output(self):
         try:
-            for line in self._process.stdout:
-                if not self._running:
+            if not self._process or not self._process.stdout:
+                return
+            while self._running:
+                line = self._process.stdout.readline()
+                if not line:
                     break
                 clean_line = line.rstrip("\r\n")
                 if clean_line:
                     self.log_line.emit(clean_line)
                     self._parse_log_line(clean_line)
+            # Drain any remaining lines
+            if self._process and self._process.stdout:
+                for line in self._process.stdout:
+                    clean_line = line.rstrip("\r\n")
+                    if clean_line:
+                        self.log_line.emit(clean_line)
+                        self._parse_log_line(clean_line)
         except Exception:
             pass
 
@@ -276,7 +301,7 @@ class BackendService(QThread):
                             self._info["db_connected"] = True
                             self._info["mysql_version"] = "8.0.46"
                         self.startup_info.emit(dict(self._info))
-                        self.state_changed.emit(BackendState.ONLINE, f"Attached to existing backend (PID {pid})")
+                        self.state_changed.emit(BackendState.RUNNING_EXTERNAL, f"Attached to existing backend (PID {pid})")
                         return
             except Exception:
                 pass
@@ -288,7 +313,23 @@ class BackendService(QThread):
         self.state_changed.emit(BackendState.FOREIGN_SERVICE, msg)
 
     @staticmethod
-    def _kill_process_tree(pid: int):
+    def _kill_process_tree(pid: int) -> bool:
+        if not pid:
+            return False
+        killed = False
+        # 1. Windows guarantee: taskkill /F /T /PID terminates the process and all child processes
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(pid)],
+                capture_output=True,
+                creationflags=subprocess.CREATE_NO_WINDOW,
+                timeout=5
+            )
+            killed = True
+        except Exception:
+            pass
+
+        # 2. psutil recursive cleanup fallback
         try:
             parent = psutil.Process(pid)
             children = parent.children(recursive=True)
@@ -298,17 +339,10 @@ class BackendService(QThread):
                 except Exception:
                     pass
             parent.kill()
-        except psutil.NoSuchProcess:
+            killed = True
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
         except Exception:
             pass
 
-        # Windows guarantee: taskkill /F /T /PID
-        try:
-            subprocess.run(
-                ["taskkill", "/F", "/T", "/PID", str(pid)],
-                capture_output=True,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
-        except Exception:
-            pass
+        return killed

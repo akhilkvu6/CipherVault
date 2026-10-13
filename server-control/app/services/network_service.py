@@ -111,7 +111,7 @@ class NetworkService:
         - 'none': Not currently listening
         """
         try:
-            for conn in psutil.net_connections(kind="inet"):
+            for conn in psutil.net_connections(kind="tcp"):
                 if conn.laddr.port == port and conn.status == psutil.CONN_LISTEN:
                     addr = conn.laddr.ip
                     if addr in ("0.0.0.0", "::"):

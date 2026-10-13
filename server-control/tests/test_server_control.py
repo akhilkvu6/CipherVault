@@ -50,6 +50,7 @@ class TestBackendState(unittest.TestCase):
         # is_active
         self.assertTrue(BackendState.is_active(BackendState.RUNNING))
         self.assertTrue(BackendState.is_active(BackendState.ONLINE))
+        self.assertTrue(BackendState.is_active(BackendState.RUNNING_EXTERNAL))
         self.assertFalse(BackendState.is_active(BackendState.STOPPED))
         self.assertFalse(BackendState.is_active(BackendState.STARTING))
 
@@ -77,6 +78,7 @@ class TestSettingsResilience(unittest.TestCase):
     def test_defaults(self):
         mgr = SettingsManager()
         self.assertEqual(mgr.backend_port, 8080)
+        self.assertFalse(mgr.auto_start_backend)
         self.assertIn(mgr.theme, ["system", "dark", "light"])
 
     def test_corrupted_json_handling(self):
@@ -209,6 +211,73 @@ class TestMainWindowStateTransitions(unittest.TestCase):
         self.win._start_server()
         # State should still be STARTING and not crash or spawn duplicate
         self.assertEqual(self.win._backend_state, BackendState.STARTING)
+
+    def test_transition_running_managed_vs_external(self):
+        # 1. Managed process
+        self.win._backend_service._owns_process = True
+        self.win._update_state(BackendState.RUNNING, "Managed server online")
+        self.assertEqual(self.win._backend_state, BackendState.RUNNING)
+        self.assertIn("Managed", self.win._status_pill.text())
+        self.assertFalse(self.win._btn_start.isEnabled())
+        self.assertTrue(self.win._btn_stop.isEnabled())
+        self.assertTrue(self.win._btn_restart.isEnabled())
+
+        # 2. External process
+        self.win._backend_service._owns_process = False
+        self.win._update_state(BackendState.RUNNING_EXTERNAL, "External server detected")
+        self.assertEqual(self.win._backend_state, BackendState.RUNNING_EXTERNAL)
+        self.assertIn("External", self.win._status_pill.text())
+        self.assertFalse(self.win._btn_start.isEnabled())
+        self.assertTrue(self.win._btn_stop.isEnabled())
+        self.assertTrue(self.win._btn_restart.isEnabled())
+
+    def test_log_line_scrubbing_and_exit_code(self):
+        # Verify ANSI codes are scrubbed and text is displayed
+        ansi_line = "\x1b[32m[INFO] Tomcat started on port 8080\x1b[0m"
+        self.win._on_log_line(ansi_line)
+        log_text = self.win._log_box.toPlainText()
+        self.assertIn("[INFO] Tomcat started on port 8080", log_text)
+        self.assertNotIn("\x1b[32m", log_text)
+
+        # Verify exit code line is appended cleanly
+        exit_line = ">>> Backend process terminated (Exit code: 0)"
+        self.win._on_log_line(exit_line)
+        self.assertIn(exit_line, self.win._log_box.toPlainText())
+
+    def test_safe_external_stop_confirm_bypass(self):
+        # Verify stopping external process with confirm=False updates state to STOPPED
+        self.win._update_state(BackendState.RUNNING_EXTERNAL, "External backend")
+        self.win._external_pid = None  # None mock
+        self.win._stop_server(confirm=False)
+        self.assertEqual(self.win._backend_state, BackendState.STOPPED)
+        self.assertTrue(self.win._btn_start.isEnabled())
+        self.assertFalse(self.win._btn_stop.isEnabled())
+
+    def test_external_health_detection_attaches_and_tails(self):
+        # When health succeeds but owns_process is False:
+        self.win._backend_service._owns_process = False
+        self.win._on_health_result(True, 200, 12.0, "UP")
+        self.assertEqual(self.win._backend_state, BackendState.RUNNING_EXTERNAL)
+        self.assertIn("External", self.win._status_pill.text())
+        self.assertTrue(self.win._external_log_tailer_active)
+        self.assertIn("[ATTACHED]", self.win._log_box.toPlainText())
+        self.assertFalse(self.win._btn_start.isEnabled())
+        self.assertTrue(self.win._btn_stop.isEnabled())
+        self.assertTrue(self.win._btn_restart.isEnabled())
+
+    def test_restart_transitions(self):
+        # 1. Managed restart
+        self.win._backend_service._owns_process = True
+        self.win._update_state(BackendState.RUNNING, "Managed server")
+        self.win._restart_server(confirm=False)
+        self.assertEqual(self.win._backend_state, BackendState.RESTARTING)
+
+        # 2. External restart
+        self.win._backend_service._owns_process = False
+        self.win._update_state(BackendState.RUNNING_EXTERNAL, "External server")
+        self.win._external_pid = None
+        self.win._restart_server(confirm=False)
+        self.assertEqual(self.win._backend_state, BackendState.RESTARTING)
 
 
 if __name__ == "__main__":
