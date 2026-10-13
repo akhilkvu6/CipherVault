@@ -134,7 +134,7 @@ sequenceDiagram
 
 ## 6. Desktop Server Manager Architecture
 
-Located in `scripts/server-control/`, built with Python 3 and PySide6 (Qt):
+Located in `server-control/` at the repository root (launched via `run.bat`), built with Python 3 and PySide6 (Qt):
 - **Process Manager:** Starts, monitors, and stops local MySQL and Spring Boot child processes.
 - **Log Streamer:** Real-time tailing of backend logs with colorized severity highlights.
 - **QR Pairing Engine:** Uses `qrcode` and `Pillow` to generate pairing QR codes encoding the host's active LAN IP and port for seamless mobile onboarding.

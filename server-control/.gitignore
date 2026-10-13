@@ -1,0 +1,9 @@
+# Bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Runtime logs
+logs/
+*.log

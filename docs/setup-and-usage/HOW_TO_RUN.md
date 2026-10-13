@@ -144,23 +144,22 @@ Started CipherVaultApplication in X.XXX seconds
 
 ## 4. Python Server Manager (Desktop GUI Alternative)
 
-For developers who prefer a visual desktop control panel, CipherVault includes a PySide6 GUI utility in `scripts/server-control/`.
+For developers who prefer a visual desktop control panel, CipherVault includes a PySide6 GUI utility in `server-control/` at the repository root.
 
 ### 4.1 First-Time Setup
-In a terminal, navigate to the `scripts/server-control/` directory and install the required Python packages:
+In a terminal at the project root, install the required Python packages:
 ```powershell
-cd C:\Users\akhil\OneDrive\Desktop\CipherVault\scripts\server-control
-pip install -r requirements.txt
+pip install -r server-control\requirements.txt
 ```
 
 ### 4.2 Launch the Manager
-Run the Windows batch launcher:
+From the CipherVault project root, run the one-click Windows batch launcher:
 ```powershell
 .\run.bat
 ```
 Or execute directly via Python:
 ```powershell
-python main.py
+python server-control\main.py
 ```
 
 ### 4.3 Server Manager Capabilities
@@ -280,6 +279,17 @@ cd C:\Users\akhil\OneDrive\Desktop\CipherVault\android
 BUILD SUCCESSFUL in Xs
 ```
 
+### 7.3 Desktop Server Control Tests
+From the CipherVault project root, run the Python test suite:
+```powershell
+python -m unittest discover -s server-control/tests
+```
+*Expected output:*
+```text
+Ran 18 tests in 0.xxx s
+OK
+```
+
 ---
 
 ## 8. First-Time User Walkthrough
@@ -314,7 +324,7 @@ In the PowerShell terminal running the Spring Boot backend:
 - Tomcat will gracefully shut down the Hikari connection pool and flush pending file writes.
 
 ### 9.2 Stop Python Server Manager
-If running `scripts/server-control`, simply close the window or click **Quit** in the menu.
+If running the Desktop Server Manager (`server-control`), simply close the window or click **Quit** in the menu.
 
 ### 9.3 Stop MySQL Service (Optional)
 If you wish to stop the MySQL Windows service:

@@ -1,60 +1,59 @@
 # ==============================================================================
-# CipherVault Root .gitignore
+# CipherVault Authoritative .gitignore
 # ==============================================================================
 
 # Environment & Secrets
 .env
 .env.local
 .env.*
+*.jks
+*.keystore
 
-# Build Artifacts & Runtime Storage
+# Android Build Outputs & Caches
+android/build/
+android/app/build/
+.gradle/
+android/.gradle/
+.externalNativeBuild/
+.cxx/
+captures/
+*.class
+
+# Android Local Machine Configuration (Preserves local SDK paths)
+local.properties
+android/local.properties
+
+# Backend Maven Build Outputs & Runtime Storage
 backend/target/
 backend/storage/
-android/app/build/
-android/build/
-.gradle/
-*.class
+storage/
+
+# Python Bytecode & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.venv/
+venv/
+env/
 
 # IDE & Editor Configuration
 .idea/
+android/.idea/
 *.iml
 *.iws
 *.ipr
 .vscode/
 
-# Android Local Configuration
-local.properties
-android/local.properties
-android/.idea/
-android/.gradle/
-
 # Logs, Dumps & Scratch Files
 *.log
 *.tmp
+server-control/logs/
 backend/scratch/
 scratch/
 tunnel.log
 
-# OS Metadata
+# Operating System Metadata
 .DS_Store
 Thumbs.db
-backend/storage/
-backend/storage/
-
-# Android / Android Studio
-.gradle/
-**/build/
-local.properties
-.idea/
-*.iml
-.externalNativeBuild/
-.cxx/
-captures/
-
-# Local signing / secrets
-*.jks
-*.keystore
-
-# OS files
-.DS_Store
-Thumbs.db
+Desktop.ini

@@ -123,34 +123,62 @@ curl http://localhost:8080/api/health
   ```
 - Build and run the app. If the connection screen appears, select the matching preset or enter the host address and tap **Save & Continue**.
 
+### 6. Command-Line Android Build & Run (Alternative)
+```powershell
+cd android
+.\gradlew.bat assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n com.ciphervault.app/.SplashActivity
+```
+
+### 7. Run Automated Test Suites
+CipherVault features 229 automated unit and integration tests across all tiers:
+```powershell
+# Backend Test Suite (138 tests - JUnit 5 / Spring Boot Test / Mockito):
+cd backend
+.\mvnw.cmd test
+
+# Android Client Unit Tests (73 tests - Robolectric / JUnit 4):
+cd android
+.\gradlew.bat testDebugUnitTest
+
+# Server Control Tests (18 tests - Python unittest):
+python -m unittest discover -s server-control/tests
+```
+
 ---
 
 ## Project Structure
 
 ```text
 CipherVault/
-├── README.md                  # Project overview and entry point (this file)
+├── run.bat                    # One-click Windows launcher for Server Control GUI
+├── README.md                  # Authoritative project overview and operations manual
 ├── .gitignore                 # Git ignore rules for Android, Spring Boot, and Python
-├── CIPHERVAULT_HOW_TO_RUN.txt # Plaintext quick-reference command cheat sheet
+├── CIPHERVAULT_HOW_TO_RUN.txt # Fast plaintext terminal command cheat sheet
 ├── android/                   # Native Android application (Java 21, Gradle, Material 3)
 │   ├── app/src/main/java/     # Activities, Fragments, Adapters, Network Clients, Services
 │   ├── app/src/main/res/      # Layouts, Drawables (Lucide icons), Themes, Values
+│   ├── app/src/test/java/     # Android unit tests (73 tests)
 │   ├── build.gradle.kts       # Android Gradle configuration
 │   └── gradlew / gradlew.bat  # Gradle wrapper
 ├── backend/                   # Spring Boot 3.3.4 REST API & Cryptographic Engine
 │   ├── src/main/java/         # Controllers, Entities, Repositories, Security, Storage
 │   ├── src/main/resources/    # application.properties (Port 8080, DB settings, limits)
+│   ├── src/test/java/         # Backend unit & integration tests (138 tests)
 │   ├── mvnw.cmd               # Maven Wrapper for Windows
 │   └── pom.xml                # Backend dependencies (Spring Security, JPA, MySQL, JJWT)
 ├── database/                  # Relational database resources
-│   ├── schema.sql             # Authoritative database schema & indexes
-│   ├── migrations/            # Versioned SQL migrations
-│   └── backups/               # Full database backups
-├── scripts/                   # Build, testing, documentation, and control utilities
-│   ├── build/                 # Build scripts and packaging helpers
-│   ├── testing/               # Test runners and test suites
-│   ├── documentation/         # Report generation & architecture diagram generators
-│   └── server-control/        # Optional Python PySide6 Desktop Server Control Utility
+│   ├── schema.sql             # Authoritative production schema & indexes
+│   └── backups/               # Verified physical SQL dumps
+├── scripts/                   # Tooling and report generation
+│   └── documentation/         # Report generation & architecture diagram generators
+├── server-control/            # Python PySide6 Desktop Server Control Utility
+│   ├── main.py                # Desktop GUI application entry point
+│   ├── requirements.txt       # Python dependencies (PySide6, psutil, requests, qrcode, Pillow)
+│   ├── settings.json          # Server Control application settings & preferences
+│   ├── app/                   # GUI windows, widgets, themes, and service managers
+│   └── tests/                 # Automated test suite (18 unit & GUI state tests)
 ├── docs/                      # Comprehensive technical documentation
 │   ├── architecture/          # System architecture & component diagrams
 │   ├── setup-and-usage/       # How-to-run, connection, and troubleshooting manuals
@@ -158,20 +186,25 @@ CipherVault/
 │   ├── security-and-encryption/# Zero-knowledge AES-256-GCM & threat model
 │   ├── testing-and-qa/        # Comprehensive test plans, audit ledgers, & QA reports
 │   └── project-reports/       # Screen implementations, final verification report, & 112p MCA report
-└── evidence/                  # Centralized test verification evidence and logs
-    ├── screenshots/           # Centralized visual verification screenshots (9 categories)
-    │   ├── onboarding/        # Splash, onboarding walkthrough, QR server scan
-    │   ├── authentication/    # Dual login, signup checklist, biometric AppLock
-    │   ├── home-and-vault/    # 10 GB storage card, vault cards, empty states
-    │   ├── upload-and-download/# Camera capture, upload staging (1 GB limit), transfers
-    │   ├── file-details-and-metadata/# Bottom sheet, SHA-256 checksums, Exif data
-    │   ├── search/            # Faceted search, category filters, query history
-    │   ├── settings-and-profile/# Server endpoints, biometrics, dark/light themes
-    │   ├── deletion/          # File deletion confirmation dialogs & state refresh
-    │   └── errors-and-diagnostics/# Benchmarks, validation error states, diagnostics
-    ├── logs/                  # System, audit, and logcat execution logs
-    ├── test-results/          # Debug APK artifacts and XML hierarchy dumps
-    └── test-data/             # Test payloads and fixtures
+├── evidence/                  # Centralized test verification evidence and logs
+│   ├── screenshots/           # Centralized visual verification screenshots (9 categories)
+│   │   ├── onboarding/        # Splash, onboarding walkthrough, QR server scan
+│   │   ├── authentication/    # Dual login, signup checklist, biometric AppLock
+│   │   ├── home-and-vault/    # 10 GB storage card, vault cards, empty states
+│   │   ├── upload-and-download/# Camera capture, upload staging (1 GB limit), transfers
+│   │   ├── file-details-and-metadata/# Bottom sheet, SHA-256 checksums, Exif data
+│   │   ├── search/            # Faceted search, category filters, query history
+│   │   ├── settings-and-profile/# Server endpoints, biometrics, dark/light themes
+│   │   ├── deletion/          # File deletion confirmation dialogs & state refresh
+│   │   └── errors-and-diagnostics/# Benchmarks, validation error states, diagnostics
+│   ├── logs/                  # System, audit, and logcat execution logs
+│   ├── test-results/          # Debug APK artifacts and XML hierarchy dumps
+│   └── deduped_manifest.xml   # Manifest of deduplicated redundant screenshots
+└── storage/                   # Backend Active Storage Subsystem
+    ├── encrypted/             # AES-256-GCM encrypted physical file blobs
+    ├── previews/              # Server-cached media thumbnails
+    ├── profile_photos/        # User avatars
+    └── uploads/               # Temporary staging
 ```
 
 ---

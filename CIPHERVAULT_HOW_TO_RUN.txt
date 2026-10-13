@@ -38,10 +38,12 @@ Expected: HTTP 200 OK, status: "UP", 6 healthy components.
 
 4. LAUNCH DESKTOP SERVER CONTROL GUI (OPTIONAL)
 --------------------------------------------------------------------------------
-PowerShell:
-  cd scripts\server-control
-  pip install -r requirements.txt
+From Project Root:
   .\run.bat
+  # Or manually:
+  cd server-control
+  pip install -r requirements.txt
+  python main.py
 
 
 5. CONNECT ANDROID DEVICE / EMULATOR
@@ -82,6 +84,9 @@ Backend Tests:
 Android Unit Tests:
   cd android
   .\gradlew.bat testDebugUnitTest
+
+Server Control Tests:
+  python -m unittest discover -s server-control/tests
 
 
 8. STOPPING SERVICES

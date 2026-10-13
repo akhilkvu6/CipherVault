@@ -55,10 +55,13 @@ CipherVault/
 │   ├── migrations/
 │   └── backups/
 ├── scripts/
-│   ├── build/
-│   ├── testing/
-│   ├── documentation/
-│   └── server-control/
+│   └── documentation/
+├── server-control/
+│   ├── main.py
+│   ├── requirements.txt
+│   ├── settings.json
+│   ├── app/
+│   └── tests/
 ├── docs/
 │   ├── architecture/
 │   ├── setup-and-usage/
@@ -124,7 +127,7 @@ Create:
 
 ### Phase 5: Reorganize Scripts
 - Move `build_full_report.py`, `generate_diagrams.py`, and `report_generator/` into `scripts/documentation/`.
-- Move `server-control/` into `scripts/server-control/`.
+- Maintain `server-control/` at the repository root directly beside `run.bat` for convenient 1-click execution.
 
 ### Phase 6: Update References and Authoritative Documentation
 - Update `scripts/documentation/build_full_report.py` and `scripts/documentation/report_generator/` paths to reflect new locations.

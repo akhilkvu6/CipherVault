@@ -56,7 +56,7 @@ Expected output:
 ### Step 3: (Optional) Launch Desktop Server Manager
 To monitor status, view live logs, and generate connection QR codes:
 ```powershell
-cd scripts\server-control
+# From CipherVault project root:
 .\run.bat
 ```
 
@@ -96,7 +96,7 @@ CipherVault supports five connection strategies configured via `ConnectionActivi
 
 ### Mode D: Desktop QR Code Pairing
 - **Steps:**
-  1. In Desktop Server Manager (`scripts\server-control\run.bat`), navigate to the "Connect" tab.
+  1. In Desktop Server Manager (`run.bat`), navigate to the "Connect" tab.
   2. On the Android phone, tap "Scan Desktop QR Code".
   3. Point camera at the Desktop Manager QR code -> base URL is automatically applied and tested.
 
