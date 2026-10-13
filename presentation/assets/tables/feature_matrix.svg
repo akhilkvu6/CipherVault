@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 28px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 40px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 20px; fill: #65483A; text-anchor: middle; }
+      
+      .table-card { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; rx: 16px; }
+      .header-cell { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; }
+      .header-text { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .row-even { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; }
+      .row-odd { fill: #F4EFEA; stroke: #DDD4C8; stroke-width: 1px; }
+      
+      .col-mod { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #65483A; }
+      .col-feat { font-family: 'Times New Roman', serif; font-size: 16.5px; font-weight: bold; fill: #171513; }
+      .col-comp { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .col-status { font-family: 'Times New Roman', serif; font-size: 15.5px; font-weight: bold; fill: #2E7D32; text-anchor: middle; }
+      .col-status-plan { font-family: 'Times New Roman', serif; font-size: 15.5px; font-weight: bold; fill: #815621; text-anchor: middle; }
+      .col-evi { font-family: 'Times New Roman', serif; font-size: 14.5px; fill: #4A3E3D; }
+    </style>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="35" width="400" height="44" class="pill"/>
+  <text x="960" y="66" class="pill-text">Feature Traceability</text>
+  <text x="960" y="125" class="main-title">CipherVault Functional Verification &amp; Implementation Matrix</text>
+  <text x="960" y="155" class="subtitle">Feature-by-feature mapping to concrete codebase components, implementation status, and verification evidence</text>
+
+  <rect x="60" y="180" width="1800" height="850" class="table-card"/>
+
+  <!-- Columns: Module (240px), Feature Description (440px), Component / Code File (420px), Status (220px), Evidence (480px) = 1800 -->
+  <rect x="60" y="180" width="240" height="60" class="header-cell" style="rx: 16px 0 0 0;"/>
+  <text x="180" y="217" class="header-text">Functional Module</text>
+
+  <rect x="300" y="180" width="440" height="60" class="header-cell"/>
+  <text x="520" y="217" class="header-text">Feature Capability</text>
+
+  <rect x="740" y="180" width="420" height="60" class="header-cell"/>
+  <text x="950" y="217" class="header-text">Implementation Component</text>
+
+  <rect x="1160" y="180" width="220" height="60" class="header-cell"/>
+  <text x="1270" y="217" class="header-text">Status</text>
+
+  <rect x="1380" y="180" width="480" height="60" class="header-cell" style="rx: 0 16px 0 0;"/>
+  <text x="1620" y="217" class="header-text">Verification Evidence</text>
+
+  <!-- 10 Rows (h: 77) -->
+  <!-- Row 1: Auth & Rate Limit -->
+  <rect x="60" y="240" width="240" height="77" class="row-even"/>
+  <text x="80" y="285" class="col-mod">Authentication</text>
+  <rect x="300" y="240" width="440" height="77" class="row-even"/>
+  <text x="320" y="275" class="col-feat">JWT Auth &amp; Sliding Rate Limiting</text>
+  <text x="320" y="298" class="col-comp">BCrypt cost 10; 5 fails = 15m lockout; version revoke.</text>
+  <rect x="740" y="240" width="420" height="77" class="row-even"/>
+  <text x="760" y="275" class="col-comp">AuthController.java, JwtService.java,</text>
+  <text x="760" y="298" class="col-comp">LoginRateLimiterService.java</text>
+  <rect x="1160" y="240" width="220" height="77" class="row-even"/>
+  <text x="1270" y="285" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="240" width="480" height="77" class="row-even"/>
+  <text x="1400" y="275" class="col-evi">Automated test AuthControllerTest passing;</text>
+  <text x="1400" y="298" class="col-evi">emulator login verified (Fig. 10).</text>
+
+  <!-- Row 2: Biometric AppLock -->
+  <rect x="60" y="317" width="240" height="77" class="row-odd"/>
+  <text x="80" y="362" class="col-mod">Access Security</text>
+  <rect x="300" y="317" width="440" height="77" class="row-odd"/>
+  <text x="320" y="352" class="col-feat">Hardware Biometric &amp; PIN AppLock</text>
+  <text x="320" y="375" class="col-comp">Cold start and background resume security challenge.</text>
+  <rect x="740" y="317" width="420" height="77" class="row-odd"/>
+  <text x="760" y="352" class="col-comp">AppLockActivity.java,</text>
+  <text x="760" y="375" class="col-comp">androidx.biometric.BiometricPrompt</text>
+  <rect x="1160" y="317" width="220" height="77" class="row-odd"/>
+  <text x="1270" y="362" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="317" width="480" height="77" class="row-odd"/>
+  <text x="1400" y="352" class="col-evi">Verified on Android 17 / API 37;</text>
+  <text x="1400" y="375" class="col-evi">direct intent redirection tested (Fig. 12).</text>
+
+  <!-- Row 3: Pre-Upload Staging -->
+  <rect x="60" y="394" width="240" height="77" class="row-even"/>
+  <text x="80" y="439" class="col-mod">Staging Queue</text>
+  <rect x="300" y="394" width="440" height="77" class="row-even"/>
+  <text x="320" y="429" class="col-feat">Pre-Upload Inspection &amp; 1 GB Batch Limit</text>
+  <text x="320" y="452" class="col-comp">Full-screen modal preview; per-item deletion before upload.</text>
+  <rect x="740" y="394" width="420" height="77" class="row-even"/>
+  <text x="760" y="429" class="col-comp">UploadStagingActivity.java,</text>
+  <text x="760" y="452" class="col-comp">dialog_staged_file_preview.xml</text>
+  <rect x="1160" y="394" width="220" height="77" class="row-even"/>
+  <text x="1270" y="439" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="394" width="480" height="77" class="row-even"/>
+  <text x="1400" y="429" class="col-evi">Batch size calculation tests passing;</text>
+  <text x="1400" y="452" class="col-evi">modal inspection verified (Fig. 20, 22).</text>
+
+  <!-- Row 4: Quota Ceiling -->
+  <rect x="60" y="471" width="240" height="77" class="row-odd"/>
+  <text x="80" y="516" class="col-mod">Storage Quotas</text>
+  <rect x="300" y="471" width="440" height="77" class="row-odd"/>
+  <text x="320" y="506" class="col-feat">10 GB Vault Storage Quota Enforcement</text>
+  <text x="320" y="529" class="col-comp">Atomic byte calculation on client and server (10,737,418,240 B).</text>
+  <rect x="740" y="471" width="420" height="77" class="row-odd"/>
+  <text x="760" y="506" class="col-comp">FileStorageService.java,</text>
+  <text x="760" y="529" class="col-comp">users.storage_limit in schema.sql</text>
+  <rect x="1160" y="471" width="220" height="77" class="row-odd"/>
+  <text x="1270" y="516" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="471" width="480" height="77" class="row-odd"/>
+  <text x="1400" y="506" class="col-evi">StorageQuotaBoundaryTest (6/6 tests passing);</text>
+  <text x="1400" y="529" class="col-evi">visual dashboard gauge active (Fig. 14).</text>
+
+  <!-- Row 5: Deduplication -->
+  <rect x="60" y="548" width="240" height="77" class="row-even"/>
+  <text x="80" y="593" class="col-mod">Deduplication</text>
+  <rect x="300" y="548" width="440" height="77" class="row-even"/>
+  <text x="320" y="583" class="col-feat">Per-User SHA-256 Duplicate Rejection</text>
+  <text x="320" y="606" class="col-comp">Calculates hash on stream; rejects matching user files (409).</text>
+  <rect x="740" y="548" width="420" height="77" class="row-even"/>
+  <text x="760" y="583" class="col-comp">FileStorageService.java,</text>
+  <text x="760" y="606" class="col-comp">uq_stored_files_user_sha256</text>
+  <rect x="1160" y="548" width="220" height="77" class="row-even"/>
+  <text x="1270" y="593" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="548" width="480" height="77" class="row-even"/>
+  <text x="1400" y="583" class="col-evi">Automated duplicate rejection test passing;</text>
+  <text x="1400" y="606" class="col-evi">eliminates cross-tenant side channels.</text>
+
+  <!-- Row 6: Payload Encryption -->
+  <rect x="60" y="625" width="240" height="77" class="row-odd"/>
+  <text x="80" y="670" class="col-mod">Cryptography</text>
+  <rect x="300" y="625" width="440" height="77" class="row-odd"/>
+  <text x="320" y="660" class="col-feat">AES-256-GCM Streaming Envelope Encryption</text>
+  <text x="320" y="683" class="col-comp">PBKDF2 Server KEK wrapping UDEK; 12B IV + 16B GHASH tag.</text>
+  <rect x="740" y="625" width="420" height="77" class="row-odd"/>
+  <text x="760" y="660" class="col-comp">EncryptionService.java,</text>
+  <text x="760" y="683" class="col-comp">KeyManagementService.java</text>
+  <rect x="1160" y="625" width="220" height="77" class="row-odd"/>
+  <text x="1270" y="670" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="625" width="480" height="77" class="row-odd"/>
+  <text x="1400" y="660" class="col-evi">1.5 GB stream transfer verified;</text>
+  <text x="1400" y="683" class="col-evi">AEADBadTagException tamper detection verified.</text>
+
+  <!-- Row 7: ExifTool Metadata -->
+  <rect x="60" y="702" width="240" height="77" class="row-even"/>
+  <text x="80" y="747" class="col-mod">Forensics</text>
+  <rect x="300" y="702" width="440" height="77" class="row-even"/>
+  <text x="320" y="737" class="col-feat">Decoupled ExifTool Metadata Extraction</text>
+  <text x="320" y="760" class="col-comp">Extracts 29 optics, codec, and document fields before encryption.</text>
+  <rect x="740" y="702" width="420" height="77" class="row-even"/>
+  <text x="760" y="737" class="col-comp">MetadataExtractionService.java,</text>
+  <text x="760" y="760" class="col-comp">file_metadata table</text>
+  <rect x="1160" y="702" width="220" height="77" class="row-even"/>
+  <text x="1270" y="747" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="702" width="480" height="77" class="row-even"/>
+  <text x="1400" y="737" class="col-evi">Expanded BottomSheet UI verified (Fig. 18);</text>
+  <text x="1400" y="760" class="col-evi">ExifTool subprocess pipeline active.</text>
+
+  <!-- Row 8: Dynamic Search -->
+  <rect x="60" y="779" width="240" height="77" class="row-odd"/>
+  <text x="80" y="824" class="col-mod">Search Engine</text>
+  <rect x="300" y="779" width="440" height="77" class="row-odd"/>
+  <text x="320" y="814" class="col-feat">Multi-Attribute Search &amp; Dynamic Chips</text>
+  <text x="320" y="837" class="col-comp">Instant facet chips (camera, resolution, codec) + JPA Criteria.</text>
+  <rect x="740" y="779" width="420" height="77" class="row-odd"/>
+  <text x="760" y="814" class="col-comp">FileSearchService.java,</text>
+  <text x="760" y="837" class="col-comp">FragmentSearch.java</text>
+  <rect x="1160" y="779" width="220" height="77" class="row-odd"/>
+  <text x="1270" y="824" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="779" width="480" height="77" class="row-odd"/>
+  <text x="1400" y="814" class="col-evi">FileSearchServiceTest (12 tests passing);</text>
+  <text x="1400" y="837" class="col-evi">dynamic chip UI verified (Fig. 27, 28).</text>
+
+  <!-- Row 9: Download Decryption -->
+  <rect x="60" y="856" width="240" height="77" class="row-even"/>
+  <text x="80" y="901" class="col-mod">Retrieval</text>
+  <rect x="300" y="856" width="440" height="77" class="row-even"/>
+  <text x="320" y="891" class="col-feat">Dual-Mode Streaming Download &amp; Decrypt</text>
+  <text x="320" y="914" class="col-comp">On-the-fly streaming decryption or raw .enc export toggle.</text>
+  <rect x="740" y="856" width="420" height="77" class="row-even"/>
+  <text x="760" y="891" class="col-comp">FileController.java#L684,</text>
+  <text x="760" y="914" class="col-comp">CipherInputStream pipeline</text>
+  <rect x="1160" y="856" width="220" height="77" class="row-even"/>
+  <text x="1270" y="901" class="col-status">&#x2714; Fully Implemented</text>
+  <rect x="1380" y="856" width="480" height="77" class="row-even"/>
+  <text x="1400" y="891" class="col-evi">Download dialog decrypt switch verified (Fig. 13);</text>
+  <text x="1400" y="914" class="col-evi">supersedes older 'planned' status.</text>
+
+  <!-- Row 10: Future Roadmap -->
+  <rect x="60" y="933" width="240" height="77" class="row-odd" style="rx: 0 0 0 16px;"/>
+  <text x="80" y="978" class="col-mod">Future Roadmap</text>
+  <rect x="300" y="933" width="440" height="77" class="row-odd"/>
+  <text x="320" y="968" class="col-feat">Multi-Factor Auth &amp; Resumable TUS Ingestion</text>
+  <text x="320" y="991" class="col-comp">TOTP hardware keys and chunked resumable transport protocol.</text>
+  <rect x="740" y="933" width="420" height="77" class="row-odd"/>
+  <text x="760" y="968" class="col-comp">Planned Phase 1-2 Components,</text>
+  <text x="760" y="991" class="col-comp">MinIO / S3 distributed backend</text>
+  <rect x="1160" y="933" width="220" height="77" class="row-odd"/>
+  <text x="1270" y="978" class="col-status-plan">&#x25F7; Planned Roadmap</text>
+  <rect x="1380" y="933" width="480" height="77" class="row-odd" style="rx: 0 0 16px 0;"/>
+  <text x="1400" y="968" class="col-evi">Documented in Chapter 15 limitations;</text>
+  <text x="1400" y="991" class="col-evi">designed for modular Phase 2 integration.</text>
+
+  <!-- Footer -->
+  <text x="960" y="1055" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    All implemented capabilities have passed end-to-end regression testing on Google Pixel 10 Pro XL (Android 17 / API 37).
+  </text>
+</svg>

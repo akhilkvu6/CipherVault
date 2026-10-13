@@ -1,0 +1,69 @@
+flowchart TB
+    subgraph AndroidClient["ANDROID CLIENT MODULE (app)"]
+        direction TB
+        subgraph UI_Pkg["UI & Presentation Packages"]
+            A_Auth["auth (Login, Signup, ViewModel)"]
+            A_Home["home (FragmentHome, Quota Gauge)"]
+            A_Vault["vault (FragmentVault, Two-Col Grid)"]
+            A_Stage["upload (UploadStagingActivity, Modal Preview)"]
+            A_Trans["transfer (FragmentTransfers, Foreground Service)"]
+            A_Search["search (FragmentSearch, Dynamic Chips)"]
+            A_Details["details (FileDetailsBottomSheet, Exif Viewer)"]
+            A_Lock["security (AppLockActivity, BiometricPrompt)"]
+        end
+
+        subgraph Core_Pkg["Core Infrastructure Packages"]
+            A_Net["core.network (ApiClient, AuthInterceptor, Retrofit)"]
+            A_Sess["core.session (SessionManager, EncryptedPrefs)"]
+            A_Theme["theme (ThemeManager, Material 3 Monet Tokens)"]
+        end
+
+        UI_Pkg --> Core_Pkg
+    end
+
+    subgraph BackendCore["SPRING BOOT BACKEND MODULE (ciphervault)"]
+        direction TB
+        subgraph Web_Pkg["Controllers & REST API (/api/*)"]
+            B_AuthCtrl["auth (AuthController - /api/auth)"]
+            B_FileCtrl["file (FileController - /api/files)"]
+            B_UserCtrl["user (UserController - /api/user)"]
+            B_ActCtrl["activity (ActivityController - /api/activities)"]
+            B_TransCtrl["transfer (TransferController - /api/transfers)"]
+            B_HealthCtrl["health (HealthController - /api/health)"]
+        end
+
+        subgraph Svc_Pkg["Business Services Layer"]
+            B_StoreSvc["file.FileStorageService (Streaming I/O Engine)"]
+            B_CryptoSvc["file.EncryptionService (AES-256-GCM AEAD)"]
+            B_KeySvc["security.KeyManagementService (PBKDF2 Server KEK)"]
+            B_MetaSvc["file.MetadataExtractionService (ExifTool Integration)"]
+            B_SearchSvc["file.FileSearchService (Criteria API Dynamic Facets)"]
+            B_RateSvc["security.LoginRateLimiterService (Sliding Window)"]
+            B_JwtSvc["security.JwtService (HMAC-SHA256 Token Engine)"]
+        end
+
+        subgraph Repo_Pkg["Persistence & Spring Data Repositories"]
+            B_UserRepo["user.UserRepository -> users"]
+            B_FileRepo["file.FileRepository -> stored_files"]
+            B_MetaRepo["file.FileMetadataRepository -> file_metadata"]
+            B_ActRepo["activity.ActivityEventRepository -> activity_events"]
+            B_TransRepo["transfer.TransferRepository -> transfers"]
+        end
+
+        Web_Pkg --> Svc_Pkg
+        Svc_Pkg --> Repo_Pkg
+    end
+
+    subgraph DesktopControl["SERVER CONTROL UTILITY (server-control)"]
+        direction TB
+        C_Main["main.py (PySide6 Desktop Application)"]
+        C_Proc["app.process (Subprocess Manager - Spring Boot & Maven)"]
+        C_Log["app.log_streamer (Live Spring Boot Output Capture)"]
+        C_Net["app.network (Socket Port Monitor - 8080 & 3306)"]
+        C_Main --> C_Proc
+        C_Main --> C_Log
+        C_Main --> C_Net
+    end
+
+    AndroidClient ==>|"HTTP/1.1 REST (Port 8080)"| Web_Pkg
+    DesktopControl -.->|"Spawns & Monitors Process"| BackendCore

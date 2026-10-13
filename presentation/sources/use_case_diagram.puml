@@ -1,0 +1,54 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam defaultFontName "Times New Roman"
+skinparam roundCorner 16
+skinparam handwritten false
+skinparam shadowing false
+
+actor "Mobile User" as User
+actor "Host Administrator" as Admin
+
+rectangle "CipherVault Private Cloud System" {
+    usecase "UC-01: Configure & Test Server Connection" as UC_Conn
+    usecase "UC-02: Register New Account" as UC_Reg
+    usecase "UC-03: Authenticate & Login (JWT)" as UC_Login
+    usecase "UC-04: Biometric / PIN AppLock Challenge" as UC_Lock
+    usecase "UC-05: Stage Files & Inspect Pre-Upload" as UC_Stage
+    usecase "UC-06: Stream Encrypted File Upload (AES-GCM)" as UC_Upload
+    usecase "UC-07: Browse Vault Catalog & Filter Categories" as UC_Browse
+    usecase "UC-08: Search Metadata & Dynamic Suggestion Chips" as UC_Search
+    usecase "UC-09: View Forensic EXIF & Media Codecs" as UC_Details
+    usecase "UC-10: Stream Download (Decrypted / Raw .enc)" as UC_Download
+    usecase "UC-11: Delete File & Reclaim Quota (Cascading)" as UC_Delete
+    usecase "UC-12: Monitor Active Transfers & Throughput" as UC_Transfers
+    usecase "UC-13: Monitor 10 GB Storage Quota Usage" as UC_Quota
+    usecase "UC-14: Secure Logout & Token Invalidation" as UC_Logout
+
+    usecase "UC-15: Manage Backend Lifecycle (Server Control)" as UC_AdminCtrl
+    usecase "UC-16: Audit Database Backups & Schema Migrations" as UC_AdminDB
+}
+
+User --> UC_Conn
+User --> UC_Reg
+User --> UC_Login
+User --> UC_Lock
+User --> UC_Stage
+User --> UC_Upload
+User --> UC_Browse
+User --> UC_Search
+User --> UC_Details
+User --> UC_Download
+User --> UC_Delete
+User --> UC_Transfers
+User --> UC_Quota
+User --> UC_Logout
+
+Admin --> UC_AdminCtrl
+Admin --> UC_AdminDB
+
+UC_Upload ..> UC_Stage : <<includes>>
+UC_Details ..> UC_Browse : <<extends>>
+UC_Download ..> UC_Browse : <<extends>>
+UC_Delete ..> UC_Browse : <<extends>>
+@enduml

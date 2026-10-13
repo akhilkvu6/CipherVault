@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .proc-circle { fill: #E4DCD1; stroke: #65483A; stroke-width: 2.5px; }
+      .proc-id { font-family: 'Times New Roman', serif; font-size: 19px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .proc-title { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .store-card { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; rx: 10px; }
+      .store-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 10px 10px 0 0; }
+      .store-title { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .store-desc { font-family: 'Times New Roman', serif; font-size: 14.5px; fill: #332B27; }
+      
+      .diamond { fill: #EDE5DA; stroke: #65483A; stroke-width: 2.5px; }
+      .diamond-title { font-family: 'Times New Roman', serif; font-size: 15.5px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Data Flow Modeling</text>
+  <text x="960" y="115" class="main-title">CipherVault Level-1 Functional Process Decomposition (DFD)</text>
+  <text x="960" y="145" class="subtitle">Detailed data flows between operational subprocesses, external actors, and authoritative data stores</text>
+
+  <!-- External Entity: Mobile User (x: 50, y: 350, w: 220, h: 380) -->
+  <rect x="50" y="350" width="220" height="380" class="inner-card"/>
+  <rect x="50" y="350" width="220" height="40" class="card-header"/>
+  <text x="160" y="377" class="tier-title">User Entity</text>
+  <circle cx="160" cy="440" r="30" fill="#E4DCD1" stroke="#65483A" stroke-width="2.5"/>
+  <circle cx="160" cy="425" r="12" fill="#65483A"/>
+  <path d="M 140 455 Q 160 445 180 455" fill="none" stroke="#65483A" stroke-width="2.5"/>
+  <text x="160" y="495" class="box-title" text-anchor="middle">Mobile Vault</text>
+  <text x="160" y="520" class="box-title" text-anchor="middle">User</text>
+  <text x="70" y="560" class="box-desc">&#8226; Register / Login</text>
+  <text x="70" y="590" class="box-desc">&#8226; Stage Upload (1 GB)</text>
+  <text x="70" y="620" class="box-desc">&#8226; Search EXIF Chips</text>
+  <text x="70" y="650" class="box-desc">&#8226; Stream Download</text>
+  <text x="70" y="680" class="box-desc">&#8226; Cascading Delete</text>
+
+  <!-- PROCESS 1.0: Authenticate (x: 340, y: 190, w: 260, h: 140) -->
+  <rect x="340" y="190" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="470" y="225" class="proc-id">Process 1.0</text>
+  <text x="470" y="255" class="proc-title">Authenticate &amp; Session</text>
+  <text x="470" y="285" class="box-desc" text-anchor="middle">BCrypt Hashing &amp; JJWT</text>
+  <text x="470" y="310" class="box-meta" text-anchor="middle">5 Fails = 15m Lockout</text>
+
+  <!-- PROCESS 2.0: Ingestion & Quotas (x: 340, y: 390, w: 260, h: 140) -->
+  <rect x="340" y="390" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="470" y="425" class="proc-id">Process 2.0</text>
+  <text x="470" y="455" class="proc-title">Ingest &amp; Validate Batch</text>
+  <text x="470" y="485" class="box-desc" text-anchor="middle">1 GB Batch Quota Gauge</text>
+  <text x="470" y="510" class="box-meta" text-anchor="middle">10 GB Storage Ceiling</text>
+
+  <!-- PROCESS 3.0: SHA-256 Deduplication (x: 680, y: 390, w: 260, h: 140) -->
+  <rect x="680" y="390" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="810" y="425" class="proc-id">Process 3.0</text>
+  <text x="810" y="455" class="proc-title">SHA-256 Deduplication</text>
+  <text x="810" y="485" class="box-desc" text-anchor="middle">Pre-Encryption Digest</text>
+  <text x="810" y="510" class="box-meta" text-anchor="middle">Per-User Atomic Isolation</text>
+
+  <!-- PROCESS 4.0: ExifTool Metadata (x: 1020, y: 390, w: 260, h: 140) -->
+  <rect x="1020" y="390" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="1150" y="425" class="proc-id">Process 4.0</text>
+  <text x="1150" y="455" class="proc-title">Extract Media Metadata</text>
+  <text x="1150" y="485" class="box-desc" text-anchor="middle">ExifTool 29-Field Parser</text>
+  <text x="1150" y="510" class="box-meta" text-anchor="middle">JPEG Preview Generation</text>
+
+  <!-- PROCESS 5.0: AES-256-GCM Encryption (x: 1360, y: 390, w: 260, h: 140) -->
+  <rect x="1360" y="390" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="1490" y="425" class="proc-id">Process 5.0</text>
+  <text x="1490" y="455" class="proc-title">AES-256-GCM Streaming</text>
+  <text x="1490" y="485" class="box-desc" text-anchor="middle">16 KB Piped Chunk Streams</text>
+  <text x="1490" y="510" class="box-meta" text-anchor="middle">12B IV + 16B GHASH Tag</text>
+
+  <!-- PROCESS 6.0: Search & Facet Chips (x: 340, y: 590, w: 260, h: 140) -->
+  <rect x="340" y="590" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="470" y="625" class="proc-id">Process 6.0</text>
+  <text x="470" y="655" class="proc-title">Search &amp; Dynamic Chips</text>
+  <text x="470" y="685" class="box-desc" text-anchor="middle">JPA Criteria Facet Query</text>
+  <text x="470" y="710" class="box-meta" text-anchor="middle">Camera, Codec &amp; Resolution</text>
+
+  <!-- PROCESS 7.0: Decrypted Download (x: 680, y: 590, w: 260, h: 140) -->
+  <rect x="680" y="590" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="810" y="625" class="proc-id">Process 7.0</text>
+  <text x="810" y="655" class="proc-title">Stream Download &amp; Decrypt</text>
+  <text x="810" y="685" class="box-desc" text-anchor="middle">CipherInputStream Pipeline</text>
+  <text x="810" y="710" class="box-meta" text-anchor="middle">Dual Mode (Plain / .enc)</text>
+
+  <!-- PROCESS 8.0: Cascade Delete (x: 1020, y: 590, w: 260, h: 140) -->
+  <rect x="1020" y="590" width="260" height="140" class="inner-card" style="fill: #F4EFEA; stroke-width: 2px;"/>
+  <text x="1150" y="625" class="proc-id">Process 8.0</text>
+  <text x="1150" y="655" class="proc-title">Cascade Delete &amp; Quota</text>
+  <text x="1150" y="685" class="box-desc" text-anchor="middle">Unlinks Filesystem Blobs</text>
+  <text x="1150" y="710" class="box-meta" text-anchor="middle">Reclaims Quota Atomically</text>
+
+  <!-- DATA STORES ROW (Bottom: y: 800) -->
+  <!-- D1: users -->
+  <rect x="50" y="800" width="320" height="190" class="store-card"/>
+  <rect x="50" y="800" width="320" height="35" class="store-header"/>
+  <text x="210" y="825" class="store-title">D1: users (MySQL)</text>
+  <text x="70" y="865" class="store-desc">&#8226; Credentials, Password Hashes</text>
+  <text x="70" y="895" class="store-desc">&#8226; Wrapped AES-256 UDEK Keys</text>
+  <text x="70" y="925" class="store-desc">&#8226; 10 GB Storage Quota Tracking</text>
+  <text x="70" y="955" class="store-desc">&#8226; token_version Revocation</text>
+
+  <!-- D2: stored_files -->
+  <rect x="410" y="800" width="330" height="190" class="store-card"/>
+  <rect x="410" y="800" width="330" height="35" class="store-header"/>
+  <text x="575" y="825" class="store-title">D2: stored_files (MySQL)</text>
+  <text x="430" y="865" class="store-desc">&#8226; Filenames &amp; Relative Disk Paths</text>
+  <text x="430" y="895" class="store-desc">&#8226; Plaintext SHA-256 Hashes</text>
+  <text x="430" y="925" class="store-desc">&#8226; Encryption Flags &amp; Sizes</text>
+  <text x="430" y="955" class="store-desc">&#8226; UNIQUE(user_id, sha256_hash)</text>
+
+  <!-- D3: file_metadata -->
+  <rect x="780" y="800" width="340" height="190" class="store-card"/>
+  <rect x="780" y="800" width="340" height="35" class="store-header"/>
+  <text x="950" y="825" class="store-title">D3: file_metadata (MySQL)</text>
+  <text x="800" y="865" class="store-desc">&#8226; 29 Decoupled Forensic Attributes</text>
+  <text x="800" y="895" class="store-desc">&#8226; Camera Optics, ISO, Shutter, Aperture</text>
+  <text x="800" y="925" class="store-desc">&#8226; Video Codecs, Resolutions, FPS</text>
+  <text x="800" y="955" class="store-desc">&#8226; 1:1 Foreign Key to stored_files</text>
+
+  <!-- D4: storage/encrypted/ -->
+  <rect x="1160" y="800" width="340" height="190" class="store-card"/>
+  <rect x="1160" y="800" width="340" height="35" class="store-header"/>
+  <text x="1330" y="825" class="store-title">D4: Filesystem Storage</text>
+  <text x="1180" y="865" class="store-desc">&#8226; storage/encrypted/ (AES-256-GCM)</text>
+  <text x="1180" y="895" class="store-desc">&#8226; storage/uploads/ (Plaintext files)</text>
+  <text x="1180" y="925" class="store-desc">&#8226; storage/previews/ (JPEG cache)</text>
+  <text x="1180" y="955" class="store-desc">&#8226; storage/profile_photos/ (Avatars)</text>
+
+  <!-- D5: activity_events & transfers -->
+  <rect x="1540" y="800" width="330" height="190" class="store-card"/>
+  <rect x="1540" y="800" width="330" height="35" class="store-header"/>
+  <text x="1705" y="825" class="store-title">D5: Audit Stores (MySQL)</text>
+  <text x="1560" y="865" class="store-desc">&#8226; activity_events (Security log)</text>
+  <text x="1560" y="895" class="store-desc">&#8226; transfers (Live batch progress)</text>
+  <text x="1560" y="925" class="store-desc">&#8226; Event types, byte counters</text>
+  <text x="1560" y="955" class="store-desc">&#8226; Cascading cleanup on user delete</text>
+
+  <!-- CONNECTORS -->
+  <line x1="270" y1="260" x2="340" y2="260" class="conn-line"/>
+  <line x1="270" y1="460" x2="340" y2="460" class="conn-line"/>
+  <line x1="600" y1="460" x2="680" y2="460" class="conn-line"/>
+  <line x1="940" y1="460" x2="1020" y2="460" class="conn-line"/>
+  <line x1="1280" y1="460" x2="1360" y2="460" class="conn-line"/>
+
+  <!-- Process to Store down arrows -->
+  <path d="M 470 330 L 470 350 L 210 350 L 210 800" class="conn-line"/>
+  <path d="M 810 530 L 810 760 L 575 760 L 575 800" class="conn-line"/>
+  <path d="M 1150 530 L 1150 800" class="conn-line"/>
+  <path d="M 1490 530 L 1490 800" class="conn-line"/>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Decomposition follows standard Gane &amp; Sarson notation with active ExifTool and AES-256-GCM streaming processes.
+  </text>
+</svg>

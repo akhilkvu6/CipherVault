@@ -1,0 +1,7 @@
+"Test Category","Target Suite / Module","Tests Run","Passed","Failed","Execution Time / Environment","Key Capabilities Verified"
+"Backend Automated","Maven / JUnit 5 / Mockito","138","138","0","~25s (Java 21 LTS)","Storage quota boundaries (10 GB / 1 GB), AES-GCM streaming decryption, duplicate SHA-256 detection, JWT expiration, rate limiting, cascading deletions"
+"Android Client Automated","Gradle / Robolectric / JUnit 4","82","82","0","~13s (Android API 34/35)","SessionManager login/logout, multi-target disk token purge, token migration guard, password complexity validation, staging queue calculations"
+"Server Control Utility","Python unittest / PySide6","23","23","0","~5s (Python 3.10+)","Process launcher, socket port detection (8080/3306), live backend log capture, graceful subprocess termination, settings persistence"
+"Live UI Regression","Google Pixel 10 Pro XL (API 37)","20 Screens","20","0","Live Emulator Session","Complete user journey: Onboarding, server ping, login, pre-upload staging, modal preview, encryption, vault grid, forensic metadata sheet, search chips, decrypted download, cascading deletion"
+"Cryptographic Benchmark","Streaming AES-256-GCM Pipeline","1.5 GB Transfer","PASS","0","28-36 MB RAM Footprint","Constant-memory streaming I/O; 12-byte IV uniqueness; 128-bit GHASH tag tamper verification (AEADBadTagException)"
+"Total Automated Tests","All Suites Combined","243","243","0","100% Pass Rate","Complete full-stack automated test coverage across Android, Spring Boot, and Desktop Control"

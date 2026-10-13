@@ -1,0 +1,58 @@
+flowchart TD
+    User(["Authenticated User"])
+
+    subgraph Processes["CipherVault Core Processes"]
+        P1["1.0 Authenticate & Verify Session\n(BCrypt & JWT Verification)"]
+        P2["2.0 Ingest & Validate Upload Batch\n(1 GB Batch & 10 GB Quota Check)"]
+        P3["3.0 Compute SHA-256 & Detect Duplicates\n(Per-User Atomic Constraint)"]
+        P4["4.0 Extract Media Metadata & Previews\n(ExifTool 29-Attribute Parser)"]
+        P5["5.0 Encrypt Stream & Persist Blobs\n(AES-256-GCM Envelope Encryption)"]
+        P6["6.0 Search & Facet Metadata\n(Criteria API Query Engine)"]
+        P7["7.0 Stream Download & Decrypt\n(Dual-Mode Decryption via CipherInputStream)"]
+        P8["8.0 Cascade Delete & Reclaim Quota\n(Relational Cleanup & Disk Unlink)"]
+    end
+
+    subgraph Stores["Data Stores"]
+        D1[("D1: users\n(Accounts & Quotas)")]
+        D2[("D2: stored_files\n(Catalog & Hashes)")]
+        D3[("D3: file_metadata\n(Forensic Media EXIF)")]
+        D4[("D4: storage/encrypted/\n(Ciphertext Blobs)")]
+        D5[("D5: activity_events & transfers\n(Audit Logs)")]
+    end
+
+    User -->|"Credentials"| P1
+    P1 <-->|"Verify & Fetch"| D1
+    P1 -->|"JWT Bearer Token"| User
+
+    User -->|"Upload Stream"| P2
+    P2 <-->|"Check Quota"| D1
+    P2 -->|"Validated Stream"| P3
+
+    P3 <-->|"Check Hashes"| D2
+    P3 -->|"Unique Stream"| P4
+
+    P4 -->|"Store EXIF"| D3
+    P4 -->|"Pre-processed Stream"| P5
+
+    P5 <-->|"Retrieve Wrapped UDEK"| D1
+    P5 -->|"Write Ciphertext"| D4
+    P5 -->|"Save File Record"| D2
+    P5 -->|"Log Activity & Transfer"| D5
+    P5 -->|"Upload Confirmation"| User
+
+    User -->|"Search Query"| P6
+    P6 <-->|"Filter Metadata"| D3
+    P6 <-->|"Fetch Files"| D2
+    P6 -->|"Matched Results"| User
+
+    User -->|"Download Request"| P7
+    P7 <-->|"Lookup File"| D2
+    P7 <-->|"Retrieve UDEK"| D1
+    P7 <-->|"Read Blob"| D4
+    P7 -->|"Streaming Octet Stream"| User
+
+    User -->|"Delete Request"| P8
+    P8 -->|"Cascade Delete"| D2
+    P8 -->|"Delete EXIF"| D3
+    P8 -->|"Unlink File"| D4
+    P8 -->|"Decrement Quota"| D1

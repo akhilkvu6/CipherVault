@@ -1,0 +1,49 @@
+sequenceDiagram
+    autonumber
+    actor User as User / Android App
+    participant Storage as EncryptedSharedPreferences
+    participant Gateway as Spring Security Filter
+    participant RateLimiter as LoginRateLimiter
+    participant AuthCtrl as AuthController
+    participant DB as MySQL (users table)
+    participant Crypto as BCrypt / JJWT
+
+    Note over User,Crypto: PHASE 1: USER REGISTRATION
+    User->>AuthCtrl: POST /api/auth/register (username, email, password)
+    AuthCtrl->>DB: Check uniqueness (username, email)
+    AuthCtrl->>Crypto: Hash password via BCrypt (Cost 10)
+    AuthCtrl->>DB: INSERT INTO users (storage_limit=10GB, token_version=1)
+    AuthCtrl-->>User: HTTP 200 OK ("User registered successfully")
+
+    Note over User,Crypto: PHASE 2: LOGIN & RATE LIMITING
+    User->>Gateway: POST /api/auth/login (email, password)
+    Gateway->>RateLimiter: Check failed attempts (< 5 in 15 mins)
+    alt Attempts >= 5
+        RateLimiter-->>User: HTTP 429 Too Many Requests (Account Locked 15m)
+    else Attempts < 5
+        Gateway->>AuthCtrl: Forward login request
+        AuthCtrl->>DB: SELECT * FROM users WHERE email = ?
+        AuthCtrl->>Crypto: BCrypt.checkpw(password, user.password)
+        alt Password Invalid
+            AuthCtrl->>RateLimiter: Increment failed attempts counter
+            AuthCtrl-->>User: HTTP 401 Unauthorized ("Invalid credentials")
+        else Password Valid
+            AuthCtrl->>RateLimiter: Reset failed attempts counter
+            AuthCtrl->>Crypto: Generate JWT (sub=email, userId, tokenVersion, exp=24h)
+            AuthCtrl-->>User: HTTP 200 OK (token, username, storageLimit)
+            User->>Storage: Securely persist JWT & User Details (MasterKey AES-GCM)
+        end
+    end
+
+    Note over User,Crypto: PHASE 3: AUTHENTICATED API REQUESTS
+    User->>Gateway: GET /api/files (Header: Authorization: Bearer <JWT>)
+    Gateway->>Crypto: Verify HMAC-SHA256 signature & expiration
+    Gateway->>DB: Verify token_version == user.token_version
+    Gateway->>AuthCtrl: Populate SecurityContextHolder with UserPrincipal
+    AuthCtrl-->>User: HTTP 200 OK (Stored Files JSON payload)
+
+    Note over User,Crypto: PHASE 4: LOGOUT & SESSION INVALIDATION
+    User->>AuthCtrl: POST /api/auth/logout (Bearer <JWT>)
+    AuthCtrl->>DB: UPDATE users SET token_version = token_version + 1
+    User->>Storage: Clear active & legacy preferences (Synchronous .commit())
+    User-->>User: Route to LoginActivity with CLEAR_TASK

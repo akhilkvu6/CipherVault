@@ -1,0 +1,30 @@
+flowchart TD
+    Start(["User Initiates Upload in Android Client"]) --> Staging["Pre-Upload Staging Queue\n(UploadStagingActivity)"]
+    Staging --> QuotaCheckClient{"Batch Size > 1 GB or\nTotal > 10 GB?"}
+    QuotaCheckClient -- "YES: Quota Exceeded" --> RejectClient["Reject Staged Batch\n(Display Red Warning Banner)"]
+    QuotaCheckClient -- "NO: Valid Batch" --> Transmit["Stream Multipart Payload over HTTP/1.1 REST\n(POST /api/files/upload)"]
+
+    Transmit --> AuthGate{"Valid Bearer JWT & Active Session?"}
+    AuthGate -- "NO: Unauthorized" --> Err401["Return 401 Unauthorized / Token Expired"]
+    AuthGate -- "YES: Authenticated" --> SpoolTemp["Spool Stream to Temporary Disk File\n(Files.createTempFile)"]
+
+    SpoolTemp --> ServerQuota{"File Size > 1 GB or\nUser Used + Size > 10 GB?"}
+    ServerQuota -- "YES: Quota Limit" --> Err413["Return 413 Payload Too Large / Storage Exceeded"]
+    ServerQuota -- "NO: Quota Approved" --> CalcHash["Compute SHA-256 Digest on Plaintext Stream\n(Streaming MessageDigest)"]
+
+    CalcHash --> DupQuery{"Query Database for Matching Hash:\n(user_id, sha256_hash)?"}
+    DupQuery -- "YES: Duplicate Found" --> Err409["Log DUPLICATE_DETECTED Event\nReturn 409 Conflict (Upload Aborted)"]
+    DupQuery -- "NO: Unique File" --> GenPreview["Generate JPEG Preview Image\n(MediaPreviewService)"]
+
+    GenPreview --> RunExif["Extract 29 Forensic Metadata Fields via ExifTool\n(Camera Optics, Codecs, Resolution)"]
+    RunExif --> EncChoice{"Encryption Enabled?\n(Default: TRUE)"}
+
+    EncChoice -- "YES: Encrypted" --> GetKey["Fetch & Unwrap User UDEK via Server KEK\n(PBKDF2 Master Key)"]
+    GetKey --> EncStream["Stream 16 KB Chunks via CipherOutputStream\nAES-256-GCM (12B IV + Ciphertext + 16B Tag)\nWrite to storage/encrypted/"]
+    EncChoice -- "NO: Unencrypted" --> CopyPlain["Write Plaintext Stream to storage/uploads/"]
+
+    EncStream --> SaveDB["Persist Records to MySQL Database:\n1. Insert into stored_files\n2. Insert into file_metadata\n3. Increment users.used_storage atomically\n4. Insert into activity_events & transfers"]
+    CopyPlain --> SaveDB
+
+    SaveDB --> ReturnOK["Return HTTP 200 OK\n(JSON: id, originalFilename, fileSize, encrypted, sha256Hash)"]
+    ReturnOK --> AndroidUI["Android UI Refreshes Vault Explorer\nDismisses Staging Queue & Updates Storage Gauge"]

@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+      
+      .uc-ellipse { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; }
+      .uc-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #171513; text-anchor: middle; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Cryptographic Architecture</text>
+  <text x="960" y="115" class="main-title">CipherVault Multi-Tier Security &amp; Cryptographic Pipeline</text>
+  <text x="960" y="145" class="subtitle">Strict algorithmic separation: SHA-256 deduplication, AES-256-GCM envelope encryption, and stateless JWT access control</text>
+
+  <!-- 3 DISTINCT HORIZONTAL PILLARS -->
+  <!-- PILLAR 1: SHA-256 INTEGRITY & DEDUPLICATION (x: 50, y: 190, w: 570, h: 780) -->
+  <rect x="50" y="190" width="570" height="780" class="outer-card"/>
+  <rect x="50" y="190" width="570" height="45" class="card-header"/>
+  <text x="335" y="220" class="tier-title">1. File Integrity &amp; Deduplication (SHA-256)</text>
+
+  <rect x="75" y="255" width="520" height="135" class="inner-card"/>
+  <text x="95" y="285" class="box-title">Streaming MessageDigest Calculation</text>
+  <text x="95" y="312" class="box-desc">&#8226; Algorithm: FIPS PUB 180-4 SHA-256 (256-bit digest)</text>
+  <text x="95" y="337" class="box-desc">&#8226; Executed on plaintext stream prior to encryption</text>
+  <text x="95" y="362" class="box-meta">Generates deterministic 64-character hexadecimal checksum.</text>
+
+  <rect x="75" y="410" width="520" height="150" class="inner-card"/>
+  <text x="95" y="440" class="box-title">Per-User Atomic Uniqueness Scope</text>
+  <text x="95" y="467" class="box-desc">&#8226; Database Constraint: UNIQUE(user_id, sha256_hash)</text>
+  <text x="95" y="492" class="box-desc">&#8226; Evaluated strictly within authenticated user's catalog</text>
+  <text x="95" y="517" class="box-desc">&#8226; Duplicate upload rejected immediately with HTTP 409</text>
+  <text x="95" y="542" class="box-meta">Saves disk space and stops redundant network transfers.</text>
+
+  <rect x="75" y="580" width="520" height="175" class="inner-card" style="fill: #EDE5DA; stroke: #65483A;"/>
+  <text x="95" y="610" class="box-title">&#x26A0; Algorithmic Distinction: Hashing vs Encryption</text>
+  <text x="95" y="637" class="box-desc">&#8226; SHA-256 is a ONE-WAY cryptographic hash function.</text>
+  <text x="95" y="662" class="box-desc">&#8226; It is NOT an encryption cipher; cannot be decrypted.</text>
+  <text x="95" y="687" class="box-desc">&#8226; It is NOT part of the AES block transformation.</text>
+  <text x="95" y="712" class="box-desc">&#8226; Isolating by user_id eliminates side-channel probing.</text>
+  <text x="95" y="737" class="box-meta">&#x2714; Solves cross-user ownership confirmation attacks.</text>
+
+  <rect x="75" y="775" width="520" height="175" class="note-badge"/>
+  <text x="95" y="805" class="note-text">&#x2714; Literature Verification</text>
+  <text x="95" y="830" class="box-meta">Informed by Yang et al. (2017) and Liu et al. (2015).</text>
+  <text x="95" y="855" class="box-meta">Global deduplication leaks user ownership. CipherVault's</text>
+  <text x="95" y="880" class="box-meta">tenant isolation preserves multi-user privacy without</text>
+  <text x="95" y="905" class="box-meta">requiring external key-management auxiliary servers.</text>
+
+  <!-- PILLAR 2: AES-256-GCM ENVELOPE ENCRYPTION (x: 650, y: 190, w: 620, h: 780) -->
+  <rect x="650" y="190" width="620" height="780" class="outer-card"/>
+  <rect x="650" y="190" width="620" height="45" class="card-header-accent"/>
+  <text x="960" y="220" class="tier-title-light">2. Authenticated Envelope Encryption (AES-256-GCM)</text>
+
+  <rect x="675" y="255" width="570" height="145" class="inner-card"/>
+  <text x="695" y="285" class="box-title">PBKDF2 Server Key Derivation (KEK)</text>
+  <text x="695" y="312" class="box-desc">&#8226; Algorithm: PBKDF2WithHmacSHA256 (RFC 2898 / RFC 8018)</text>
+  <text x="695" y="337" class="box-desc">&#8226; Work Factor: 65,536 iterations from master secret</text>
+  <text x="695" y="362" class="box-desc">&#8226; Derives 256-bit Server Key Encryption Key (KEK)</text>
+  <text x="695" y="387" class="box-meta">Protected in memory; zeroized after initialization.</text>
+
+  <rect x="675" y="420" width="570" height="150" class="inner-card"/>
+  <text x="695" y="450" class="box-title">User Data Encryption Keys (UDEKs)</text>
+  <text x="695" y="477" class="box-desc">&#8226; Generated via SecureRandom (256-bit cryptographic AES key)</text>
+  <text x="695" y="502" class="box-desc">&#8226; Wrapped (encrypted) with Server KEK via AES-256-GCM</text>
+  <text x="695" y="527" class="box-desc">&#8226; Stored as Base64 in users.user_key (Never in plaintext)</text>
+  <text x="695" y="552" class="box-meta">Isolates each user in an independent cryptographic keyspace.</text>
+
+  <rect x="675" y="590" width="570" height="175" class="inner-card" style="fill: #EDE5DA; stroke: #65483A;"/>
+  <text x="695" y="620" class="box-title">Physical Ciphertext Blob Structure</text>
+  <text x="695" y="647" class="box-desc">&#8226; <tspan font-weight="bold">[ 12-Byte Nonce / IV ]</tspan> : Fresh SecureRandom per file</text>
+  <text x="695" y="672" class="box-desc">&#8226; <tspan font-weight="bold">[ Ciphertext Chunks ]</tspan> : 16 KB streaming CipherOutputStream</text>
+  <text x="695" y="697" class="box-desc">&#8226; <tspan font-weight="bold">[ 16-Byte GHASH Tag ]</tspan> : Galois field GF(2^128) auth tag</text>
+  <text x="695" y="722" class="box-desc">&#8226; Tamper Detection: Automatically verified on streaming read</text>
+  <text x="695" y="747" class="box-meta">&#x2714; Throws AEADBadTagException upon any 1-bit tampering.</text>
+
+  <rect x="675" y="785" width="570" height="165" class="note-badge"/>
+  <text x="695" y="815" class="note-text">&#x2714; Cryptographic Boundary</text>
+  <text x="695" y="840" class="box-meta">Files are stored strictly in storage/encrypted/{uuid}.</text>
+  <text x="695" y="865" class="box-meta">MySQL stores zero binary bytes. Compromising one user's</text>
+  <text x="695" y="890" class="box-meta">key never compromises another user's vault.</text>
+
+  <!-- PILLAR 3: AUTH & ACCESS CONTROL (x: 1300, y: 190, w: 570, h: 780) -->
+  <rect x="1300" y="190" width="570" height="780" class="outer-card"/>
+  <rect x="1300" y="190" width="570" height="45" class="card-header"/>
+  <text x="1585" y="220" class="tier-title">3. Authentication &amp; JWT Access Control</text>
+
+  <rect x="1325" y="255" width="520" height="145" class="inner-card"/>
+  <text x="1345" y="285" class="box-title">BCrypt User Password Hashing</text>
+  <text x="1345" y="312" class="box-desc">&#8226; Algorithm: OpenBSD BCrypt (Cost Factor 10)</text>
+  <text x="1345" y="337" class="box-desc">&#8226; 128-bit embedded salt per password</text>
+  <text x="1345" y="362" class="box-desc">&#8226; Passwords strictly separated from file encryption keys</text>
+  <text x="1345" y="387" class="box-meta">Password hash is NEVER used as the file-encryption key.</text>
+
+  <rect x="1325" y="420" width="520" height="150" class="inner-card"/>
+  <text x="1345" y="450" class="box-title">Stateless JJWT Token Verification</text>
+  <text x="1345" y="477" class="box-desc">&#8226; Signed with HMAC-SHA256 (HS256) via 256-bit secret</text>
+  <text x="1345" y="502" class="box-desc">&#8226; Claims: sub (email), userId, tokenVersion</text>
+  <text x="1345" y="527" class="box-desc">&#8226; Short-lived 24-hour expiration window</text>
+  <text x="1345" y="552" class="box-meta">Stored in hardware-backed EncryptedSharedPreferences.</text>
+
+  <rect x="1325" y="590" width="520" height="175" class="inner-card" style="fill: #EDE5DA; stroke: #65483A;"/>
+  <text x="1345" y="620" class="box-title">Token Version Revocation Pattern</text>
+  <text x="1345" y="647" class="box-desc">&#8226; Database tracks token_version in users table</text>
+  <text x="1345" y="672" class="box-desc">&#8226; Logout increments token_version = token_version + 1</text>
+  <text x="1345" y="697" class="box-desc">&#8226; Filter verifies token.version == db.version</text>
+  <text x="1345" y="722" class="box-desc">&#8226; Instant global revocation without distributed blacklists</text>
+  <text x="1345" y="747" class="box-meta">&#x2714; Guaranteed protection against stolen tokens.</text>
+
+  <rect x="1325" y="785" width="520" height="165" class="note-badge"/>
+  <text x="1345" y="815" class="note-text">&#x2714; Access Control Invariant</text>
+  <text x="1345" y="840" class="box-meta">Requests missing valid Authorization headers or</text>
+  <text x="1345" y="865" class="box-meta">attempting to access files belonging to another</text>
+  <text x="1345" y="890" class="box-meta">user_id are rejected immediately with 401/404.</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    All 3 security subsystems operate independently: SHA-256 (integrity), AES-GCM (confidentiality), and JWT (access control).
+  </text>
+</svg>

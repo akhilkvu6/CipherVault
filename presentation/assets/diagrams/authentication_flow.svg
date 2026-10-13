@@ -1,0 +1,182 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+      
+      .uc-ellipse { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; }
+      .uc-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #171513; text-anchor: middle; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Security Architecture</text>
+  <text x="960" y="115" class="main-title">CipherVault Authentication &amp; Session Lifecycle Workflow</text>
+  <text x="960" y="145" class="subtitle">Complete sequence: BCrypt registration, sliding-window rate limiting, stateless JWT verification, and synchronous logout purge</text>
+
+  <!-- 4 PHASES ACROSS THE SCREEN -->
+  <!-- PHASE 1: REGISTRATION (x: 50, y: 190, w: 420, h: 780) -->
+  <rect x="50" y="190" width="420" height="780" class="outer-card"/>
+  <rect x="50" y="190" width="420" height="45" class="card-header"/>
+  <text x="260" y="220" class="tier-title">Phase 1: Registration</text>
+
+  <rect x="75" y="255" width="370" height="150" class="inner-card"/>
+  <text x="95" y="285" class="box-title">1. Client Validation</text>
+  <text x="95" y="312" class="box-desc">&#8226; Username format &amp; email syntax</text>
+  <text x="95" y="337" class="box-desc">&#8226; Password complexity rule:</text>
+  <text x="110" y="360" class="box-meta">Min 8 chars, uppercase, digit, symbol</text>
+  <text x="95" y="385" class="box-desc">&#8226; Dispatches POST /api/auth/register</text>
+
+  <rect x="75" y="425" width="370" height="170" class="inner-card"/>
+  <text x="95" y="455" class="box-title">2. Server Credentials Hashing</text>
+  <text x="95" y="482" class="box-desc">&#8226; Verifies uniqueness (username, email)</text>
+  <text x="95" y="507" class="box-desc">&#8226; Hashes via BCrypt (Cost Factor 10)</text>
+  <text x="95" y="532" class="box-desc">&#8226; Generates 256-bit AES UDEK key</text>
+  <text x="95" y="557" class="box-desc">&#8226; Wraps UDEK with Server KEK</text>
+  <text x="95" y="582" class="box-desc">&#8226; Inserts user record (10 GB quota)</text>
+
+  <rect x="75" y="615" width="370" height="150" class="inner-card" style="fill: #E8F5E9; stroke: #2E7D32;"/>
+  <text x="95" y="645" class="box-title" fill="#2E7D32">3. Account Initialization</text>
+  <text x="95" y="672" class="box-desc">&#8226; Returns HTTP 200 OK</text>
+  <text x="95" y="697" class="box-desc">&#8226; Sets token_version = 1 in database</text>
+  <text x="95" y="722" class="box-desc">&#8226; Android transitions to LoginActivity</text>
+  <text x="95" y="747" class="box-meta">&#x2714; User ready for authenticated login.</text>
+
+  <rect x="75" y="785" width="370" height="160" class="note-badge"/>
+  <text x="95" y="815" class="note-text">&#x2714; Security Invariant</text>
+  <text x="95" y="840" class="box-meta">Passphrase is never stored in plaintext.</text>
+  <text x="95" y="865" class="box-meta">BCrypt provides adaptive work factor resistance</text>
+  <text x="95" y="890" class="box-meta">against GPU and ASIC offline dictionary attacks.</text>
+
+  <!-- PHASE 2: LOGIN & RATE LIMITING (x: 500, y: 190, w: 430, h: 780) -->
+  <rect x="500" y="190" width="430" height="780" class="outer-card"/>
+  <rect x="500" y="190" width="430" height="45" class="card-header"/>
+  <text x="715" y="220" class="tier-title">Phase 2: Login &amp; Rate Limiting</text>
+
+  <rect x="525" y="255" width="380" height="150" class="inner-card"/>
+  <text x="545" y="285" class="box-title">1. Sliding-Window Guard</text>
+  <text x="545" y="312" class="box-desc">&#8226; Intercepts POST /api/auth/login</text>
+  <text x="545" y="337" class="box-desc">&#8226; Checks failed attempts within 15 mins</text>
+  <text x="545" y="362" class="box-desc">&#8226; If attempts &gt;= 5: Returns HTTP 429</text>
+  <text x="545" y="387" class="box-meta">Blocks automated brute-force attacks.</text>
+
+  <rect x="525" y="425" width="380" height="170" class="inner-card"/>
+  <text x="545" y="455" class="box-title">2. BCrypt &amp; Token Issuance</text>
+  <text x="545" y="482" class="box-desc">&#8226; Queries user by email in MySQL</text>
+  <text x="545" y="507" class="box-desc">&#8226; Evaluates BCrypt.checkpw(password)</text>
+  <text x="545" y="532" class="box-desc">&#8226; Resets failed counter on success</text>
+  <text x="545" y="557" class="box-desc">&#8226; Generates 24-hour stateless JWT</text>
+  <text x="545" y="582" class="box-meta">Claims: sub, userId, tokenVersion (HMAC-256).</text>
+
+  <rect x="525" y="615" width="380" height="150" class="inner-card" style="fill: #E8F5E9; stroke: #2E7D32;"/>
+  <text x="545" y="645" class="box-title" fill="#2E7D32">3. Hardware Keystore Session</text>
+  <text x="545" y="672" class="box-desc">&#8226; Android client receives JWT token</text>
+  <text x="545" y="697" class="box-desc">&#8226; Stores in EncryptedSharedPreferences</text>
+  <text x="545" y="722" class="box-desc">&#8226; Protected via Android Keystore MasterKey</text>
+  <text x="545" y="747" class="box-meta">&#x2714; Routes to MainActivity vault explorer.</text>
+
+  <rect x="525" y="785" width="380" height="160" class="note-badge"/>
+  <text x="545" y="815" class="note-text">&#x2714; Rate Limiting Invariant</text>
+  <text x="545" y="840" class="box-meta">Protects weak passwords from network probing.</text>
+  <text x="545" y="865" class="box-meta">Lockout automatically releases after 15 minutes</text>
+  <text x="545" y="890" class="box-meta">of zero failed attempts.</text>
+
+  <!-- PHASE 3: AUTHENTICATED REQUESTS (x: 960, y: 190, w: 430, h: 780) -->
+  <rect x="960" y="190" width="430" height="780" class="outer-card"/>
+  <rect x="960" y="190" width="430" height="45" class="card-header"/>
+  <text x="1175" y="220" class="tier-title">Phase 3: Authenticated API Requests</text>
+
+  <rect x="985" y="255" width="380" height="150" class="inner-card"/>
+  <text x="1005" y="285" class="box-title">1. Bearer Header Injection</text>
+  <text x="1005" y="312" class="box-desc">&#8226; OkHttp AuthInterceptor reads token</text>
+  <text x="1005" y="337" class="box-desc">&#8226; Injects: Authorization: Bearer &lt;JWT&gt;</text>
+  <text x="1005" y="362" class="box-desc">&#8226; Automatically attached to every call</text>
+  <text x="1005" y="387" class="box-meta">Transparent token propagation.</text>
+
+  <rect x="985" y="425" width="380" height="170" class="inner-card"/>
+  <text x="1005" y="455" class="box-title">2. Stateless Filter Verification</text>
+  <text x="1005" y="482" class="box-desc">&#8226; JwtAuthenticationFilter extracts token</text>
+  <text x="1005" y="507" class="box-desc">&#8226; Validates HMAC-SHA256 signature</text>
+  <text x="1005" y="532" class="box-desc">&#8226; Verifies token expiration (&lt; 24h)</text>
+  <text x="1005" y="557" class="box-desc">&#8226; Matches token_version against database</text>
+  <text x="1005" y="582" class="box-meta">Rejects immediately if revoked or expired.</text>
+
+  <rect x="985" y="615" width="380" height="150" class="inner-card" style="fill: #E8F5E9; stroke: #2E7D32;"/>
+  <text x="1005" y="645" class="box-title" fill="#2E7D32">3. Tenant Isolation</text>
+  <text x="1005" y="672" class="box-desc">&#8226; Populates SecurityContext with User</text>
+  <text x="1005" y="697" class="box-desc">&#8226; Services enforce user_id boundary</text>
+  <text x="1005" y="722" class="box-desc">&#8226; Files strictly segregated per tenant</text>
+  <text x="1005" y="747" class="box-meta">&#x2714; Zero cross-user visibility.</text>
+
+  <rect x="985" y="785" width="380" height="160" class="note-badge"/>
+  <text x="1005" y="815" class="note-text">&#x2714; Token Revocation Guard</text>
+  <text x="1005" y="840" class="box-meta">Even if a valid signature exists, mismatching</text>
+  <text x="1005" y="865" class="box-meta">token_version kills access instantly upon</text>
+  <text x="1005" y="890" class="box-meta">remote logout or password change.</text>
+
+  <!-- PHASE 4: LOGOUT & PURGE (x: 1420, y: 190, w: 450, h: 780) -->
+  <rect x="1420" y="190" width="450" height="780" class="outer-card"/>
+  <rect x="1420" y="190" width="450" height="45" class="card-header-accent"/>
+  <text x="1645" y="220" class="tier-title-light">Phase 4: Logout &amp; Disk Token Purge</text>
+
+  <rect x="1445" y="255" width="400" height="150" class="inner-card"/>
+  <text x="1465" y="285" class="box-title">1. Explicit User Sign Out</text>
+  <text x="1465" y="312" class="box-desc">&#8226; User confirms Sign Out in Settings</text>
+  <text x="1465" y="337" class="box-desc">&#8226; POST /api/auth/logout with Bearer</text>
+  <text x="1465" y="362" class="box-desc">&#8226; Server increments users.token_version</text>
+  <text x="1465" y="387" class="box-meta">Server-side revocation completed.</text>
+
+  <rect x="1445" y="425" width="400" height="170" class="inner-card" style="fill: #FFF8E1; stroke: #FFA000;"/>
+  <text x="1465" y="455" class="box-title" fill="#E65100">2. Multi-Target Synchronous Disk Purge</text>
+  <text x="1465" y="482" class="box-desc">&#8226; Clears EncryptedSharedPreferences</text>
+  <text x="1465" y="507" class="box-desc">&#8226; Clears legacy SharedPreferences</text>
+  <text x="1465" y="532" class="box-desc">&#8226; Invokes synchronous .commit() (not .apply)</text>
+  <text x="1465" y="557" class="box-desc">&#8226; Sets KEY_MIGRATION_COMPLETED = true</text>
+  <text x="1465" y="582" class="box-meta">&#x2714; Fixes token resurrection bug completely.</text>
+
+  <rect x="1445" y="615" width="400" height="150" class="inner-card" style="fill: #E8F5E9; stroke: #2E7D32;"/>
+  <text x="1465" y="645" class="box-title" fill="#2E7D32">3. Cold-Start Defense</text>
+  <text x="1465" y="672" class="box-desc">&#8226; Navigates with CLEAR_TASK | NEW_TASK</text>
+  <text x="1465" y="697" class="box-desc">&#8226; Process kill &amp; relaunch routes to Login</text>
+  <text x="1465" y="722" class="box-desc">&#8226; MainActivity.onResume() aborts if logged out</text>
+  <text x="1465" y="747" class="box-meta">&#x2714; Verified across cold emulator restarts.</text>
+
+  <rect x="1445" y="785" width="400" height="160" class="note-badge"/>
+  <text x="1465" y="815" class="note-text">&#x2714; Regression Certified</text>
+  <text x="1465" y="840" class="box-meta">Automated test SessionManagerTest passing.</text>
+  <text x="1465" y="865" class="box-meta">Live on-device regression pass verified that</text>
+  <text x="1465" y="890" class="box-meta">signed-out sessions cannot be resurrected.</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Full authentication lifecycle ensures strong password hashing, brute-force defense, stateless authorization, and guaranteed session destruction.
+  </text>
+</svg>

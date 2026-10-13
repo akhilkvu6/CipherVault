@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 22px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 22px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18.5px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-line-double { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-start: url(#arrow-rev); marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14.5px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+    <marker id="arrow-rev" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 9 1.5 L 0 5 L 9 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <!-- Title Pill -->
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Database Design</text>
+  <text x="960" y="115" class="main-title">CipherVault Authoritative Entity-Relationship (ER) Diagram</text>
+  <text x="960" y="145" class="subtitle">MySQL 8.0 Relational Topology: Primary Keys, Cascading Foreign Keys, and Cryptographic Unique Constraints</text>
+
+  <!-- TABLE 1: users (x: 50, y: 180, w: 380, h: 540) -->
+  <rect x="50" y="180" width="380" height="540" class="inner-card"/>
+  <rect x="50" y="180" width="380" height="45" class="card-header"/>
+  <text x="240" y="210" class="tier-title">users</text>
+  
+  <text x="70" y="255" class="box-title">id : BIGINT (PK, AUTO_INC)</text>
+  <text x="70" y="285" class="box-desc">&#8226; name : VARCHAR(255) NOT NULL</text>
+  <text x="70" y="315" class="box-desc">&#8226; username : VARCHAR(255) [UNIQUE]</text>
+  <text x="70" y="345" class="box-desc">&#8226; email : VARCHAR(255) [UNIQUE, LOGIN]</text>
+  <text x="70" y="375" class="box-desc">&#8226; password : VARCHAR(255) [BCrypt Cost 10]</text>
+  <text x="70" y="405" class="box-desc">&#8226; storage_limit : BIGINT [10 GB = 10737418240 B]</text>
+  <text x="70" y="435" class="box-desc">&#8226; used_storage : BIGINT DEFAULT 0 [Bytes]</text>
+  <text x="70" y="465" class="box-desc">&#8226; user_key : VARCHAR(512) [Wrapped UDEK]</text>
+  <text x="70" y="495" class="box-desc">&#8226; token_version : INT DEFAULT 1 [Revoke]</text>
+  <text x="70" y="525" class="box-desc">&#8226; profile_photo_path : VARCHAR(512) NULL</text>
+  <text x="70" y="555" class="box-desc">&#8226; created_at : DATETIME CURRENT_TIMESTAMP</text>
+  <rect x="65" y="585" width="350" height="115" class="note-badge"/>
+  <text x="80" y="615" class="note-text">&#x2714; Master User Account &amp; Quota Entity</text>
+  <text x="80" y="640" class="box-meta">Stores wrapped AES-256 UDEK per user.</text>
+  <text x="80" y="665" class="box-meta">Token version invalidates JWTs on logout.</text>
+  <text x="80" y="688" class="box-meta">Atomic used_storage updates on upload/delete.</text>
+
+  <!-- TABLE 2: stored_files (x: 520, y: 180, w: 420, h: 540) -->
+  <rect x="520" y="180" width="420" height="540" class="inner-card"/>
+  <rect x="520" y="180" width="420" height="45" class="card-header"/>
+  <text x="730" y="210" class="tier-title">stored_files</text>
+
+  <text x="540" y="255" class="box-title">id : BIGINT (PK, AUTO_INC)</text>
+  <text x="540" y="285" class="box-desc">&#8226; user_id : BIGINT (FK &#8594; users.id) [CASCADE]</text>
+  <text x="540" y="315" class="box-desc">&#8226; original_filename : VARCHAR(255) NOT NULL</text>
+  <text x="540" y="345" class="box-desc">&#8226; stored_filename : VARCHAR(255) [UUID.ext]</text>
+  <text x="540" y="375" class="box-desc">&#8226; file_size : BIGINT NOT NULL [Bytes, Max 1GB]</text>
+  <text x="540" y="405" class="box-desc">&#8226; content_type : VARCHAR(255) NOT NULL</text>
+  <text x="540" y="435" class="box-desc">&#8226; sha256_hash : VARCHAR(64) NOT NULL</text>
+  <text x="540" y="465" class="box-desc">&#8226; storage_path : VARCHAR(512) [storage/encrypted/]</text>
+  <text x="540" y="495" class="box-desc">&#8226; encrypted : BOOLEAN DEFAULT TRUE</text>
+  <text x="540" y="525" class="box-desc">&#8226; has_preview : BOOLEAN DEFAULT FALSE</text>
+  <text x="540" y="555" class="box-desc">&#8226; preview_path : VARCHAR(512) [storage/previews/]</text>
+  <text x="540" y="585" class="box-desc">&#8226; created_at : DATETIME CURRENT_TIMESTAMP</text>
+  <rect x="535" y="605" width="390" height="95" class="note-badge"/>
+  <text x="550" y="635" class="note-text">&#x2714; UNIQUE (user_id, sha256_hash)</text>
+  <text x="550" y="660" class="box-meta">Atomic per-user deduplication constraint.</text>
+  <text x="550" y="683" class="box-meta">Eliminates cross-tenant side-channel leakage.</text>
+
+  <!-- TABLE 3: file_metadata (x: 1040, y: 180, w: 410, h: 540) -->
+  <rect x="1040" y="180" width="410" height="540" class="inner-card"/>
+  <rect x="1040" y="180" width="410" height="45" class="card-header"/>
+  <text x="1245" y="210" class="tier-title">file_metadata</text>
+
+  <text x="1060" y="255" class="box-title">id : BIGINT (PK, AUTO_INC)</text>
+  <text x="1060" y="285" class="box-desc">&#8226; file_id : BIGINT (FK &#8594; stored_files.id) [1:1, UK]</text>
+  <text x="1060" y="315" class="box-desc">&#8226; camera_make, camera_model : VARCHAR(255)</text>
+  <text x="1060" y="345" class="box-desc">&#8226; lens : VARCHAR(255), focal_length : VARCHAR(100)</text>
+  <text x="1060" y="375" class="box-desc">&#8226; iso : VARCHAR(50), exposure_time : VARCHAR(100)</text>
+  <text x="1060" y="405" class="box-desc">&#8226; f_number : VARCHAR(50), date_taken : VARCHAR(100)</text>
+  <text x="1060" y="435" class="box-desc">&#8226; width, height : INT, resolution : VARCHAR(100)</text>
+  <text x="1060" y="465" class="box-desc">&#8226; video_codec, audio_codec : VARCHAR(100)</text>
+  <text x="1060" y="495" class="box-desc">&#8226; duration : VARCHAR(100), bitrate : VARCHAR(100)</text>
+  <text x="1060" y="525" class="box-desc">&#8226; author, title, artist, album, genre : VARCHAR</text>
+  <text x="1060" y="555" class="box-desc">&#8226; doc_created_date, doc_modified_date : VARCHAR</text>
+  <text x="1060" y="585" class="box-desc">&#8226; raw_metadata_json : TEXT [ExifTool JSON Dump]</text>
+  <rect x="1055" y="605" width="380" height="95" class="note-badge"/>
+  <text x="1070" y="635" class="note-text">&#x2714; 29 Decoupled Forensic Attributes</text>
+  <text x="1070" y="660" class="box-meta">Indexed via B-Trees: make, model, codec, res.</text>
+  <text x="1070" y="683" class="box-meta">Powers multi-attribute search and suggestion chips.</text>
+
+  <!-- TABLE 4: activity_events (x: 150, y: 770, w: 600, h: 260) -->
+  <rect x="150" y="770" width="600" height="260" class="inner-card"/>
+  <rect x="150" y="770" width="600" height="45" class="card-header"/>
+  <text x="450" y="800" class="tier-title">activity_events</text>
+
+  <text x="170" y="845" class="box-title">id : BIGINT (PK) | user_id : BIGINT (FK &#8594; users.id) [CASCADE]</text>
+  <text x="170" y="875" class="box-desc">&#8226; event_type : VARCHAR(50) [LOGIN, UPLOAD, DOWNLOAD, DELETE, DUPLICATE_DETECTED]</text>
+  <text x="170" y="905" class="box-desc">&#8226; timestamp : DATETIME CURRENT_TIMESTAMP | summary : VARCHAR(500)</text>
+  <text x="170" y="935" class="box-desc">&#8226; file_count : INT, total_bytes : BIGINT, affected_files : TEXT</text>
+  <text x="170" y="965" class="box-desc">&#8226; status : VARCHAR(50) [SUCCESS, REJECTED, FAILED] | error_message : VARCHAR(500)</text>
+  <text x="170" y="1000" class="box-meta">Audits security lifecycle and file transfer transactions per user account.</text>
+
+  <!-- TABLE 5: transfers (x: 820, y: 770, w: 640, h: 260) -->
+  <rect x="820" y="770" width="640" height="260" class="inner-card"/>
+  <rect x="820" y="770" width="640" height="45" class="card-header"/>
+  <text x="1140" y="800" class="tier-title">transfers</text>
+
+  <text x="840" y="845" class="box-title">id : BIGINT (PK) | user_id : BIGINT (FK &#8594; users.id) [CASCADE]</text>
+  <text x="840" y="875" class="box-desc">&#8226; transfer_type : VARCHAR(50) [UPLOAD / DOWNLOAD] | status : VARCHAR(50) [COMPLETED, etc.]</text>
+  <text x="840" y="905" class="box-desc">&#8226; total_bytes, transferred_bytes : BIGINT | batch_identifier : VARCHAR(100) [UUID]</text>
+  <text x="840" y="935" class="box-desc">&#8226; file_ids : VARCHAR(255), file_names : TEXT, error_message : VARCHAR(500)</text>
+  <text x="840" y="965" class="box-desc">&#8226; started_at, completed_at : DATETIME, updated_at : DATETIME ON UPDATE</text>
+  <text x="840" y="1000" class="box-meta">Tracks live streaming throughput metrics and foreground transfer batch history.</text>
+
+  <!-- RELATIONSHIP CONNECTORS -->
+  <!-- 1. users -> stored_files (1:N) -->
+  <line x1="430" y1="360" x2="520" y2="360" class="conn-line"/>
+  <rect x="445" y="340" width="60" height="25" class="edge-bg"/>
+  <text x="475" y="357" class="edge-label">1 : N</text>
+
+  <!-- 2. stored_files -> file_metadata (1:1) -->
+  <line x1="940" y1="360" x2="1040" y2="360" class="conn-line"/>
+  <rect x="965" y="340" width="50" height="25" class="edge-bg"/>
+  <text x="990" y="357" class="edge-label">1 : 1</text>
+
+  <!-- 3. users -> activity_events (1:N) -->
+  <path d="M 240 720 L 240 770" class="conn-line"/>
+  <rect x="250" y="730" width="50" height="25" class="edge-bg"/>
+  <text x="275" y="747" class="edge-label">1 : N</text>
+
+  <!-- 4. users -> transfers (1:N) -->
+  <path d="M 350 720 L 350 745 L 900 745 L 900 770" class="conn-line"/>
+  <rect x="580" y="732" width="50" height="25" class="edge-bg"/>
+  <text x="605" y="749" class="edge-label">1 : N</text>
+
+  <!-- LEGEND BOX (x: 1480, y: 180, w: 390, h: 540) -->
+  <rect x="1480" y="180" width="390" height="540" class="outer-card"/>
+  <rect x="1480" y="180" width="390" height="45" class="card-header-accent"/>
+  <text x="1675" y="210" class="tier-title-light">Legend &amp; Integrity Invariants</text>
+
+  <text x="1510" y="260" class="box-title">Relational Cardinality Rules</text>
+  <text x="1510" y="290" class="box-desc">&#8226; <tspan font-weight="bold">PK:</tspan> Primary Key (Auto Increment)</text>
+  <text x="1510" y="320" class="box-desc">&#8226; <tspan font-weight="bold">FK:</tspan> Foreign Key constraint</text>
+  <text x="1510" y="350" class="box-desc">&#8226; <tspan font-weight="bold">ON DELETE CASCADE:</tspan> Deleting a parent</text>
+  <text x="1530" y="375" class="box-desc">user or stored_file cascades automatically</text>
+  <text x="1530" y="400" class="box-desc">to metadata, activities, and transfers.</text>
+
+  <line x1="1510" y1="420" x2="1840" y2="420" stroke="#DDD4C8" stroke-width="1.5"/>
+
+  <text x="1510" y="450" class="box-title">Cryptographic Boundaries</text>
+  <text x="1510" y="480" class="box-desc">&#8226; <tspan font-weight="bold">Zero Plaintext Storage:</tspan> Files on disk</text>
+  <text x="1530" y="505" class="box-desc">are stored as AES-256-GCM blobs.</text>
+  <text x="1510" y="535" class="box-desc">&#8226; <tspan font-weight="bold">Zero Binary in MySQL:</tspan> MySQL stores</text>
+  <text x="1530" y="560" class="box-desc">file metadata, quotas, and hashes only.</text>
+  <text x="1510" y="590" class="box-desc">&#8226; <tspan font-weight="bold">Isolated Deduplication:</tspan> Duplicate</text>
+  <text x="1530" y="615" class="box-desc">checks are isolated per user account,</text>
+  <text x="1530" y="640" class="box-desc">preventing multi-tenant probing attacks.</text>
+  <text x="1510" y="670" class="box-desc">&#8226; <tspan font-weight="bold">Token Versioning:</tspan> Incrementing</text>
+  <text x="1530" y="695" class="box-desc">token_version revokes all active JWTs.</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Authoritative MySQL 8.0 schema verified from database/schema.sql and Spring Boot JPA entity mapping classes.
+  </text>
+</svg>

@@ -1,0 +1,63 @@
+flowchart LR
+    subgraph Client["TIER 1: MOBILE CLIENT (ANDROID)"]
+        UI["Android UI Views (Material 3)"]
+        VM["ViewModels & Domain Managers"]
+        EncPrefs["Hardware EncryptedSharedPreferences"]
+        Net["Retrofit 2 & OkHttp 4 Client"]
+        UI --> VM
+        VM --> Net
+        EncPrefs -.-> Net
+    end
+
+    subgraph Security["TIER 2: SECURITY & API GATEWAY"]
+        Filter["Spring Security 6 Stateless Filter"]
+        JWT["JJWT HMAC-SHA256 Token Validator"]
+        RateLimit["Sliding-Window Login Rate Limiter"]
+        Net ==>|"HTTP/1.1 REST (Bearer JWT)"| Filter
+        Filter --> JWT
+        Filter --> RateLimit
+    end
+
+    subgraph BackendCore["TIER 3: SPRING BOOT APPLICATION SERVICES"]
+        AuthCtrl["AuthController & UserController"]
+        FileCtrl["FileController & TransferController"]
+        StorageSvc["FileStorageService (Streaming I/O)"]
+        CryptoEngine["EncryptionService (AES-256-GCM)"]
+        KeyMgr["KeyManagementService (PBKDF2 Server KEK)"]
+        MetaExtract["MetadataExtractionService (ExifTool)"]
+        SearchSvc["FileSearchService (Criteria API)"]
+
+        Filter --> AuthCtrl
+        Filter --> FileCtrl
+        FileCtrl --> StorageSvc
+        FileCtrl --> SearchSvc
+        StorageSvc --> CryptoEngine
+        StorageSvc --> MetaExtract
+        CryptoEngine <--> KeyMgr
+    end
+
+    subgraph Persistence["TIER 4: SOVEREIGN PERSISTENCE LAYER"]
+        subgraph MySQL["MySQL 8.0 Database (Metadata & Relational State)"]
+            T_Users["users (Quota & Accounts)"]
+            T_Files["stored_files (Filenames & Hashes)"]
+            T_Meta["file_metadata (29 Forensic Fields)"]
+            T_Events["activity_events (Audit Trail)"]
+            T_Transfers["transfers (Live Batches)"]
+        end
+
+        subgraph Filesystem["Sovereign Filesystem (Encrypted Blobs)"]
+            Dir_Enc["storage/encrypted/ (AES-256-GCM Blobs)"]
+            Dir_Norm["storage/uploads/ (Unencrypted Uploads)"]
+            Dir_Prev["storage/previews/ (JPEG Thumbnails)"]
+            Dir_Avt["storage/profile_photos/ (Avatars)"]
+        end
+
+        AuthCtrl --> T_Users
+        StorageSvc --> T_Files
+        StorageSvc --> T_Meta
+        StorageSvc --> T_Events
+        StorageSvc --> T_Transfers
+        CryptoEngine ==>|"Piped 16 KB Streams"| Dir_Enc
+        StorageSvc ==>|"Direct Byte Stream"| Dir_Norm
+        StorageSvc -.->|"Thumbnail Cache"| Dir_Prev
+    end

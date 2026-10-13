@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .proc-circle { fill: #E4DCD1; stroke: #65483A; stroke-width: 2.5px; }
+      .proc-id { font-family: 'Times New Roman', serif; font-size: 19px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .proc-title { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .store-card { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; rx: 10px; }
+      .store-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 10px 10px 0 0; }
+      .store-title { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .store-desc { font-family: 'Times New Roman', serif; font-size: 14.5px; fill: #332B27; }
+      
+      .diamond { fill: #EDE5DA; stroke: #65483A; stroke-width: 2.5px; }
+      .diamond-title { font-family: 'Times New Roman', serif; font-size: 15.5px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Workflow Engineering</text>
+  <text x="960" y="115" class="main-title">CipherVault Streaming Retrieval &amp; Decryption Workflow</text>
+  <text x="960" y="145" class="subtitle">Complete processing order: User authorization, dual-mode decryption toggle, AES-256-GCM streaming, and GHASH verification</text>
+
+  <!-- Step 1: User Action (x: 50, y: 220, w: 260, h: 220) -->
+  <rect x="50" y="220" width="260" height="220" class="inner-card"/>
+  <rect x="50" y="220" width="260" height="40" class="card-header"/>
+  <text x="180" y="247" class="tier-title">Step 1: Download Action</text>
+  <text x="70" y="290" class="box-desc">&#8226; User taps direct 40dp [Download]</text>
+  <text x="70" y="315" class="box-desc">&#8226; Displays modal download dialog</text>
+  <text x="70" y="340" class="box-desc">&#8226; Toggle: 'Decrypt on download'</text>
+  <text x="70" y="365" class="box-desc">&#8226; Default state: ENABLED (true)</text>
+  <text x="70" y="395" class="box-meta">Allows choosing plain or .enc file.</text>
+  <rect x="65" y="405" width="230" height="22" class="note-badge"/>
+  <text x="180" y="421" class="edge-label" text-anchor="middle">In-App Decryption Switch</text>
+
+  <!-- Step 2: REST Request (x: 360, y: 220, w: 260, h: 220) -->
+  <rect x="360" y="220" width="260" height="220" class="inner-card"/>
+  <rect x="360" y="220" width="260" height="40" class="card-header"/>
+  <text x="490" y="247" class="tier-title">Step 2: REST Request</text>
+  <text x="380" y="290" class="box-desc">&#8226; GET /api/files/&#123;id&#125;/download</text>
+  <text x="380" y="315" class="box-desc">&#8226; Param: ?decrypt=true|false</text>
+  <text x="380" y="340" class="box-desc">&#8226; Header: Authorization: Bearer</text>
+  <text x="380" y="365" class="box-desc">&#8226; Verifies active session token</text>
+  <text x="380" y="395" class="box-meta">Passes through stateless security filter.</text>
+
+  <!-- Step 3: Auth & Ownership (Diamond: cx: 740, cy: 330) -->
+  <polygon points="740,240 830,330 740,420 650,330" class="diamond"/>
+  <text x="740" y="315" class="diamond-title">JWT Valid &amp;</text>
+  <text x="740" y="338" class="diamond-title">File Belongs</text>
+  <text x="740" y="360" class="diamond-title">to User?</text>
+
+  <!-- Reject 401/404 -->
+  <rect x="650" y="470" width="180" height="80" class="inner-card" style="stroke: #C62828; fill: #FFEBEE;"/>
+  <text x="740" y="505" class="box-title" fill="#C62828" text-anchor="middle">401 / 404</text>
+  <text x="740" y="530" class="box-desc" text-anchor="middle">Access Denied</text>
+
+  <!-- Step 4: Mode Branch (Diamond: cx: 960, cy: 330) -->
+  <polygon points="960,240 1050,330 960,420 870,330" class="diamond"/>
+  <text x="960" y="320" class="diamond-title">Decrypt Mode</text>
+  <text x="960" y="345" class="diamond-title">Requested?</text>
+
+  <!-- BRANCH A: DECRYPTION PATH (Top Right: x: 1140, y: 200, w: 720, h: 360) -->
+  <rect x="1140" y="200" width="720" height="360" class="outer-card" style="stroke: #2E7D32; fill: #F1F8F1;"/>
+  <rect x="1140" y="200" width="720" height="40" style="fill: #2E7D32; rx: 14px 14px 0 0;"/>
+  <text x="1500" y="227" class="tier-title-light">Branch A: Streaming AES-256-GCM Decryption (Default)</text>
+
+  <rect x="1165" y="255" width="325" height="150" class="inner-card"/>
+  <text x="1185" y="285" class="box-title">Key &amp; Nonce Recovery</text>
+  <text x="1185" y="312" class="box-desc">&#8226; Reads 12-byte IV from blob header</text>
+  <text x="1185" y="337" class="box-desc">&#8226; Unwraps user UDEK via Server KEK</text>
+  <text x="1185" y="362" class="box-desc">&#8226; Inits CipherInputStream (GCM mode)</text>
+  <text x="1185" y="387" class="box-meta">Memory-zeroed key handling.</text>
+
+  <rect x="1510" y="255" width="325" height="150" class="inner-card"/>
+  <text x="1530" y="285" class="box-title">GHASH Tag Tamper Verify</text>
+  <text x="1530" y="312" class="box-desc">&#8226; Streams 16 KB chunks to response</text>
+  <text x="1530" y="337" class="box-desc">&#8226; Verifies 128-bit GHASH at EOF</text>
+  <text x="1530" y="362" class="box-desc">&#8226; Throws AEADBadTagException if altered</text>
+  <text x="1530" y="387" class="box-meta">Guarantees 100% cryptographic integrity.</text>
+
+  <rect x="1165" y="420" width="670" height="120" class="inner-card" style="fill: #FFFFFF;"/>
+  <text x="1185" y="450" class="box-title">Client Delivery: Original Plaintext Restored</text>
+  <text x="1185" y="475" class="box-desc">&#8226; Sets Content-Disposition with original filename (e.g. photo.jpg) and MIME type</text>
+  <text x="1185" y="500" class="box-desc">&#8226; Emits X-File-SHA256 header; saved directly to Android Downloads directory</text>
+  <text x="1185" y="525" class="box-meta">&#x2714; Solves the limitation from review 1: Decryption is fully implemented and operational.</text>
+
+  <!-- BRANCH B: RAW CIPHERTEXT EXPORT (Bottom Right: x: 1140, y: 590, w: 720, h: 220) -->
+  <rect x="1140" y="590" width="720" height="220" class="outer-card" style="stroke: #65483A; fill: #F4EFEA;"/>
+  <rect x="1140" y="590" width="720" height="40" class="card-header"/>
+  <text x="1500" y="617" class="tier-title">Branch B: Raw Ciphertext Export (decrypt = false)</text>
+  
+  <text x="1170" y="660" class="box-title">Encrypted Blob Export (.enc Artifact)</text>
+  <text x="1170" y="690" class="box-desc">&#8226; Streams physical encrypted file directly from storage/encrypted/{uuid}</text>
+  <text x="1170" y="715" class="box-desc">&#8226; Appends .enc extension (e.g. photo.jpg.enc) &amp; sets application/octet-stream</text>
+  <text x="1170" y="740" class="box-desc">&#8226; Allows users to export raw zero-knowledge encrypted backups for forensic storage</text>
+  <text x="1170" y="770" class="box-meta">&#x2714; Useful for secure off-site archiving without revealing plaintext to device storage.</text>
+
+  <!-- AUDIT & COMPLETION (x: 50, y: 640, w: 1000, h: 170) -->
+  <rect x="50" y="640" width="1000" height="170" class="inner-card"/>
+  <rect x="50" y="640" width="1000" height="40" class="card-header"/>
+  <text x="550" y="667" class="tier-title">Step 5: Transfer Ledger &amp; Security Auditing</text>
+  <text x="75" y="710" class="box-desc">&#8226; <tspan font-weight="bold">activity_events:</tspan> Inserts DOWNLOAD audit event with user_id, filename, and bytes transferred.</text>
+  <text x="75" y="735" class="box-desc">&#8226; <tspan font-weight="bold">transfers:</tspan> Updates batch status to COMPLETED; records streaming throughput and completion timestamp.</text>
+  <text x="75" y="760" class="box-desc">&#8226; <tspan font-weight="bold">Android TransferService:</tspan> Dismisses foreground streaming notification &amp; alerts user of download success.</text>
+  <text x="75" y="788" class="box-meta">&#x2714; Constant-memory streaming ensures high performance even on 2 GB file downloads.</text>
+
+  <!-- CONNECTORS -->
+  <line x1="310" y1="330" x2="360" y2="330" class="conn-line"/>
+  <line x1="620" y1="330" x2="650" y2="330" class="conn-line"/>
+  <line x1="740" y1="420" x2="740" y2="470" class="conn-line"/>
+  <line x1="830" y1="330" x2="870" y2="330" class="conn-line"/>
+  <line x1="1050" y1="330" x2="1140" y2="330" class="conn-line"/>
+  <text x="1090" y="320" class="edge-label">YES</text>
+
+  <path d="M 960 420 L 960 700 L 1140 700" class="conn-line"/>
+  <text x="980" y="550" class="edge-label">NO (.enc)</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Dual-mode streaming retrieval guarantees both usability (automatic decryption) and cryptographic sovereignty (raw blob export).
+  </text>
+</svg>

@@ -1,0 +1,87 @@
+erDiagram
+    users ||--o{ stored_files : "owns (1:N)"
+    users ||--o{ activity_events : "performs (1:N)"
+    users ||--o{ transfers : "initiates (1:N)"
+    stored_files ||--o| file_metadata : "has (1:1)"
+
+    users {
+        bigint id PK "Auto Increment"
+        varchar name "Full User Name"
+        varchar username UK "Unique Handle"
+        varchar email UK "Unique Login Email"
+        varchar password "BCrypt Hash Cost 10"
+        bigint storage_limit "10 GB Quota (10737418240 bytes)"
+        bigint used_storage "Current Bytes Consumed"
+        varchar user_key "Wrapped UDEK (AES-256-GCM)"
+        int token_version "Revocation Counter"
+        varchar profile_photo_path "Avatar Path"
+        datetime created_at "Registration Timestamp"
+    }
+
+    stored_files {
+        bigint id PK "Auto Increment"
+        bigint user_id FK "References users(id) ON DELETE CASCADE"
+        varchar original_filename "Preserved Client Name"
+        varchar stored_filename "UUID Disk Name"
+        bigint file_size "Bytes (Max 1 GB)"
+        varchar content_type "MIME Type"
+        varchar sha256_hash "Plaintext Digest (64 Hex)"
+        varchar storage_path "Relative Filesystem Path"
+        boolean encrypted "AES-256-GCM Flag"
+        boolean has_preview "Preview Available Flag"
+        varchar preview_path "JPEG Thumbnail Path"
+        varchar preview_mime_type "Preview MIME Type"
+        datetime created_at "Upload Timestamp"
+    }
+
+    file_metadata {
+        bigint id PK "Auto Increment"
+        bigint file_id FK "Unique References stored_files(id) ON DELETE CASCADE"
+        varchar camera_make "Exif Camera Manufacturer"
+        varchar camera_model "Exif Camera Model"
+        varchar lens "Optical Lens Hardware"
+        varchar focal_length "Focal Length"
+        varchar iso "Sensor Sensitivity"
+        varchar exposure_time "Shutter Speed"
+        varchar f_number "Lens Aperture"
+        varchar date_taken "Original Media Timestamp"
+        int width "Pixel Width"
+        int height "Pixel Height"
+        varchar resolution "Formatted Dimensions"
+        varchar duration "Media Duration"
+        varchar video_codec "Encoding Format"
+        varchar audio_codec "Audio Stream Codec"
+        varchar frame_rate "FPS Rating"
+        varchar bitrate "Bitrate"
+        varchar title "Embedded Title"
+        varchar artist "Media Creator"
+        varchar author "Document Author"
+        text raw_metadata_json "Raw ExifTool JSON Dump"
+    }
+
+    activity_events {
+        bigint id PK "Auto Increment"
+        bigint user_id FK "References users(id) ON DELETE CASCADE"
+        varchar event_type "LOGIN, UPLOAD, DOWNLOAD, DELETE"
+        datetime timestamp "Event Timestamp"
+        varchar summary "Audit Description"
+        int file_count "Affected Items Count"
+        bigint total_bytes "Bytes Involved"
+        text affected_files "Filenames Affected"
+        varchar status "SUCCESS, REJECTED, FAILED"
+        varchar error_message "Diagnostic Details"
+    }
+
+    transfers {
+        bigint id PK "Auto Increment"
+        bigint user_id FK "References users(id) ON DELETE CASCADE"
+        varchar transfer_type "UPLOAD or DOWNLOAD"
+        varchar status "IN_PROGRESS, COMPLETED, FAILED"
+        bigint total_bytes "Batch Size in Bytes"
+        bigint transferred_bytes "Bytes Streamed"
+        varchar file_ids "Comma-separated IDs"
+        text file_names "Batch Filenames"
+        varchar batch_identifier "UUID Batch ID"
+        datetime started_at "Start Timestamp"
+        datetime completed_at "Completion Timestamp"
+    }

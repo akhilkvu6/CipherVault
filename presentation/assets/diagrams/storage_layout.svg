@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+      
+      .uc-ellipse { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; }
+      .uc-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #171513; text-anchor: middle; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Storage Architecture</text>
+  <text x="960" y="115" class="main-title">CipherVault Physical File &amp; Database Storage Layout</text>
+  <text x="960" y="145" class="subtitle">Complete storage topology: 4 authoritative filesystem directories vs. MySQL 8.0 relational metadata segregation</text>
+
+  <!-- CONTAINER 1: PHYSICAL FILESYSTEM (x: 50, y: 190, w: 900, h: 780) -->
+  <rect x="50" y="190" width="900" height="780" class="outer-card"/>
+  <rect x="50" y="190" width="900" height="45" class="card-header"/>
+  <text x="500" y="220" class="tier-title">Physical Server Storage Hierarchy (storage/)</text>
+
+  <!-- Dir 1: storage/encrypted/ -->
+  <rect x="80" y="255" width="840" height="150" class="inner-card" style="stroke: #65483A; stroke-width: 2px; fill: #EDE5DA;"/>
+  <text x="105" y="290" class="box-title">1. storage/encrypted/ (Authenticated Ciphertext Blobs)</text>
+  <text x="105" y="320" class="box-desc">&#8226; <tspan font-weight="bold">Contents:</tspan> Physical file blobs encrypted via streaming AES-256-GCM.</text>
+  <text x="105" y="345" class="box-desc">&#8226; <tspan font-weight="bold">File Naming:</tspan> UUID format: &#123;uuid&#125;.ext (e.g. 58d9008f-1e6e-4aad-b30f-09cd306699b8.pdf).</text>
+  <text x="105" y="370" class="box-desc">&#8226; <tspan font-weight="bold">Binary Structure:</tspan> [ 12-Byte Nonce ] + [ Ciphertext Chunks ] + [ 16-Byte GHASH Tag ].</text>
+  <text x="105" y="395" class="box-meta">&#x2714; Zero plaintext on disk. Protected at rest. Cryptographically unreadable without user UDEK.</text>
+
+  <!-- Dir 2: storage/uploads/ -->
+  <rect x="80" y="425" width="840" height="130" class="inner-card"/>
+  <text x="105" y="460" class="box-title">2. storage/uploads/ (Unencrypted Upload Staging)</text>
+  <text x="105" y="490" class="box-desc">&#8226; <tspan font-weight="bold">Contents:</tspan> Files uploaded when user explicitly disables the encryption toggle switch.</text>
+  <text x="105" y="515" class="box-desc">&#8226; <tspan font-weight="bold">File Naming:</tspan> UUID format: &#123;uuid&#125;.ext (retains original format for direct streaming).</text>
+  <text x="105" y="540" class="box-meta">&#x2714; Accommodates public non-sensitive documents where encryption overhead is unnecessary.</text>
+
+  <!-- Dir 3: storage/previews/ -->
+  <rect x="80" y="575" width="840" height="130" class="inner-card"/>
+  <text x="105" y="610" class="box-title">3. storage/previews/ (Thumbnail Cache)</text>
+  <text x="105" y="640" class="box-desc">&#8226; <tspan font-weight="bold">Contents:</tspan> Downsampled JPEG preview thumbnails generated by MediaPreviewService.</text>
+  <text x="105" y="665" class="box-desc">&#8226; <tspan font-weight="bold">File Naming:</tspan> preview-&#123;uuid&#125;.jpg (served via GET /api/files/&#123;id&#125;/preview).</text>
+  <text x="105" y="690" class="box-meta">&#x2714; Allows instant mobile grid rendering without decrypting heavy multi-gigabyte payloads.</text>
+
+  <!-- Dir 4: storage/profile_photos/ -->
+  <rect x="80" y="725" width="840" height="120" class="inner-card"/>
+  <text x="105" y="760" class="box-title">4. storage/profile_photos/ (User Avatars)</text>
+  <text x="105" y="790" class="box-desc">&#8226; <tspan font-weight="bold">Contents:</tspan> Custom user account profile images uploaded from Android Settings.</text>
+  <text x="105" y="815" class="box-desc">&#8226; <tspan font-weight="bold">File Naming:</tspan> photo-&#123;uuid&#125;.jpg (served via GET /api/user/photo).</text>
+  <text x="105" y="838" class="box-meta">&#x2714; Linked to users.profile_photo_path; synchronized across all active sessions.</text>
+
+  <rect x="80" y="865" width="840" height="85" class="note-badge"/>
+  <text x="105" y="895" class="note-text">&#x2714; Directory Initialization</text>
+  <text x="105" y="920" class="box-meta">All 4 directories are initialized automatically on Spring Boot bootstrap via FileStorageConfig.java.</text>
+  <text x="105" y="940" class="box-meta">Path traversal attacks are blocked via strict FileStorageConfig.resolvePath() containment checks.</text>
+
+  <!-- CONTAINER 2: MYSQL METADATA SEGREGATION (x: 980, y: 190, w: 890, h: 780) -->
+  <rect x="980" y="190" width="890" height="780" class="outer-card"/>
+  <rect x="980" y="190" width="890" height="45" class="card-header-accent"/>
+  <text x="1425" y="220" class="tier-title-light">Relational Metadata Segregation (MySQL 8.0)</text>
+
+  <rect x="1010" y="255" width="830" height="150" class="inner-card"/>
+  <text x="1035" y="290" class="box-title">Crucial Architectural Invariant: ZERO Binary Bytes in DB</text>
+  <text x="1035" y="320" class="box-desc">&#8226; MySQL stores <tspan font-weight="bold">zero</tspan> file binary content bytes (no BLOBs or large text encodings).</text>
+  <text x="1035" y="345" class="box-desc">&#8226; Stores structured relational metadata, filenames, quotas, hashes, and disk path pointers.</text>
+  <text x="1035" y="370" class="box-desc">&#8226; Preserves extreme database query speed, microsecond latency, and small SQL backup sizes.</text>
+  <text x="1035" y="395" class="box-meta">&#x2714; Entire test database backup is only ~548 KB, despite containing gigabytes of stored vault data.</text>
+
+  <rect x="1010" y="425" width="830" height="280" class="inner-card"/>
+  <text x="1035" y="460" class="box-title">Decoupled Relational Schema Scope</text>
+  
+  <text x="1035" y="495" class="box-desc">&#8226; <tspan font-weight="bold">users:</tspan> User identity, password hashes, PBKDF2 wrapped UDEKs, token_version, and 10 GB quota.</text>
+  <text x="1035" y="525" class="box-desc">&#8226; <tspan font-weight="bold">stored_files:</tspan> Original filenames, stored filenames, sizes, content types, and SHA-256 digests.</text>
+  <text x="1035" y="555" class="box-desc">&#8226; <tspan font-weight="bold">file_metadata:</tspan> 29 decoupled forensic EXIF attributes (optics, resolution, codecs, author).</text>
+  <text x="1035" y="585" class="box-desc">&#8226; <tspan font-weight="bold">activity_events:</tspan> Immutable security audit trail recording login, upload, download, and delete.</text>
+  <text x="1035" y="615" class="box-desc">&#8226; <tspan font-weight="bold">transfers:</tspan> Real-time streaming throughput, batch identifiers, byte counters, and statuses.</text>
+  <text x="1035" y="650" class="note-text">&#x2714; Cryptographic Deduplication Constraint:</text>
+  <text x="1035" y="675" class="box-meta">UNIQUE (user_id, sha256_hash) enforces atomic per-user deduplication without side channels.</text>
+
+  <rect x="1010" y="725" width="830" height="225" class="inner-card" style="fill: #E8F5E9; stroke: #2E7D32; stroke-width: 2px;"/>
+  <text x="1035" y="760" class="box-title" fill="#2E7D32">&#x2714; Cascading Lifecycle Consistency</text>
+  <text x="1035" y="790" class="box-desc">&#8226; When a file is deleted via DELETE /api/files/&#123;id&#125;:</text>
+  <text x="1055" y="815" class="box-desc">1. Relational database cascades delete to file_metadata via foreign key ON DELETE CASCADE.</text>
+  <text x="1055" y="840" class="box-desc">2. users.used_storage quota is decremented atomically by the exact file size.</text>
+  <text x="1055" y="865" class="box-desc">3. Server unlinks the physical ciphertext blob from storage/encrypted/.</text>
+  <text x="1055" y="890" class="box-desc">4. Server unlinks the cached thumbnail from storage/previews/.</text>
+  <text x="1035" y="920" class="box-meta">&#x2714; Guarantees 100% synchronization between database records and physical disk files.</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    All 4 storage directories and MySQL database tables verified directly from FileStorageConfig.java and database/schema.sql.
+  </text>
+</svg>

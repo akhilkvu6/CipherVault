@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14.5px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+      
+      .step-badge { fill: #65483A; rx: 12px; }
+      .step-num { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">System Architecture</text>
+  <text x="960" y="115" class="main-title">CipherVault Multi-Tier System Architecture</text>
+  <text x="960" y="145" class="subtitle">End-to-end data flow: Android Client, Stateless Security Gateway, Spring Boot Services, and Sovereign Persistence</text>
+
+  <!-- TIER 1: ANDROID CLIENT (x: 50, y: 180, w: 420, h: 770) -->
+  <rect x="50" y="180" width="420" height="770" class="outer-card"/>
+  <rect x="50" y="180" width="420" height="45" class="card-header"/>
+  <text x="260" y="210" class="tier-title">Tier 1: Android Mobile Client</text>
+
+  <!-- Box 1.1: UI Layer -->
+  <rect x="75" y="245" width="370" height="160" class="inner-card"/>
+  <text x="95" y="278" class="box-title">Material Design 3 Presentation</text>
+  <text x="95" y="305" class="box-desc">&#8226; Native Java Views &amp; ViewModels</text>
+  <text x="95" y="330" class="box-desc">&#8226; 2-Column Responsive Vault Grid</text>
+  <text x="95" y="355" class="box-desc">&#8226; Pre-Upload Staging &amp; 1 GB Batch Quota</text>
+  <text x="95" y="380" class="box-desc">&#8226; Direct 40dp [Download] [Delete] Buttons</text>
+
+  <!-- Box 1.2: Client Security -->
+  <rect x="75" y="425" width="370" height="160" class="inner-card"/>
+  <text x="95" y="458" class="box-title">Hardware-Backed Security</text>
+  <text x="95" y="485" class="box-desc">&#8226; EncryptedSharedPreferences (MasterKey)</text>
+  <text x="95" y="510" class="box-desc">&#8226; JWT Token Storage &amp; Synchronous Purge</text>
+  <text x="95" y="535" class="box-desc">&#8226; BiometricPrompt &amp; PIN AppLock Challenge</text>
+  <text x="95" y="560" class="box-desc">&#8226; Token Migration Guard (Session Isolation)</text>
+
+  <!-- Box 1.3: Client Network -->
+  <rect x="75" y="605" width="370" height="160" class="inner-card"/>
+  <text x="95" y="638" class="box-title">Network &amp; Streaming Ingestion</text>
+  <text x="95" y="665" class="box-desc">&#8226; Retrofit 2 &amp; OkHttp 4.12.0</text>
+  <text x="95" y="690" class="box-desc">&#8226; Bearer Token Interceptor &amp; 401 Catch</text>
+  <text x="95" y="715" class="box-desc">&#8226; Foreground Transfer Service &amp; Progress</text>
+  <text x="95" y="740" class="box-desc">&#8226; Dual-Mode Download Dialog Switch</text>
+
+  <rect x="75" y="785" width="370" height="145" class="note-badge"/>
+  <text x="95" y="815" class="note-text">&#x2714; Client Invariant</text>
+  <text x="95" y="840" class="box-meta">Pre-upload inspection prevents accidental</text>
+  <text x="95" y="865" class="box-meta">quota exhaustion. Session is cleared</text>
+  <text x="95" y="890" class="box-meta">synchronously on logout via multi-target .commit().</text>
+
+  <!-- TIER 2: SECURITY & GATEWAY (x: 510, y: 180, w: 380, h: 770) -->
+  <rect x="510" y="180" width="380" height="770" class="outer-card"/>
+  <rect x="510" y="180" width="380" height="45" class="card-header"/>
+  <text x="700" y="210" class="tier-title">Tier 2: Security &amp; Gateway</text>
+
+  <rect x="535" y="245" width="330" height="160" class="inner-card"/>
+  <text x="555" y="278" class="box-title">Spring Security 6.3 Filter</text>
+  <text x="555" y="305" class="box-desc">&#8226; SessionCreationPolicy.STATELESS</text>
+  <text x="555" y="330" class="box-desc">&#8226; Bearer Token Extraction Filter</text>
+  <text x="555" y="355" class="box-desc">&#8226; Strict CORS &amp; Path Matching</text>
+  <text x="555" y="380" class="box-desc">&#8226; Public Endpoints: /auth/*, /health</text>
+
+  <rect x="535" y="425" width="330" height="160" class="inner-card"/>
+  <text x="555" y="458" class="box-title">JJWT HMAC-SHA256 Engine</text>
+  <text x="555" y="485" class="box-desc">&#8226; 24-Hour Short-Lived JWT Tokens</text>
+  <text x="555" y="510" class="box-desc">&#8226; Claims: sub (email), userId, version</text>
+  <text x="555" y="535" class="box-desc">&#8226; Immediate Revocation on Version Bump</text>
+  <text x="555" y="560" class="box-desc">&#8226; Signature &amp; Tamper Verification</text>
+
+  <rect x="535" y="605" width="330" height="160" class="inner-card"/>
+  <text x="555" y="638" class="box-title">Brute-Force Rate Limiter</text>
+  <text x="555" y="665" class="box-desc">&#8226; Sliding-Window Attempt Tracker</text>
+  <text x="555" y="690" class="box-desc">&#8226; 5 Consecutive Failures Threshold</text>
+  <text x="555" y="715" class="box-desc">&#8226; 15-Minute Automated Lockout</text>
+  <text x="555" y="740" class="box-desc">&#8226; Returns HTTP 429 Too Many Requests</text>
+
+  <rect x="535" y="785" width="330" height="145" class="note-badge"/>
+  <text x="555" y="815" class="note-text">&#x2714; Zero Stored State</text>
+  <text x="555" y="840" class="box-meta">Every API call authenticates via stateless</text>
+  <text x="555" y="865" class="box-meta">crypto signature. No HTTP sessions stored</text>
+  <text x="555" y="890" class="box-meta">in server memory.</text>
+
+  <!-- TIER 3: SERVICES (x: 930, y: 180, w: 460, h: 770) -->
+  <rect x="930" y="180" width="460" height="770" class="outer-card"/>
+  <rect x="930" y="180" width="460" height="45" class="card-header"/>
+  <text x="1160" y="210" class="tier-title">Tier 3: Spring Boot Application Services</text>
+
+  <rect x="955" y="245" width="410" height="160" class="inner-card"/>
+  <text x="975" y="278" class="box-title">FileStorageService (Streaming I/O)</text>
+  <text x="975" y="305" class="box-desc">&#8226; Constant-memory 16 KB chunked streaming</text>
+  <text x="975" y="330" class="box-desc">&#8226; 1 GB upload ceiling &amp; 10 GB user quota check</text>
+  <text x="975" y="355" class="box-desc">&#8226; SHA-256 pre-encryption digest calculation</text>
+  <text x="975" y="380" class="box-desc">&#8226; Atomic per-user duplicate rejection (409 Conflict)</text>
+
+  <rect x="955" y="425" width="410" height="160" class="inner-card"/>
+  <text x="975" y="458" class="box-title">Cryptographic &amp; Key Services</text>
+  <text x="975" y="485" class="box-desc">&#8226; EncryptionService (AES-256-GCM AEAD)</text>
+  <text x="975" y="510" class="box-desc">&#8226; KeyManagementService (PBKDF2 Server KEK)</text>
+  <text x="975" y="535" class="box-desc">&#8226; Wraps per-user UDEKs; memory zeroization</text>
+  <text x="975" y="560" class="box-desc">&#8226; Streaming decryption with GHASH tamper verify</text>
+
+  <rect x="955" y="605" width="410" height="160" class="inner-card"/>
+  <text x="975" y="638" class="box-title">Forensic &amp; Search Services</text>
+  <text x="975" y="665" class="box-desc">&#8226; MetadataExtractionService (ExifTool CLI)</text>
+  <text x="975" y="690" class="box-desc">&#8226; MediaPreviewService (JPEG Thumbnail Cache)</text>
+  <text x="975" y="715" class="box-desc">&#8226; FileSearchService (JPA Criteria Facet Query)</text>
+  <text x="975" y="740" class="box-desc">&#8226; Dynamic Suggestion Chips Engine</text>
+
+  <rect x="955" y="785" width="410" height="145" class="note-badge"/>
+  <text x="975" y="815" class="note-text">&#x2714; High-Throughput Pipeline</text>
+  <text x="975" y="840" class="box-meta">Java 21 virtual threads support hundreds of</text>
+  <text x="975" y="865" class="box-meta">concurrent streaming transfers while maintaining</text>
+  <text x="975" y="890" class="box-meta">a flat 28-36 MB RAM heap footprint.</text>
+
+  <!-- TIER 4: PERSISTENCE (x: 1430, y: 180, w: 440, h: 770) -->
+  <rect x="1430" y="180" width="440" height="770" class="outer-card"/>
+  <rect x="1430" y="180" width="440" height="45" class="card-header-accent"/>
+  <text x="1650" y="210" class="tier-title-light">Tier 4: Sovereign Persistence</text>
+
+  <!-- MySQL Box -->
+  <rect x="1455" y="245" width="390" height="240" class="inner-card"/>
+  <text x="1475" y="278" class="box-title">MySQL 8.0 Relational DB</text>
+  <text x="1475" y="305" class="box-desc">&#8226; <tspan font-weight="bold">users:</tspan> Quotas, wrapped keys, auth</text>
+  <text x="1475" y="330" class="box-desc">&#8226; <tspan font-weight="bold">stored_files:</tspan> Filenames, sizes, hashes</text>
+  <text x="1475" y="355" class="box-desc">&#8226; <tspan font-weight="bold">file_metadata:</tspan> 29 EXIF &amp; codec fields</text>
+  <text x="1475" y="380" class="box-desc">&#8226; <tspan font-weight="bold">activity_events:</tspan> Immutable audit trail</text>
+  <text x="1475" y="405" class="box-desc">&#8226; <tspan font-weight="bold">transfers:</tspan> Live throughput &amp; batches</text>
+  <text x="1475" y="435" class="box-meta">&#x2714; Stores ZERO file binary bytes.</text>
+  <text x="1475" y="460" class="box-meta">&#x2714; Enforces UNIQUE(user_id, sha256_hash).</text>
+
+  <!-- Filesystem Box -->
+  <rect x="1455" y="505" width="390" height="260" class="inner-card"/>
+  <text x="1475" y="538" class="box-title">Server Storage Directories</text>
+  <text x="1475" y="565" class="box-desc">&#8226; <tspan font-weight="bold">storage/encrypted/:</tspan> AES-256-GCM Blobs</text>
+  <text x="1495" y="588" class="box-meta">[12B IV] + [Ciphertext] + [16B Tag]</text>
+  <text x="1475" y="613" class="box-desc">&#8226; <tspan font-weight="bold">storage/uploads/:</tspan> Unencrypted Uploads</text>
+  <text x="1475" y="638" class="box-desc">&#8226; <tspan font-weight="bold">storage/previews/:</tspan> Downsampled JPEGs</text>
+  <text x="1475" y="663" class="box-desc">&#8226; <tspan font-weight="bold">storage/profile_photos/:</tspan> User Avatars</text>
+  <text x="1475" y="695" class="box-meta">&#x2714; Files unlinked upon cascading delete.</text>
+  <text x="1475" y="720" class="box-meta">&#x2714; Zero plaintext on disk for encrypted items.</text>
+
+  <rect x="1455" y="785" width="390" height="145" class="note-badge"/>
+  <text x="1475" y="815" class="note-text">&#x2714; Storage Segregation</text>
+  <text x="1475" y="840" class="box-meta">Complete physical decoupling between structured</text>
+  <text x="1475" y="865" class="box-meta">relational metadata and encrypted payload blobs.</text>
+  <text x="1475" y="890" class="box-meta">Protects database performance and data privacy.</text>
+
+  <!-- INTER-TIER CONNECTORS -->
+  <!-- Tier 1 to Tier 2 -->
+  <line x1="470" y1="320" x2="510" y2="320" class="conn-line"/>
+  <line x1="470" y1="680" x2="510" y2="680" class="conn-line"/>
+  <rect x="460" y="480" width="60" height="30" class="edge-bg"/>
+  <text x="490" y="500" class="edge-label">REST</text>
+
+  <!-- Tier 2 to Tier 3 -->
+  <line x1="890" y1="320" x2="930" y2="320" class="conn-line"/>
+  <line x1="890" y1="680" x2="930" y2="680" class="conn-line"/>
+
+  <!-- Tier 3 to Tier 4 -->
+  <line x1="1390" y1="360" x2="1455" y2="360" class="conn-line"/>
+  <line x1="1390" y1="630" x2="1455" y2="630" class="conn-line"/>
+  <rect x="1380" y="480" width="80" height="30" class="edge-bg"/>
+  <text x="1420" y="500" class="edge-label">Stream I/O</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Verified architecture: Spring Boot 3.3.4 (port 8080) and MySQL 8.0 (port 3306) running on sovereign host.
+  </text>
+</svg>

@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 28px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 40px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 20px; fill: #65483A; text-anchor: middle; }
+      
+      .table-card { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; rx: 16px; }
+      .header-cell { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; }
+      .header-text { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .row-even { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; }
+      .row-odd { fill: #F4EFEA; stroke: #DDD4C8; stroke-width: 1px; }
+      
+      .col-table { font-family: 'Times New Roman', serif; font-size: 20px; font-weight: bold; fill: #65483A; }
+      .col-resp { font-family: 'Times New Roman', serif; font-size: 16px; fill: #2C2825; }
+      .col-cols { font-family: 'Times New Roman', serif; font-size: 14.5px; fill: #332B27; }
+      .col-keys { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #171513; }
+      .col-card { font-family: 'Times New Roman', serif; font-size: 15.5px; fill: #65483A; font-weight: bold; }
+    </style>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="35" width="400" height="44" class="pill"/>
+  <text x="960" y="66" class="pill-text">Database Schema</text>
+  <text x="960" y="125" class="main-title">Authoritative MySQL 8.0 Relational Data Dictionary</text>
+  <text x="960" y="155" class="subtitle">Complete table specifications, foreign key cascade rules, unique cryptographic constraints, and cardinalities</text>
+
+  <rect x="60" y="180" width="1800" height="850" class="table-card"/>
+
+  <!-- Columns: Table (220px), Primary Responsibility (460px), Key Columns (480px), Constraints & Keys (380px), Cardinality (260px) = 1800 -->
+  <rect x="60" y="180" width="220" height="60" class="header-cell" style="rx: 16px 0 0 0;"/>
+  <text x="170" y="217" class="header-text">Table Name</text>
+
+  <rect x="280" y="180" width="460" height="60" class="header-cell"/>
+  <text x="510" y="217" class="header-text">Primary Responsibility &amp; Storage Scope</text>
+
+  <rect x="740" y="180" width="480" height="60" class="header-cell"/>
+  <text x="980" y="217" class="header-text">Key Columns &amp; Data Types</text>
+
+  <rect x="1220" y="180" width="360" height="60" class="header-cell"/>
+  <text x="1400" y="217" class="header-text">Primary / Foreign Keys &amp; Constraints</text>
+
+  <rect x="1580" y="180" width="280" height="60" class="header-cell" style="rx: 0 16px 0 0;"/>
+  <text x="1720" y="217" class="header-text">Relational Cardinality</text>
+
+  <!-- Row 1: users (h: 155) -->
+  <rect x="60" y="240" width="220" height="155" class="row-even"/>
+  <text x="80" y="320" class="col-table">users</text>
+
+  <rect x="280" y="240" width="460" height="155" class="row-even"/>
+  <text x="300" y="275" class="col-resp">Manages user identity, authentication credentials,</text>
+  <text x="300" y="300" class="col-resp">wrapped PBKDF2/AES envelope encryption keys,</text>
+  <text x="300" y="325" class="col-resp">JWT revocation token versions, profile avatars,</text>
+  <text x="300" y="350" class="col-resp">and atomic 10 GB storage quota tracking.</text>
+
+  <rect x="740" y="240" width="480" height="155" class="row-even"/>
+  <text x="760" y="270" class="col-cols">&#8226; id (BIGINT AUTO_INCREMENT)</text>
+  <text x="760" y="293" class="col-cols">&#8226; username, email (VARCHAR(255))</text>
+  <text x="760" y="316" class="col-cols">&#8226; password (VARCHAR(255) BCrypt)</text>
+  <text x="760" y="339" class="col-cols">&#8226; storage_limit (10 GB default: 10737418240)</text>
+  <text x="760" y="362" class="col-cols">&#8226; used_storage (BIGINT), user_key (VARCHAR(512))</text>
+  <text x="760" y="385" class="col-cols">&#8226; token_version (INT), created_at (DATETIME)</text>
+
+  <rect x="1220" y="240" width="360" height="155" class="row-even"/>
+  <text x="1240" y="285" class="col-keys">PK: id</text>
+  <text x="1240" y="315" class="col-keys">UNIQUE (username)</text>
+  <text x="1240" y="345" class="col-keys">UNIQUE (email)</text>
+  <text x="1240" y="375" class="col-resp">Indexes: username, email</text>
+
+  <rect x="1580" y="240" width="280" height="155" class="row-even"/>
+  <text x="1600" y="295" class="col-card">1 : N with stored_files</text>
+  <text x="1600" y="325" class="col-card">1 : N with activity_events</text>
+  <text x="1600" y="355" class="col-card">1 : N with transfers</text>
+
+  <!-- Row 2: stored_files (h: 160) -->
+  <rect x="60" y="395" width="220" height="160" class="row-odd"/>
+  <text x="80" y="480" class="col-table">stored_files</text>
+
+  <rect x="280" y="395" width="460" height="160" class="row-odd"/>
+  <text x="300" y="430" class="col-resp">Catalogs all files stored in the vault, original vs.</text>
+  <text x="300" y="455" class="col-resp">UUID disk filenames, physical filesystem paths,</text>
+  <text x="300" y="480" class="col-resp">plaintext SHA-256 integrity digests, AES encryption</text>
+  <text x="300" y="505" class="col-resp">flags, and generated thumbnail preview paths.</text>
+
+  <rect x="740" y="395" width="480" height="160" class="row-odd"/>
+  <text x="760" y="425" class="col-cols">&#8226; id (BIGINT AUTO_INCREMENT)</text>
+  <text x="760" y="448" class="col-cols">&#8226; user_id (BIGINT NOT NULL)</text>
+  <text x="760" y="471" class="col-cols">&#8226; original_filename, stored_filename (VARCHAR)</text>
+  <text x="760" y="494" class="col-cols">&#8226; file_size (BIGINT), content_type (VARCHAR)</text>
+  <text x="760" y="517" class="col-cols">&#8226; sha256_hash (VARCHAR(64)), storage_path (VARCHAR)</text>
+  <text x="760" y="540" class="col-cols">&#8226; encrypted (BOOLEAN), preview_path (VARCHAR)</text>
+
+  <rect x="1220" y="395" width="360" height="160" class="row-odd"/>
+  <text x="1240" y="435" class="col-keys">PK: id</text>
+  <text x="1240" y="465" class="col-keys">FK: user_id &#8594; users(id)</text>
+  <text x="1240" y="490" class="col-resp">ON DELETE CASCADE</text>
+  <text x="1240" y="520" class="col-keys">UNIQUE (user_id, sha256_hash)</text>
+  <text x="1240" y="545" class="col-resp">[Per-User Deduplication]</text>
+
+  <rect x="1580" y="395" width="280" height="160" class="row-odd"/>
+  <text x="1600" y="460" class="col-card">N : 1 with users</text>
+  <text x="1600" y="495" class="col-card">1 : 1 with file_metadata</text>
+  <text x="1600" y="530" class="col-resp">(Cascades on delete)</text>
+
+  <!-- Row 3: file_metadata (h: 165) -->
+  <rect x="60" y="555" width="220" height="165" class="row-even"/>
+  <text x="80" y="640" class="col-table">file_metadata</text>
+
+  <rect x="280" y="555" width="460" height="165" class="row-even"/>
+  <text x="300" y="590" class="col-resp">Stores 29 decoupled forensic media attributes</text>
+  <text x="300" y="615" class="col-resp">extracted by ExifTool before encryption:</text>
+  <text x="300" y="640" class="col-resp">camera optics, ISO, aperture, resolution, video</text>
+  <text x="300" y="665" class="col-resp">and audio codecs, duration, author, and raw JSON.</text>
+
+  <rect x="740" y="555" width="480" height="165" class="row-even"/>
+  <text x="760" y="585" class="col-cols">&#8226; id (BIGINT PK), file_id (BIGINT UNIQUE FK)</text>
+  <text x="760" y="608" class="col-cols">&#8226; camera_make, camera_model, lens (VARCHAR)</text>
+  <text x="760" y="631" class="col-cols">&#8226; focal_length, iso, exposure_time, f_number</text>
+  <text x="760" y="654" class="col-cols">&#8226; width, height (INT), resolution (VARCHAR)</text>
+  <text x="760" y="677" class="col-cols">&#8226; video_codec, audio_codec, duration, bitrate</text>
+  <text x="760" y="700" class="col-cols">&#8226; author, title, raw_metadata_json (TEXT)</text>
+
+  <rect x="1220" y="555" width="360" height="165" class="row-even"/>
+  <text x="1240" y="600" class="col-keys">PK: id</text>
+  <text x="1240" y="630" class="col-keys">FK: file_id &#8594; stored_files(id)</text>
+  <text x="1240" y="655" class="col-resp">ON DELETE CASCADE</text>
+  <text x="1240" y="685" class="col-keys">UNIQUE (file_id)</text>
+  <text x="1240" y="710" class="col-resp">Indexes: make, model, vcodec, res</text>
+
+  <rect x="1580" y="555" width="280" height="165" class="row-even"/>
+  <text x="1600" y="630" class="col-card">1 : 1 with stored_files</text>
+  <text x="1600" y="660" class="col-resp">Enforces strict 1:1</text>
+  <text x="1600" y="685" class="col-resp">metadata association.</text>
+
+  <!-- Row 4: activity_events (h: 135) -->
+  <rect x="60" y="720" width="220" height="135" class="row-odd"/>
+  <text x="80" y="790" class="col-table">activity_events</text>
+
+  <rect x="280" y="720" width="460" height="135" class="row-odd"/>
+  <text x="300" y="755" class="col-resp">Immutable security and user operation audit log:</text>
+  <text x="300" y="780" class="col-resp">records user authentication, file uploads, duplicate</text>
+  <text x="300" y="805" class="col-resp">detections, downloads, and cascading deletions.</text>
+
+  <rect x="740" y="720" width="480" height="135" class="row-odd"/>
+  <text x="760" y="750" class="col-cols">&#8226; id (BIGINT PK), user_id (BIGINT FK)</text>
+  <text x="760" y="773" class="col-cols">&#8226; event_type (VARCHAR(50)) [LOGIN, UPLOAD, etc.]</text>
+  <text x="760" y="796" class="col-cols">&#8226; timestamp (DATETIME), summary (VARCHAR(500))</text>
+  <text x="760" y="819" class="col-cols">&#8226; file_count, total_bytes, status, error_message</text>
+
+  <rect x="1220" y="720" width="360" height="135" class="row-odd"/>
+  <text x="1240" y="765" class="col-keys">PK: id</text>
+  <text x="1240" y="795" class="col-keys">FK: user_id &#8594; users(id)</text>
+  <text x="1240" y="820" class="col-resp">ON DELETE CASCADE</text>
+  <text x="1240" y="845" class="col-resp">Indexes: user_id, timestamp</text>
+
+  <rect x="1580" y="720" width="280" height="135" class="row-odd"/>
+  <text x="1600" y="775" class="col-card">N : 1 with users</text>
+  <text x="1600" y="805" class="col-resp">Audited history per user.</text>
+
+  <!-- Row 5: transfers (h: 175) -->
+  <rect x="60" y="855" width="220" height="175" class="row-even" style="rx: 0 0 0 16px;"/>
+  <text x="80" y="945" class="col-table">transfers</text>
+
+  <rect x="280" y="855" width="460" height="175" class="row-even"/>
+  <text x="300" y="890" class="col-resp">Audits live background streaming transfer batches:</text>
+  <text x="300" y="915" class="col-resp">tracks active upload and download progress, byte</text>
+  <text x="300" y="940" class="col-resp">counters, transfer speeds, and batch identifiers.</text>
+
+  <rect x="740" y="855" width="480" height="175" class="row-even"/>
+  <text x="760" y="885" class="col-cols">&#8226; id (BIGINT PK), user_id (BIGINT FK)</text>
+  <text x="760" y="908" class="col-cols">&#8226; transfer_type (VARCHAR(50)) [UPLOAD/DOWNLOAD]</text>
+  <text x="760" y="931" class="col-cols">&#8226; status (VARCHAR(50)) [IN_PROGRESS, COMPLETED]</text>
+  <text x="760" y="954" class="col-cols">&#8226; total_bytes, transferred_bytes (BIGINT)</text>
+  <text x="760" y="977" class="col-cols">&#8226; file_ids (VARCHAR), file_names (TEXT), batch_identifier</text>
+  <text x="760" y="1000" class="col-cols">&#8226; started_at, completed_at, updated_at (DATETIME)</text>
+
+  <rect x="1220" y="855" width="360" height="175" class="row-even"/>
+  <text x="1240" y="900" class="col-keys">PK: id</text>
+  <text x="1240" y="930" class="col-keys">FK: user_id &#8594; users(id)</text>
+  <text x="1240" y="955" class="col-resp">ON DELETE CASCADE</text>
+  <text x="1240" y="985" class="col-resp">Indexes: user_id, type, time, status</text>
+
+  <rect x="1580" y="855" width="280" height="175" class="row-even" style="rx: 0 0 16px 0;"/>
+  <text x="1600" y="930" class="col-card">N : 1 with users</text>
+  <text x="1600" y="960" class="col-resp">Streaming audit ledger.</text>
+
+  <!-- Footer Note -->
+  <text x="960" y="1055" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Verified directly against database/schema.sql and Spring Boot JPA entity definitions in com.ciphervault.ciphervault.
+  </text>
+</svg>

@@ -1,0 +1,185 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 28px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 40px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 20px; fill: #65483A; text-anchor: middle; }
+      
+      .table-card { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; rx: 16px; }
+      .header-cell { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; }
+      .header-text { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      
+      .row-even { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; }
+      .row-odd { fill: #F4EFEA; stroke: #DDD4C8; stroke-width: 1px; }
+      
+      .col-domain { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #65483A; }
+      .col-tech { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #171513; }
+      .col-spec { font-family: 'Times New Roman', serif; font-size: 15px; fill: #4A3E3D; }
+      .col-role { font-family: 'Times New Roman', serif; font-size: 15.5px; fill: #2C2825; }
+      .col-ref { font-family: 'Times New Roman', serif; font-size: 14.5px; fill: #705D53; font-style: italic; }
+    </style>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="35" width="400" height="44" class="pill"/>
+  <text x="960" y="66" class="pill-text">Technology Stack</text>
+  <text x="960" y="125" class="main-title">CipherVault Multi-Tier Technology Infrastructure</text>
+  <text x="960" y="155" class="subtitle">Enterprise open standards, cryptographic libraries, and platform runtimes verified in code</text>
+
+  <rect x="60" y="180" width="1800" height="850" class="table-card"/>
+
+  <!-- Columns: Domain (260px), Technology (280px), Spec/Version (260px), Role & Purpose (640px), Reference (360px) = 1800 -->
+  <rect x="60" y="180" width="260" height="60" class="header-cell" style="rx: 16px 0 0 0;"/>
+  <text x="190" y="217" class="header-text">Architectural Tier</text>
+
+  <rect x="320" y="180" width="280" height="60" class="header-cell"/>
+  <text x="460" y="217" class="header-text">Technology</text>
+
+  <rect x="600" y="180" width="260" height="60" class="header-cell"/>
+  <text x="730" y="217" class="header-text">Version / Standard</text>
+
+  <rect x="860" y="180" width="600" height="60" class="header-cell"/>
+  <text x="1160" y="217" class="header-text">Operational Role &amp; Purpose</text>
+
+  <rect x="1460" y="180" width="400" height="60" class="header-cell" style="rx: 0 16px 0 0;"/>
+  <text x="1660" y="217" class="header-text">Source Traceability</text>
+
+  <!-- Rows (10 rows, h: 76) -->
+  <!-- Row 1: Android Client -->
+  <rect x="60" y="240" width="260" height="76" class="row-even"/>
+  <text x="80" y="285" class="col-domain">Mobile Client</text>
+  <rect x="320" y="240" width="280" height="76" class="row-even"/>
+  <text x="340" y="285" class="col-tech">Android Native (Java)</text>
+  <rect x="600" y="240" width="260" height="76" class="row-even"/>
+  <text x="620" y="285" class="col-spec">Java 17 / API 26-37</text>
+  <rect x="860" y="240" width="600" height="76" class="row-even"/>
+  <text x="880" y="275" class="col-role">Native Android client utilizing XML Views, ViewModels, and</text>
+  <text x="880" y="298" class="col-role">direct action touch targets for download and deletion.</text>
+  <rect x="1460" y="240" width="400" height="76" class="row-even"/>
+  <text x="1480" y="285" class="col-ref">android/app/src/main/java</text>
+
+  <!-- Row 2: UI Design System -->
+  <rect x="60" y="316" width="260" height="76" class="row-odd"/>
+  <text x="80" y="361" class="col-domain">Design System</text>
+  <rect x="320" y="316" width="280" height="76" class="row-odd"/>
+  <text x="340" y="361" class="col-tech">Google Material Design 3</text>
+  <rect x="600" y="316" width="260" height="76" class="row-odd"/>
+  <text x="620" y="361" class="col-spec">com.google.android.material:1.12.0</text>
+  <rect x="860" y="316" width="600" height="76" class="row-odd"/>
+  <text x="880" y="351" class="col-role">Material 3 Cards (16dp rounded radii), BottomSheetDialogs,</text>
+  <text x="880" y="374" class="col-role">FABs, and dynamic Monet wallpaper color palette.</text>
+  <rect x="1460" y="316" width="400" height="76" class="row-odd"/>
+  <text x="1480" y="361" class="col-ref">android/app/build.gradle.kts</text>
+
+  <!-- Row 3: Client Security -->
+  <rect x="60" y="392" width="260" height="76" class="row-even"/>
+  <text x="80" y="437" class="col-domain">Client Security</text>
+  <rect x="320" y="392" width="280" height="76" class="row-even"/>
+  <text x="340" y="437" class="col-tech">Jetpack Security &amp; Biometric</text>
+  <rect x="600" y="392" width="260" height="76" class="row-even"/>
+  <text x="620" y="437" class="col-spec">androidx.security:security-crypto</text>
+  <rect x="860" y="392" width="600" height="76" class="row-even"/>
+  <text x="880" y="427" class="col-role">Hardware-backed EncryptedSharedPreferences via MasterKey;</text>
+  <text x="880" y="450" class="col-role">BiometricPrompt challenge on app cold start and resume.</text>
+  <rect x="1460" y="392" width="400" height="76" class="row-even"/>
+  <text x="1480" y="437" class="col-ref">android/.../SessionManager.java</text>
+
+  <!-- Row 4: Backend Microservice -->
+  <rect x="60" y="468" width="260" height="76" class="row-odd"/>
+  <text x="80" y="513" class="col-domain">Backend Core</text>
+  <rect x="320" y="468" width="280" height="76" class="row-odd"/>
+  <text x="340" y="513" class="col-tech">Spring Boot</text>
+  <rect x="600" y="468" width="260" height="76" class="row-odd"/>
+  <text x="620" y="513" class="col-spec">Spring Boot 3.3.4 (Java 21 LTS)</text>
+  <rect x="860" y="468" width="600" height="76" class="row-odd"/>
+  <text x="880" y="503" class="col-role">REST microservice framework running on virtual threads (Project Loom);</text>
+  <text x="880" y="526" class="col-role">handles multipart streaming uploads and token authentication.</text>
+  <rect x="1460" y="468" width="400" height="76" class="row-odd"/>
+  <text x="1480" y="513" class="col-ref">backend/pom.xml</text>
+
+  <!-- Row 5: Authentication & Access -->
+  <rect x="60" y="544" width="260" height="76" class="row-even"/>
+  <text x="80" y="589" class="col-domain">Security &amp; Auth</text>
+  <rect x="320" y="544" width="280" height="76" class="row-even"/>
+  <text x="340" y="589" class="col-tech">Spring Security &amp; JJWT</text>
+  <rect x="600" y="544" width="260" height="76" class="row-even"/>
+  <text x="620" y="589" class="col-spec">Spring Security 6.3 / JJWT 0.12.5</text>
+  <rect x="860" y="544" width="600" height="76" class="row-even"/>
+  <text x="880" y="579" class="col-role">Stateless JWT authentication (HMAC-SHA256, 24h lifetime);</text>
+  <text x="880" y="602" class="col-role">sliding-window brute-force rate limiter (5 fails = 15m lockout).</text>
+  <rect x="1460" y="544" width="400" height="76" class="row-even"/>
+  <text x="1480" y="589" class="col-ref">backend/.../security/JwtService.java</text>
+
+  <!-- Row 6: Symmetric Encryption -->
+  <rect x="60" y="620" width="260" height="76" class="row-odd"/>
+  <text x="80" y="665" class="col-domain">Payload Cryptography</text>
+  <rect x="320" y="620" width="280" height="76" class="row-odd"/>
+  <text x="340" y="665" class="col-tech">AES-256-GCM AEAD</text>
+  <rect x="600" y="620" width="260" height="76" class="row-odd"/>
+  <text x="620" y="665" class="col-spec">NIST SP 800-38D Standard</text>
+  <rect x="860" y="620" width="600" height="76" class="row-odd"/>
+  <text x="880" y="655" class="col-role">Constant-memory 16 KB chunked streaming authenticated encryption;</text>
+  <text x="880" y="678" class="col-role">random 12-byte IV per file + 128-bit GHASH tamper tag.</text>
+  <rect x="1460" y="620" width="400" height="76" class="row-odd"/>
+  <text x="1480" y="665" class="col-ref">backend/.../file/EncryptionService.java</text>
+
+  <!-- Row 7: Key Management -->
+  <rect x="60" y="696" width="260" height="76" class="row-even"/>
+  <text x="80" y="741" class="col-domain">Envelope Key Mgmt</text>
+  <rect x="320" y="696" width="280" height="76" class="row-even"/>
+  <text x="340" y="741" class="col-tech">PBKDF2-HMAC-SHA256</text>
+  <rect x="600" y="696" width="260" height="76" class="row-even"/>
+  <text x="620" y="741" class="col-spec">RFC 2898 / RFC 8018 (65,536 rounds)</text>
+  <rect x="860" y="696" width="600" height="76" class="row-even"/>
+  <text x="880" y="731" class="col-role">Derives Server Master KEK to wrap per-user AES-256 UDEKs;</text>
+  <text x="880" y="754" class="col-role">cryptographic memory zeroization after key derivation.</text>
+  <rect x="1460" y="696" width="400" height="76" class="row-even"/>
+  <text x="1480" y="741" class="col-ref">backend/.../KeyManagementService.java</text>
+
+  <!-- Row 8: Deduplication & Hashes -->
+  <rect x="60" y="772" width="260" height="76" class="row-odd"/>
+  <text x="80" y="817" class="col-domain">Deduplication</text>
+  <rect x="320" y="772" width="280" height="76" class="row-odd"/>
+  <text x="340" y="817" class="col-tech">SHA-256 Integrity Digest</text>
+  <rect x="600" y="772" width="260" height="76" class="row-odd"/>
+  <text x="620" y="817" class="col-spec">FIPS PUB 180-4</text>
+  <rect x="860" y="772" width="600" height="76" class="row-odd"/>
+  <text x="880" y="807" class="col-role">Streaming plaintext digest calculation; enforced per-user</text>
+  <text x="880" y="830" class="col-role">via database composite unique constraint (user_id, sha256_hash).</text>
+  <rect x="1460" y="772" width="400" height="76" class="row-odd"/>
+  <text x="1480" y="817" class="col-ref">backend/.../FileStorageService.java</text>
+
+  <!-- Row 9: Relational Persistence -->
+  <rect x="60" y="848" width="260" height="76" class="row-even"/>
+  <text x="80" y="893" class="col-domain">Database &amp; ORM</text>
+  <rect x="320" y="848" width="280" height="76" class="row-even"/>
+  <text x="340" y="893" class="col-tech">MySQL &amp; Spring Data JPA</text>
+  <rect x="600" y="848" width="260" height="76" class="row-even"/>
+  <text x="620" y="893" class="col-spec">MySQL 8.0 / Hibernate 6.5</text>
+  <rect x="860" y="848" width="600" height="76" class="row-even"/>
+  <text x="880" y="883" class="col-role">InnoDB ACID transactions, B-Tree indexes, cascading foreign keys;</text>
+  <text x="880" y="906" class="col-role">JPA Criteria dynamic facet query generator.</text>
+  <rect x="1460" y="848" width="400" height="76" class="row-even"/>
+  <text x="1480" y="893" class="col-ref">database/schema.sql</text>
+
+  <!-- Row 10: Forensic Extraction & Desktop -->
+  <rect x="60" y="924" width="260" height="76" class="row-odd" style="rx: 0 0 0 16px;"/>
+  <text x="80" y="969" class="col-domain">Forensics &amp; Tools</text>
+  <rect x="320" y="924" width="280" height="76" class="row-odd"/>
+  <text x="340" y="969" class="col-tech">ExifTool &amp; PySide6</text>
+  <rect x="600" y="924" width="260" height="76" class="row-odd"/>
+  <text x="620" y="969" class="col-spec">Phil Harvey CLI / Qt 6.5</text>
+  <rect x="860" y="924" width="600" height="76" class="row-odd"/>
+  <text x="880" y="959" class="col-role">Automated 29-attribute forensic media extraction; desktop GUI server</text>
+  <text x="880" y="982" class="col-role">controller for backend process orchestration and log streaming.</text>
+  <rect x="1460" y="924" width="400" height="76" class="row-odd" style="rx: 0 0 16px 0;"/>
+  <text x="1480" y="969" class="col-ref">server-control/main.py</text>
+
+  <!-- Footer -->
+  <text x="960" y="1055" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    All listed technologies are actively deployed in the current repository and verified via automated build pipelines.
+  </text>
+</svg>

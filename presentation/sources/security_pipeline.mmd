@@ -1,0 +1,48 @@
+flowchart TD
+    subgraph Pipeline1["1. INTEGRITY & DEDUPLICATION (SHA-256)"]
+        FilePlain["Incoming File Stream\n(Plaintext Bytes)"]
+        HashCalc["Compute 256-Bit Cryptographic Hash\n(FIPS PUB 180-4 SHA-256)"]
+        UserScope["Check User Scope:\nUNIQUE (user_id, sha256_hash)"]
+        HashResult{"Hash in User's\nstored_files?"}
+        DupReject["REJECT UPLOAD\n(409 Conflict - Eliminates Cross-User Leakage)"]
+        HashPass["PROCEED TO ENCRYPTION\n(Store sha256_hash in database)"]
+
+        FilePlain --> HashCalc
+        HashCalc --> UserScope
+        UserScope --> HashResult
+        HashResult -- "YES: Duplicate" --> DupReject
+        HashResult -- "NO: Unique" --> HashPass
+    end
+
+    subgraph Pipeline2["2. AUTHENTICATED ENVELOPE ENCRYPTION (AES-256-GCM)"]
+        MasterPass["Server Master Passphrase\n(Environment Secret)"]
+        PBKDF2["Derive Server KEK (256-bit AES)\nPBKDF2-HMAC-SHA256 (65,536 iterations)"]
+        UserUDEK["Generate User Data Key (UDEK)\n(256-bit AES via SecureRandom)"]
+        WrappedKey["Wrap UDEK via KEK & Store in users.user_key\n(AES-GCM Authenticated Ciphertext)"]
+        NonceGen["Generate 12-Byte Nonce (IV)\n(Fresh SecureRandom per file)"]
+        AESEngine["Stream Encrypt in 16 KB Chunks\n(AES/GCM/NoPadding)"]
+        StoredBlob["Stored Ciphertext Blob Structure:\n[ 12B IV ] + [ Ciphertext Chunks ] + [ 16B GHASH Tag ]\nSaved to: storage/encrypted/{uuid}"]
+
+        MasterPass --> PBKDF2
+        PBKDF2 --> WrappedKey
+        UserUDEK --> WrappedKey
+        UserUDEK --> AESEngine
+        HashPass ==>|"Plaintext Ingestion"| AESEngine
+        NonceGen --> AESEngine
+        AESEngine --> StoredBlob
+    end
+
+    subgraph Pipeline3["3. AUTHENTICATION & ACCESS CONTROL (BCrypt & JWT)"]
+        UserPass["User Password"]
+        BCrypt["BCrypt Hash (Cost Factor 10)\nStored in users.password"]
+        JWTIssue["Generate Stateless 24h JWT\n(sub=email, userId, tokenVersion)\nSigned with HMAC-SHA256"]
+        ReqAuth["Incoming API Request\n(Header: Authorization: Bearer <JWT>)"]
+        FilterVerify["Stateless Security Filter\n1. Verify HMAC Signature\n2. Check Expiry (< 24h)\n3. Verify token_version == DB version"]
+        UserAccess["Authorize Operation for Authenticated user_id\nStrict Tenant Isolation"]
+
+        UserPass --> BCrypt
+        BCrypt --> JWTIssue
+        ReqAuth --> FilterVerify
+        JWTIssue -.-> ReqAuth
+        FilterVerify --> UserAccess
+    end

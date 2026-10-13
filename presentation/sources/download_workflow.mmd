@@ -1,0 +1,29 @@
+flowchart TD
+    Start(["User Taps [Download] in Android Vault"]) --> Dlg["Display Download Dialog\n(Toggle: 'Decrypt on download')"]
+    Dlg --> Req["Dispatch HTTP GET /api/files/{id}/download?decrypt={true|false}\nHeader: Authorization: Bearer <JWT>"]
+
+    Req --> AuthCheck{"Valid JWT & Active Session?"}
+    AuthCheck -- "NO" --> Err401["Return HTTP 401 Unauthorized"]
+    AuthCheck -- "YES" --> OwnerCheck{"Does File Belong to User?\n(stored_files.user_id == user.id)"}
+
+    OwnerCheck -- "NO: Forbidden" --> Err404["Return HTTP 404 / 403 Forbidden"]
+    OwnerCheck -- "YES: Authorized" --> CheckMode{"Decrypt Parameter Requested?\n(decrypt == true)"}
+
+    CheckMode -- "YES: Decrypt Plaintext" --> CheckEnc{"Is Stored File Encrypted?"}
+
+    CheckEnc -- "YES: AES-GCM Encrypted" --> ReadIV["Read 12-Byte Nonce (IV) from Stored Blob Header\n(storage/encrypted/{stored_filename})"]
+    ReadIV --> FetchKey["Fetch User's UDEK from Database\nUnwrap via Server KEK (PBKDF2)"]
+    FetchKey --> InitDec["Initialize CipherInputStream\n(AES-256-GCM Mode with 128-Bit GHASH Tag)"]
+    InitDec --> StreamPlain["Stream 16 KB Plaintext Chunks to ResponseBody\nSet Content-Disposition with original_filename\nSet X-File-SHA256 Header"]
+    StreamPlain --> VerifyTag{"GHASH Tag Valid at Stream End?"}
+    VerifyTag -- "FAIL: Tampered" --> ThrowTag["Throw AEADBadTagException\nAbort Stream Immediately"]
+    VerifyTag -- "PASS: Authentic" --> SuccessFile["File Saved to Android Downloads Directory"]
+
+    CheckEnc -- "NO: Plaintext File" --> StreamDirect["Stream Raw File from storage/uploads/\n(Direct StreamingResponseBody)"]
+    StreamDirect --> SuccessFile
+
+    CheckMode -- "NO: Export Raw Blob" --> StreamEnc["Stream Encrypted Blob with .enc Extension\n(No Decryption Performed)"]
+    StreamEnc --> SaveEnc["Encrypted .enc Artifact Saved to Device"]
+
+    SuccessFile --> Audit["Record DOWNLOAD Event in activity_events & transfers"]
+    SaveEnc --> Audit

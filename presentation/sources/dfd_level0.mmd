@@ -1,0 +1,24 @@
+flowchart TD
+    User(["Mobile Vault User"])
+
+    subgraph Boundary["CipherVault System Boundary"]
+        SystemCore[["CipherVault Sovereign Cloud Storage System\n(Android Client + Spring Boot REST Core)"]]
+    end
+
+    DB[("MySQL 8.0 Relational Database\n(Accounts, Metadata, Audits)")]
+    FS[("Server Filesystem\n(Encrypted Blobs & Previews)")]
+
+    User ==>|"1. Credentials & Auth Challenge"| SystemCore
+    SystemCore ==>|"2. Signed JWT Token & Profile"| User
+
+    User ==>|"3. Staged Files & Upload Request (Max 1 GB)"| SystemCore
+    SystemCore ==>|"4. Upload Progress & Status Response"| User
+
+    User ==>|"5. Search Query & Facet Filters"| SystemCore
+    SystemCore ==>|"6. Filtered File Catalog & Suggestions"| User
+
+    User ==>|"7. Download Request (Decrypted / Raw)"| SystemCore
+    SystemCore ==>|"8. Streaming File Binary (Plaintext / .enc)"| User
+
+    SystemCore <==>|"Queries & Persistence"| DB
+    SystemCore <==>|"Encrypted Stream I/O"| FS

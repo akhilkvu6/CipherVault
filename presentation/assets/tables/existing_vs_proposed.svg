@@ -1,0 +1,222 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 28px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 40px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 20px; fill: #65483A; text-anchor: middle; }
+      
+      .table-card { fill: #FFFFFF; stroke: #65483A; stroke-width: 2px; rx: 16px; }
+      .header-cell { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; }
+      .header-text { font-family: 'Times New Roman', serif; font-size: 20px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .header-text-highlight { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      
+      .row-even { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; }
+      .row-odd { fill: #F4EFEA; stroke: #DDD4C8; stroke-width: 1px; }
+      .row-highlight { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; }
+      
+      .col-dim { font-family: 'Times New Roman', serif; font-size: 17px; font-weight: bold; fill: #171513; }
+      .col-text { font-family: 'Times New Roman', serif; font-size: 15.5px; fill: #2C2825; }
+      .col-highlight { font-family: 'Times New Roman', serif; font-size: 16px; font-weight: bold; fill: #65483A; }
+      .badge { fill: #65483A; rx: 6px; }
+      .badge-text { font-family: 'Times New Roman', serif; font-size: 13px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" class="bg"/>
+
+  <!-- Header Header Banner -->
+  <rect x="760" y="35" width="400" height="44" class="pill"/>
+  <text x="960" y="66" class="pill-text">Comparative Evaluation</text>
+  <text x="960" y="125" class="main-title">Existing Cloud Storage Systems vs. CipherVault Sovereign Cloud</text>
+  <text x="960" y="155" class="subtitle">Empirical matrix auditing data custody, cryptographic boundaries, streaming pipelines, and metadata indexing</text>
+
+  <!-- Table Container Card -->
+  <rect x="60" y="180" width="1800" height="850" class="table-card"/>
+
+  <!-- Columns: Dim (280px), Google/Dropbox (360px), Nextcloud (360px), Cryptomator (360px), CipherVault (440px) -->
+  <!-- Total: 280 + 360 + 360 + 360 + 440 = 1800 -->
+
+  <!-- Table Header -->
+  <rect x="60" y="180" width="280" height="65" class="header-cell" style="rx: 16px 0 0 0;"/>
+  <text x="200" y="220" class="header-text">Evaluation Parameter</text>
+
+  <rect x="340" y="180" width="360" height="65" class="header-cell"/>
+  <text x="520" y="220" class="header-text">Google Drive / Dropbox</text>
+
+  <rect x="700" y="180" width="360" height="65" class="header-cell"/>
+  <text x="880" y="220" class="header-text">Nextcloud (Self-Hosted)</text>
+
+  <rect x="1060" y="180" width="360" height="65" class="header-cell"/>
+  <text x="1240" y="220" class="header-text">Cryptomator (Client-Side)</text>
+
+  <rect x="1420" y="180" width="440" height="65" class="header-cell" style="fill: #E0D4C5; stroke: #65483A; stroke-width: 2px; rx: 0 16px 0 0;"/>
+  <text x="1640" y="220" class="header-text-highlight">&#x2714; CipherVault (This Project)</text>
+
+  <!-- Row 1: Data Custody (y: 245 to 340, h: 95) -->
+  <rect x="60" y="245" width="280" height="95" class="row-even"/>
+  <text x="80" y="295" class="col-dim">Data Custody Model</text>
+
+  <rect x="340" y="245" width="360" height="95" class="row-even"/>
+  <text x="360" y="285" class="col-text">Third-party commercial servers.</text>
+  <text x="360" y="310" class="col-text">Vendor holds custody of keys and disk.</text>
+
+  <rect x="700" y="245" width="360" height="95" class="row-even"/>
+  <text x="720" y="285" class="col-text">Self-hosted private VPS/server.</text>
+  <text x="720" y="310" class="col-text">Eliminates third-party hosting.</text>
+
+  <rect x="1060" y="245" width="360" height="95" class="row-even"/>
+  <text x="1080" y="285" class="col-text">Hybrid: Encrypted files stored on</text>
+  <text x="1080" y="310" class="col-text">third-party commercial clouds.</text>
+
+  <rect x="1420" y="245" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="285" class="col-highlight">Self-Hosted Sovereign Storage</text>
+  <text x="1440" y="310" class="col-text">Local server or private hardware; complete custody.</text>
+
+  <!-- Row 2: Payload Encryption (y: 340 to 435, h: 95) -->
+  <rect x="60" y="340" width="280" height="95" class="row-odd"/>
+  <text x="80" y="390" class="col-dim">Encryption Scheme</text>
+
+  <rect x="340" y="340" width="360" height="95" class="row-odd"/>
+  <text x="360" y="380" class="col-text">Server-side AES-256 (Custodial).</text>
+  <text x="360" y="405" class="col-text">Keys accessible to provider for scanning.</text>
+
+  <rect x="700" y="340" width="360" height="95" class="row-odd"/>
+  <text x="720" y="380" class="col-text">Optional server-side encryption.</text>
+  <text x="720" y="405" class="col-text">Client E2EE prone to sync race conditions.</text>
+
+  <rect x="1060" y="340" width="360" height="95" class="row-odd"/>
+  <text x="1080" y="380" class="col-text">Client-side AES-256 with scrypt KDF.</text>
+  <text x="1080" y="405" class="col-text">Strong, but locks data in opaque chunks.</text>
+
+  <rect x="1420" y="340" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="380" class="col-highlight">AES-256-GCM Envelope Encryption</text>
+  <text x="1440" y="405" class="col-text">PBKDF2 Server KEK (65k rounds) + Per-User UDEKs.</text>
+
+  <!-- Row 3: Tamper Verification (y: 435 to 530, h: 95) -->
+  <rect x="60" y="435" width="280" height="95" class="row-even"/>
+  <text x="80" y="485" class="col-dim">Tamper Verification</text>
+
+  <rect x="340" y="435" width="360" height="95" class="row-even"/>
+  <text x="360" y="475" class="col-text">TLS transport only.</text>
+  <text x="360" y="500" class="col-text">No stored ciphertext integrity check.</text>
+
+  <rect x="700" y="435" width="360" height="95" class="row-even"/>
+  <text x="720" y="475" class="col-text">HMAC / TLS transport checks.</text>
+  <text x="720" y="500" class="col-text">Variable depending on storage engine.</text>
+
+  <rect x="1060" y="435" width="360" height="95" class="row-even"/>
+  <text x="1080" y="475" class="col-text">HMAC-SHA256 authenticated</text>
+  <text x="1080" y="500" class="col-text">ciphertext verification on read.</text>
+
+  <rect x="1420" y="435" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="475" class="col-highlight">128-Bit GHASH Authentication Tag (AEAD)</text>
+  <text x="1440" y="500" class="col-text">Immediate AEADBadTagException on 1-bit tampering.</text>
+
+  <!-- Row 4: Forensic Metadata (y: 530 to 625, h: 95) -->
+  <rect x="60" y="530" width="280" height="95" class="row-odd"/>
+  <text x="80" y="580" class="col-dim">Forensic Metadata Search</text>
+
+  <rect x="340" y="530" width="360" height="95" class="row-odd"/>
+  <text x="360" y="570" class="col-text">Plaintext corporate scanning.</text>
+  <text x="360" y="595" class="col-text">Search requires surrendering plaintext.</text>
+
+  <rect x="700" y="530" width="360" height="95" class="row-odd"/>
+  <text x="720" y="570" class="col-text">Basic MIME classification &amp; manual tags.</text>
+  <text x="720" y="595" class="col-text">No automated camera optics parsing.</text>
+
+  <rect x="1060" y="530" width="360" height="95" class="row-odd"/>
+  <text x="1080" y="570" class="col-text">None (The Metadata Paradox).</text>
+  <text x="1080" y="595" class="col-text">Opaque ciphertext prevents all search.</text>
+
+  <rect x="1420" y="530" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="570" class="col-highlight">Decoupled ExifTool Extraction (29 Fields)</text>
+  <text x="1440" y="595" class="col-text">Full EXIF, optics &amp; codecs; dynamic suggestion chips.</text>
+
+  <!-- Row 5: Pre-Upload Staging (y: 625 to 720, h: 95) -->
+  <rect x="60" y="625" width="280" height="95" class="row-even"/>
+  <text x="80" y="675" class="col-dim">Pre-Upload Staging</text>
+
+  <rect x="340" y="625" width="360" height="95" class="row-even"/>
+  <text x="360" y="665" class="col-text">None: Picked files immediately</text>
+  <text x="360" y="690" class="col-text">stream to remote cloud.</text>
+
+  <rect x="700" y="625" width="360" height="95" class="row-even"/>
+  <text x="720" y="665" class="col-text">None: Immediate upload sync</text>
+  <text x="720" y="690" class="col-text">without batch pre-inspection.</text>
+
+  <rect x="1060" y="625" width="360" height="95" class="row-even"/>
+  <text x="1080" y="665" class="col-text">None: Relies on external third-party</text>
+  <text x="1080" y="690" class="col-text">cloud folder sync clients.</text>
+
+  <rect x="1420" y="625" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="665" class="col-highlight">Dedicated Staging Queue with Modal Preview</text>
+  <text x="1440" y="690" class="col-text">Pre-upload inspection, item removal, 1 GB batch limit.</text>
+
+  <!-- Row 6: Deduplication Scope (y: 720 to 815, h: 95) -->
+  <rect x="60" y="720" width="280" height="95" class="row-odd"/>
+  <text x="80" y="770" class="col-dim">Duplicate Avoidance</text>
+
+  <rect x="340" y="720" width="360" height="95" class="row-odd"/>
+  <text x="360" y="760" class="col-text">Global cross-user deduplication.</text>
+  <text x="360" y="785" class="col-text">Vulnerable to ownership-probing attacks.</text>
+
+  <rect x="700" y="720" width="360" height="95" class="row-odd"/>
+  <text x="720" y="760" class="col-text">None: Identical files stored redundantly</text>
+  <text x="720" y="785" class="col-text">across user directories.</text>
+
+  <rect x="1060" y="720" width="360" height="95" class="row-odd"/>
+  <text x="1080" y="760" class="col-text">None: Different randomized salts</text>
+  <text x="1080" y="785" class="col-text">prevent duplicate detection entirely.</text>
+
+  <rect x="1420" y="720" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="760" class="col-highlight">Per-User SHA-256 Constraint (Isolated)</text>
+  <text x="1440" y="785" class="col-text">Eliminates cross-user side channels and wasted space.</text>
+
+  <!-- Row 7: Streaming Pipeline & Quotas (y: 815 to 910, h: 95) -->
+  <rect x="60" y="815" width="280" height="95" class="row-even"/>
+  <text x="80" y="865" class="col-dim">Streaming I/O &amp; Quotas</text>
+
+  <rect x="340" y="815" width="360" height="95" class="row-even"/>
+  <text x="360" y="855" class="col-text">Proprietary chunked CDN buffers.</text>
+  <text x="360" y="880" class="col-text">High commercial subscription fees.</text>
+
+  <rect x="700" y="815" width="360" height="95" class="row-even"/>
+  <text x="720" y="855" class="col-text">Chunked HTTP upload via PHP-FPM.</text>
+  <text x="720" y="880" class="col-text">Heavy memory footprint (monolith).</text>
+
+  <rect x="1060" y="815" width="360" height="95" class="row-even"/>
+  <text x="1080" y="855" class="col-text">Local virtual drive caching.</text>
+  <text x="1080" y="880" class="col-text">Limited by local mobile storage.</text>
+
+  <rect x="1420" y="815" width="440" height="95" class="row-highlight"/>
+  <text x="1440" y="855" class="col-highlight">Constant-Memory 16 KB Piped Streaming</text>
+  <text x="1440" y="880" class="col-text">Flat 28-36 MB RAM footprint; 10 GB user vault quota.</text>
+
+  <!-- Row 8: Mobile UX & Actions (y: 910 to 1005, h: 95) -->
+  <rect x="60" y="910" width="280" height="95" class="row-odd" style="rx: 0 0 0 16px;"/>
+  <text x="80" y="960" class="col-dim">Mobile UI &amp; Actions</text>
+
+  <rect x="340" y="910" width="360" height="95" class="row-odd"/>
+  <text x="360" y="950" class="col-text">Commercial cloud app; actions</text>
+  <text x="360" y="975" class="col-text">hidden inside multi-level menus.</text>
+
+  <rect x="700" y="910" width="360" height="95" class="row-odd"/>
+  <text x="720" y="950" class="col-text">Generic mobile UI with slow list</text>
+  <text x="720" y="975" class="col-text">rendering on large directories.</text>
+
+  <rect x="1060" y="910" width="360" height="95" class="row-odd"/>
+  <text x="1080" y="950" class="col-text">Basic file explorer; requires</text>
+  <text x="1080" y="975" class="col-text">spawning external viewer apps.</text>
+
+  <rect x="1420" y="910" width="440" height="95" class="row-highlight" style="rx: 0 0 16px 0;"/>
+  <text x="1440" y="950" class="col-highlight">Google Material 3 Native Android</text>
+  <text x="1440" y="975" class="col-text">Direct 40dp action touch targets [Download] [Delete].</text>
+
+  <!-- Footer Citation -->
+  <text x="960" y="1055" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Based on empirical audits of Google Drive v2.24, Nextcloud v3.28, and Cryptomator v1.10. Informed by Yang et al. (2017) and Liu et al. (2015).
+  </text>
+</svg>

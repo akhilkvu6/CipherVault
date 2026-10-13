@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+
+  <defs>
+    <style>
+      .bg { fill: #FAF9F6; }
+      .pill { fill: #65483A; rx: 20px; }
+      .pill-text { font-family: 'Times New Roman', serif; font-size: 26px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .main-title { font-family: 'Times New Roman', serif; font-size: 38px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .subtitle { font-family: 'Times New Roman', serif; font-size: 19px; fill: #65483A; text-anchor: middle; }
+      
+      .outer-card { fill: #F4EFEA; stroke: #65483A; stroke-width: 2.5px; rx: 16px; }
+      .inner-card { fill: #FFFFFF; stroke: #DDD4C8; stroke-width: 1.5px; rx: 12px; }
+      .card-header { fill: #E4DCD1; stroke: #65483A; stroke-width: 1.5px; rx: 12px 12px 0 0; }
+      .card-header-accent { fill: #65483A; rx: 12px 12px 0 0; }
+      
+      .tier-title { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #171513; text-anchor: middle; }
+      .tier-title-light { font-family: 'Times New Roman', serif; font-size: 21px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+      .box-title { font-family: 'Times New Roman', serif; font-size: 18px; font-weight: bold; fill: #171513; }
+      .box-desc { font-family: 'Times New Roman', serif; font-size: 15px; fill: #332B27; }
+      .box-meta { font-family: 'Times New Roman', serif; font-size: 14px; fill: #705D53; font-style: italic; }
+      
+      .conn-line { stroke: #65483A; stroke-width: 2.5px; fill: none; marker-end: url(#arrow); }
+      .conn-dash { stroke: #8D7B68; stroke-width: 2px; stroke-dasharray: 6,5; fill: none; marker-end: url(#arrow); }
+      .edge-label { font-family: 'Times New Roman', serif; font-size: 14.5px; font-weight: bold; fill: #65483A; text-anchor: middle; }
+      .edge-bg { fill: #FAF9F6; stroke: #DDD4C8; stroke-width: 1px; rx: 6px; }
+      
+      .note-badge { fill: #EDE5DA; stroke: #65483A; stroke-width: 1.5px; rx: 10px; }
+      .note-text { font-family: 'Times New Roman', serif; font-size: 15px; font-weight: bold; fill: #65483A; }
+      
+      .step-badge { fill: #65483A; rx: 12px; }
+      .step-num { font-family: 'Times New Roman', serif; font-size: 14px; font-weight: bold; fill: #FAF9F6; text-anchor: middle; }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#65483A"/>
+    </marker>
+  </defs>
+
+  <rect width="1920" height="1080" class="bg"/>
+
+  <rect x="760" y="30" width="400" height="42" class="pill"/>
+  <text x="960" y="60" class="pill-text">Data Flow Modeling</text>
+  <text x="960" y="115" class="main-title">CipherVault Level-0 Context Data Flow Diagram (DFD)</text>
+  <text x="960" y="145" class="subtitle">High-level system boundary, external human/admin entities, and primary data exchanges</text>
+
+  <!-- External Entity 1: Mobile User (x: 80, y: 320, w: 280, h: 440) -->
+  <rect x="80" y="320" width="280" height="440" class="outer-card"/>
+  <rect x="80" y="320" width="280" height="45" class="card-header"/>
+  <text x="220" y="350" class="tier-title">External Entity: User</text>
+  
+  <circle cx="220" cy="430" r="35" fill="#E4DCD1" stroke="#65483A" stroke-width="2.5"/>
+  <circle cx="220" cy="415" r="14" fill="#65483A"/>
+  <path d="M 195 450 Q 220 435 245 450" fill="none" stroke="#65483A" stroke-width="3"/>
+  <text x="220" y="495" class="box-title" text-anchor="middle">Mobile Vault User</text>
+  <text x="220" y="520" class="box-meta" text-anchor="middle">Android Client (API 26-37)</text>
+
+  <text x="105" y="560" class="box-desc">&#8226; Submits registration &amp; login</text>
+  <text x="105" y="590" class="box-desc">&#8226; Selects &amp; stages files (1 GB)</text>
+  <text x="105" y="620" class="box-desc">&#8226; Inspects pre-upload previews</text>
+  <text x="105" y="650" class="box-desc">&#8226; Searches forensic metadata</text>
+  <text x="105" y="680" class="box-desc">&#8226; Streams decrypted downloads</text>
+  <text x="105" y="710" class="box-desc">&#8226; Deletes vault files &amp; audits</text>
+
+  <!-- SYSTEM BOUNDARY: CipherVault Core (x: 620, y: 220, w: 680, h: 640) -->
+  <rect x="620" y="220" width="680" height="640" class="outer-card" style="stroke-width: 3px; stroke-dasharray: 8,6;"/>
+  <rect x="640" y="240" width="640" height="600" class="inner-card" style="fill: #FAF9F6; stroke: #65483A; stroke-width: 2px;"/>
+  
+  <rect x="640" y="240" width="640" height="50" class="card-header-accent"/>
+  <text x="960" y="275" class="tier-title-light">CipherVault System Boundary (0.0)</text>
+
+  <circle cx="960" cy="440" r="110" fill="#E4DCD1" stroke="#65483A" stroke-width="3"/>
+  <text x="960" y="415" class="box-title" text-anchor="middle" font-size="22px">0.0</text>
+  <text x="960" y="445" class="box-title" text-anchor="middle">CipherVault</text>
+  <text x="960" y="470" class="box-title" text-anchor="middle">Core Engine</text>
+  <text x="960" y="495" class="box-meta" text-anchor="middle">Spring Boot Microservice</text>
+
+  <!-- Internal Services Summary inside Boundary -->
+  <rect x="680" y="590" width="560" height="220" class="note-badge"/>
+  <text x="705" y="625" class="note-text">&#x2714; Integrated Internal System Capabilities</text>
+  <text x="705" y="655" class="box-desc">&#8226; <tspan font-weight="bold">Security:</tspan> BCrypt hashing, JWT issuance, rate limiting, and PBKDF2 KEK.</text>
+  <text x="705" y="685" class="box-desc">&#8226; <tspan font-weight="bold">Ingestion:</tspan> SHA-256 duplicate checking, 1 GB batch limit, 10 GB quota.</text>
+  <text x="705" y="715" class="box-desc">&#8226; <tspan font-weight="bold">Cryptography:</tspan> Streaming AES-256-GCM authenticated encryption/decryption.</text>
+  <text x="705" y="745" class="box-desc">&#8226; <tspan font-weight="bold">Forensics:</tspan> Automated ExifTool parsing and dynamic facet search chips.</text>
+  <text x="705" y="775" class="box-desc">&#8226; <tspan font-weight="bold">Auditing:</tspan> Foreground transfer tracking and immutable activity logging.</text>
+
+  <!-- Data Store 1: MySQL Database (x: 1540, y: 220, w: 320, h: 300) -->
+  <rect x="1540" y="220" width="320" height="300" class="inner-card"/>
+  <rect x="1540" y="220" width="320" height="45" class="card-header"/>
+  <text x="1700" y="250" class="tier-title">Data Store: D1 (MySQL)</text>
+  
+  <text x="1565" y="295" class="box-title">MySQL 8.0 Database</text>
+  <text x="1565" y="325" class="box-desc">&#8226; users (Credentials &amp; 10 GB quota)</text>
+  <text x="1565" y="355" class="box-desc">&#8226; stored_files (Hashes &amp; paths)</text>
+  <text x="1565" y="385" class="box-desc">&#8226; file_metadata (29 EXIF fields)</text>
+  <text x="1565" y="415" class="box-desc">&#8226; activity_events (Audit trail)</text>
+  <text x="1565" y="445" class="box-desc">&#8226; transfers (Live batch logs)</text>
+  <text x="1565" y="480" class="box-meta">Enforces UNIQUE(user_id, sha256_hash).</text>
+
+  <!-- Data Store 2: Filesystem Storage (x: 1540, y: 560, w: 320, h: 300) -->
+  <rect x="1540" y="560" width="320" height="300" class="inner-card"/>
+  <rect x="1540" y="560" width="320" height="45" class="card-header"/>
+  <text x="1700" y="590" class="tier-title">Data Store: D2 (Filesystem)</text>
+
+  <text x="1565" y="635" class="box-title">Sovereign Filesystem</text>
+  <text x="1565" y="665" class="box-desc">&#8226; storage/encrypted/ (AES-GCM blobs)</text>
+  <text x="1565" y="695" class="box-desc">&#8226; storage/uploads/ (Plaintext uploads)</text>
+  <text x="1565" y="725" class="box-desc">&#8226; storage/previews/ (JPEG thumbnails)</text>
+  <text x="1565" y="755" class="box-desc">&#8226; storage/profile_photos/ (Avatars)</text>
+  <text x="1565" y="795" class="box-meta">&#x2714; Constant-memory chunked I/O.</text>
+  <text x="1565" y="820" class="box-meta">&#x2714; Unlinked on cascading delete.</text>
+
+  <!-- DATA FLOW ARROWS -->
+  <!-- User to System -->
+  <path d="M 360 400 L 640 400" class="conn-line"/>
+  <text x="500" y="390" class="edge-label">1. Credentials / Staged Files / Queries</text>
+
+  <!-- System to User -->
+  <path d="M 640 480 L 360 480" class="conn-line"/>
+  <text x="500" y="470" class="edge-label">2. Signed JWT / File Metadata / Decrypted Stream</text>
+
+  <!-- System to MySQL -->
+  <path d="M 1280 370 L 1540 370" class="conn-line"/>
+  <text x="1410" y="360" class="edge-label">SQL Queries / Metadata</text>
+
+  <!-- MySQL to System -->
+  <path d="M 1540 410 L 1280 410" class="conn-line"/>
+  <text x="1410" y="430" class="edge-label">Entity Records / Quota</text>
+
+  <!-- System to Filesystem -->
+  <path d="M 1280 680 L 1540 680" class="conn-line"/>
+  <text x="1410" y="670" class="edge-label">16 KB AES-GCM Encrypted Streams</text>
+
+  <!-- Filesystem to System -->
+  <path d="M 1540 720 L 1280 720" class="conn-line"/>
+  <text x="1410" y="740" class="edge-label">Raw / Decrypted Stream Chunk</text>
+
+  <!-- Footer -->
+  <text x="960" y="1060" font-family="'Times New Roman', serif" font-size="15px" fill="#705D53" text-anchor="middle">
+    Context DFD defines the boundary between external mobile user interactions and internal persistence mechanisms.
+  </text>
+</svg>
