@@ -46,7 +46,7 @@ public class ThemeManager {
     }
 
     public static int getEncryptedColor(Context context) {
-        if (context == null) return Color.parseColor("#B79A6A");
+        if (context == null) return Color.parseColor("#2E7D32");
         return ContextCompat.getColor(context, R.color.vault_encrypted);
     }
 }

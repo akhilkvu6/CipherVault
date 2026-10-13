@@ -250,6 +250,10 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                             if (response.isSuccessful() && response.body() != null && response.body().isDuplicate()) {
                                 file.status = StagingStatus.DUPLICATE_EXCLUDED;
                                 file.statusReason = "Duplicate Excluded";
+                                AuditLogger.AuditEntry dupEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_DUPLICATE_DETECTED, "WARNING", "Duplicate detected: " + file.name, null);
+                                dupEntry.primaryEntity = file.name;
+                                dupEntry.fileSize = file.size;
+                                AuditLogger.logEvent(UploadStagingActivity.this, dupEntry);
                             } else {
                                 if (file.status != StagingStatus.EXCEEDS_QUOTA) {
                                     file.status = StagingStatus.READY;
@@ -340,6 +344,10 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
         boolean isVideo = (mimeType != null && mimeType.startsWith("video/"))
                 || ext.equals("mp4") || ext.equals("mkv") || ext.equals("webm") || ext.equals("mov");
 
+        boolean isAudio = (mimeType != null && mimeType.startsWith("audio/"))
+                || ext.equals("mp3") || ext.equals("wav") || ext.equals("flac")
+                || ext.equals("m4a") || ext.equals("aac") || ext.equals("ogg");
+
         boolean isText = (mimeType != null && mimeType.startsWith("text/"))
                 || ext.equals("txt") || ext.equals("json") || ext.equals("xml")
                 || ext.equals("csv") || ext.equals("md") || ext.equals("log");
@@ -372,6 +380,34 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                 ivGenericIcon.setImageResource(R.drawable.ic_lucide_video);
                 tvGenericType.setText("Video (" + ext.toUpperCase(Locale.US) + ")");
             }
+        } else if ("pdf".equals(ext) || "application/pdf".equalsIgnoreCase(mimeType)) {
+            Bitmap pdfThumb = ThumbnailLoader.renderPdfFirstPage(this, file.uri, 1080, 1920);
+            if (pdfThumb != null) {
+                ivImage.setImageBitmap(pdfThumb);
+                ivImage.setVisibility(View.VISIBLE);
+                layoutGeneric.setVisibility(View.GONE);
+                scrollText.setVisibility(View.GONE);
+            } else {
+                ivImage.setVisibility(View.GONE);
+                scrollText.setVisibility(View.GONE);
+                layoutGeneric.setVisibility(View.VISIBLE);
+                ivGenericIcon.setImageResource(R.drawable.ic_lucide_file_text);
+                tvGenericType.setText("PDF Document");
+            }
+        } else if (isAudio) {
+            Bitmap albumArt = ThumbnailLoader.extractAudioAlbumArt(this, file.uri, 1080, 1080);
+            if (albumArt != null) {
+                ivImage.setImageBitmap(albumArt);
+                ivImage.setVisibility(View.VISIBLE);
+                layoutGeneric.setVisibility(View.GONE);
+                scrollText.setVisibility(View.GONE);
+            } else {
+                ivImage.setVisibility(View.GONE);
+                scrollText.setVisibility(View.GONE);
+                layoutGeneric.setVisibility(View.VISIBLE);
+                ivGenericIcon.setImageResource(R.drawable.ic_lucide_music);
+                tvGenericType.setText("Audio (" + ext.toUpperCase(Locale.US) + ")");
+            }
         } else if (isText) {
             try (InputStream is = getContentResolver().openInputStream(file.uri);
                  BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
@@ -393,12 +429,6 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                 ivGenericIcon.setImageResource(R.drawable.ic_lucide_file_text);
                 tvGenericType.setText("Text File");
             }
-        } else if ("pdf".equals(ext) || "application/pdf".equalsIgnoreCase(mimeType)) {
-            ivImage.setVisibility(View.GONE);
-            scrollText.setVisibility(View.GONE);
-            layoutGeneric.setVisibility(View.VISIBLE);
-            ivGenericIcon.setImageResource(R.drawable.ic_lucide_file_text);
-            tvGenericType.setText("PDF Document");
         } else {
             ivImage.setVisibility(View.GONE);
             scrollText.setVisibility(View.GONE);
@@ -442,7 +472,7 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
     private long calculateBatchSize() {
         long sum = 0;
         for (StagedFile f : stagedFiles) {
-            if (f.status != StagingStatus.DUPLICATE_EXCLUDED) {
+            if (f.status == StagingStatus.READY || f.status == StagingStatus.UPLOADING) {
                 sum += f.size;
             }
         }
@@ -518,6 +548,9 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                         }
                     }
                     updateQuotaMetrics();
+                    AuditLogger.AuditEntry remDupEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_DUPLICATE_DETECTED, "SUCCESS", "Removed " + duplicates.size() + " duplicate file(s) from staging", null);
+                    remDupEntry.batchCount = duplicates.size();
+                    AuditLogger.logEvent(UploadStagingActivity.this, remDupEntry);
                     Toast.makeText(this, "Duplicates removed", Toast.LENGTH_SHORT).show();
                     executeUpload();
                 })
@@ -581,6 +614,10 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                     f.status = StagingStatus.COMPLETED;
                     f.statusReason = "Uploaded (AES-256-GCM)";
                     f.progress = 100;
+                    Long uploadedFileId = item.getRemoteFileId();
+                    if (uploadedFileId != null && f.uri != null) {
+                        ThumbnailLoader.associateStagingThumbnail(UploadStagingActivity.this, f.uri, uploadedFileId, f.sha256);
+                    }
                 } else if (item.getState() == TransferState.FAILED) {
                     f.status = StagingStatus.FAILED;
                     f.statusReason = item.getErrorMessage() != null ? item.getErrorMessage() : "Upload failed";
@@ -626,6 +663,24 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
         isUploading = false;
         progressOverallUpload.setIndeterminate(false);
         progressOverallUpload.setVisibility(View.GONE);
+
+        // Remove successfully completed items from staging list
+        List<StagedFile> completed = new ArrayList<>();
+        for (StagedFile f : stagedFiles) {
+            if (f.status == StagingStatus.COMPLETED) {
+                completed.add(f);
+            }
+        }
+        stagedFiles.removeAll(completed);
+
+        // Reset progress on remaining failed items so user can retry
+        for (StagedFile f : stagedFiles) {
+            if (f.status == StagingStatus.FAILED) {
+                f.progress = 0;
+            }
+        }
+        adapter.notifyDataSetChanged();
+
         if (batch.getState() == TransferState.CANCELLED) {
             tvUploadStatusMsg.setText("Upload batch cancelled");
             Toast.makeText(this, "Batch upload cancelled", Toast.LENGTH_SHORT).show();
@@ -638,7 +693,9 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
             AuditLogger.log(this, "File Moved/Uploaded to Vault", "SUCCESS", "Batch indexed into vault");
             Toast.makeText(this, "Uploading completed", Toast.LENGTH_LONG).show();
         }
-        updateQuotaMetrics();
+
+        // Reload authoritative storage usage from server and refresh metrics
+        loadCurrentStorageUsage();
     }
 
     @Override
@@ -730,6 +787,22 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                     });
                     break;
                 case EXCEEDS_QUOTA:
+                    holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.status_error));
+                    holder.progressStagingFile.setVisibility(View.GONE);
+                    holder.btnPreviewStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnPreviewStagingFile.setEnabled(true);
+                    holder.btnRemoveStagingFile.setVisibility(View.VISIBLE);
+                    holder.btnRemoveStagingFile.setIconResource(R.drawable.ic_lucide_trash_2);
+                    holder.btnRemoveStagingFile.setIconTint(ColorStateList.valueOf(ContextCompat.getColor(ctx, R.color.status_error)));
+                    holder.btnRemoveStagingFile.setContentDescription("Delete staged file");
+                    holder.btnRemoveStagingFile.setEnabled(true);
+                    holder.btnRemoveStagingFile.setOnClickListener(v -> {
+                        int pos = holder.getBindingAdapterPosition();
+                        if (pos != RecyclerView.NO_POSITION) {
+                            actionListener.onRemove(pos);
+                        }
+                    });
+                    break;
                 case FAILED:
                     holder.tvStagingStatus.setTextColor(ContextCompat.getColor(ctx, R.color.status_error));
                     holder.progressStagingFile.setVisibility(View.GONE);
@@ -744,6 +817,17 @@ public class UploadStagingActivity extends BaseActivity implements TransferListe
                         int pos = holder.getBindingAdapterPosition();
                         if (pos != RecyclerView.NO_POSITION) {
                             actionListener.onRemove(pos);
+                        }
+                    });
+                    holder.tvStagingStatus.setOnClickListener(v -> {
+                        file.status = StagingStatus.READY;
+                        file.statusReason = "Ready to retry";
+                        int pos = holder.getBindingAdapterPosition();
+                        if (pos != RecyclerView.NO_POSITION) {
+                            notifyItemChanged(pos);
+                        }
+                        if (ctx instanceof UploadStagingActivity) {
+                            ((UploadStagingActivity) ctx).updateQuotaMetrics();
                         }
                     });
                     break;

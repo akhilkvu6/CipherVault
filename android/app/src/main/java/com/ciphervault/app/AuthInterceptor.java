@@ -37,8 +37,14 @@ public class AuthInterceptor implements Interceptor {
             );
         }
 
-        return chain.proceed(
+        Response response = chain.proceed(
                 requestBuilder.build()
         );
+
+        if (response.code() == 401 && token != null && !token.isEmpty() && context != null) {
+            AuditLogger.log(context, "Session Expired", "FAILED", "Authorization token expired or invalid (HTTP 401)");
+        }
+
+        return response;
     }
 }

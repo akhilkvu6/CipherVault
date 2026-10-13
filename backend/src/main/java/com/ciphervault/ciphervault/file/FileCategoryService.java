@@ -70,6 +70,13 @@ public class FileCategoryService {
             return CATEGORY_MEDIA;
         }
 
+        // Android package archives (.apk) must be categorized as Other, not Archives
+        if (name.endsWith(".apk")
+                || mime.contains("android.package-archive")
+                || mime.contains("vnd.android.package-archive")) {
+            return CATEGORY_OTHER;
+        }
+
         if (mime.contains("zip")
                 || mime.contains("tar")
                 || mime.contains("compressed")
@@ -168,16 +175,20 @@ public class FileCategoryService {
 
         Predicate isMedia = cb.or(isVideo, isAudio);
 
-        Predicate isArchive = cb.or(
-                cb.like(cb.lower(root.get(contentType)), "%zip%"),
-                cb.like(cb.lower(root.get(contentType)), "%tar%"),
-                cb.like(cb.lower(root.get(contentType)), "%compressed%"),
-                extensionPredicate(
-                        cb,
-                        root,
-                        filename,
-                        ".zip", ".rar", ".7z", ".tar", ".gz"
-                )
+        Predicate isArchive = cb.and(
+                cb.or(
+                        cb.like(cb.lower(root.get(contentType)), "%zip%"),
+                        cb.like(cb.lower(root.get(contentType)), "%tar%"),
+                        cb.like(cb.lower(root.get(contentType)), "%compressed%"),
+                        extensionPredicate(
+                                cb,
+                                root,
+                                filename,
+                                ".zip", ".rar", ".7z", ".tar", ".gz"
+                        )
+                ),
+                cb.not(cb.like(cb.lower(root.get(filename)), "%.apk")),
+                cb.not(cb.like(cb.lower(root.get(contentType)), "%android.package-archive%"))
         );
 
         return switch (catLower) {

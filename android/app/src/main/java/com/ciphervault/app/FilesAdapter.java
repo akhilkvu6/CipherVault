@@ -1,6 +1,7 @@
 package com.ciphervault.app;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.text.format.Formatter;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -67,21 +68,47 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
             case IMAGES: typeLabel = "Image"; break;
             case VIDEOS: typeLabel = "Video"; break;
             case PDFS: typeLabel = "PDF"; break;
+            case DOCUMENTS: typeLabel = "Document"; break;
+            case AUDIO: typeLabel = "Audio"; break;
+            case ARCHIVES: typeLabel = "Archive"; break;
             default: typeLabel = "File"; break;
         }
-        holder.tvFileSize.setText(typeLabel + " • " + FileUtils.formatStorageSize(file.getFileSize()));
 
-        if (file.isEncrypted()) {
+        String sizeStr = FileUtils.formatStorageSize(context, file.getFileSize());
+        String dateStr = file.getCreatedAt();
+        String formattedDate = (dateStr != null && !dateStr.trim().isEmpty())
+                ? FileUtils.formatDisplayDateOnly(dateStr) : null;
+
+        StringBuilder subtitle = new StringBuilder();
+        subtitle.append(typeLabel).append(" • ").append(sizeStr);
+        if (formattedDate != null && !formattedDate.isEmpty()) {
+            subtitle.append(" • ").append(formattedDate);
+        }
+        holder.tvFileSize.setText(subtitle.toString());
+
+        if (!file.hasEncryptionStatus()) {
+            holder.tvEncryptionBadge.setVisibility(View.GONE);
+            if (holder.tvEncryptionDot != null) holder.tvEncryptionDot.setVisibility(View.GONE);
+        } else if (file.isEncrypted()) {
             int encColor = ThemeManager.getEncryptedColor(context);
+            holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             holder.tvEncryptionBadge.setText("Encrypted");
             holder.tvEncryptionBadge.setTextColor(encColor);
-            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lucide_lock, 0, 0, 0);
-            holder.tvEncryptionBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
-            holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
+            holder.tvEncryptionBadge.setBackgroundResource(R.drawable.bg_badge_encrypted);
+            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_badge_lock, 0, 0, 0);
+            holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(encColor));
+            holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density + 0.5f));
+            if (holder.tvEncryptionDot != null) holder.tvEncryptionDot.setVisibility(View.GONE);
         } else {
+            int unencColor = ContextCompat.getColor(context, R.color.vault_unencrypted);
+            holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             holder.tvEncryptionBadge.setText("Not encrypted");
-            holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
-            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+            holder.tvEncryptionBadge.setTextColor(unencColor);
+            holder.tvEncryptionBadge.setBackgroundResource(R.drawable.bg_badge_unencrypted);
+            holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_badge_unlock, 0, 0, 0);
+            holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(unencColor));
+            holder.tvEncryptionBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density + 0.5f));
+            if (holder.tvEncryptionDot != null) holder.tvEncryptionDot.setVisibility(View.GONE);
         }
 
         switch (file.getCategory()) {
@@ -92,21 +119,51 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
                 holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_video);
                 break;
             case PDFS:
+            case DOCUMENTS:
                 holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file_text);
+                break;
+            case AUDIO:
+                holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_music);
+                break;
+            case ARCHIVES:
+                holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_archive);
                 break;
             default:
                 holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file);
                 break;
         }
 
-        if (file.hasPreview() && file.getId() != null) {
-            ThumbnailLoader.loadThumbnail(context, file.getId(), holder.ivThumbnail, holder.ivFileIcon,
+        boolean canLoadThumb = file.getId() != null && (file.hasPreview() || ThumbnailLoader.hasCachedThumbnail(context, file.getId(), file.getSha256Checksum()));
+        if (canLoadThumb) {
+            ThumbnailLoader.loadThumbnail(context, file.getId(), file.getSha256Checksum(), file.hasPreview(), holder.ivThumbnail, holder.ivFileIcon,
                     file.getCategory() == StoredFile.FileCategory.VIDEOS ? holder.ivVideoBadge : null);
         } else {
+            holder.ivThumbnail.setImageDrawable(null);
             holder.ivThumbnail.setVisibility(View.GONE);
             holder.ivFileIcon.setVisibility(View.VISIBLE);
             if (holder.ivVideoBadge != null) {
                 holder.ivVideoBadge.setVisibility(View.GONE);
+            }
+        }
+
+        if (holder.tvFileMetadataSummary != null) {
+            List<String> metaParts = new ArrayList<>();
+            String camera = file.getCameraInfo();
+            if (camera != null && !camera.trim().isEmpty()) metaParts.add(camera.trim());
+            String res = file.getResolution();
+            if (res != null && !res.trim().isEmpty()) metaParts.add(res.trim());
+            String codec = file.getCodec();
+            if (codec != null && !codec.trim().isEmpty()) metaParts.add(codec.trim());
+            String artistAuthor = file.getArtistOrAuthor();
+            if (artistAuthor != null && !artistAuthor.trim().isEmpty()) metaParts.add(artistAuthor.trim());
+            String duration = file.getDuration();
+            if (duration != null && !duration.trim().isEmpty()) metaParts.add(duration.trim());
+
+            if (!metaParts.isEmpty()) {
+                holder.tvFileMetadataSummary.setVisibility(View.VISIBLE);
+                holder.tvFileMetadataSummary.setText(android.text.TextUtils.join(" • ", metaParts));
+            } else {
+                holder.tvFileMetadataSummary.setVisibility(View.GONE);
             }
         }
 
@@ -155,7 +212,9 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
         final ImageView ivVideoBadge;
         final TextView tvFileName;
         final TextView tvFileSize;
+        final TextView tvEncryptionDot;
         final TextView tvEncryptionBadge;
+        final TextView tvFileMetadataSummary;
         final MaterialButton btnDownload;
         final MaterialButton btnDelete;
 
@@ -166,7 +225,9 @@ public class FilesAdapter extends RecyclerView.Adapter<FilesAdapter.FileViewHold
             ivVideoBadge = itemView.findViewById(R.id.ivVideoBadge);
             tvFileName = itemView.findViewById(R.id.tvFileName);
             tvFileSize = itemView.findViewById(R.id.tvFileSize);
+            tvEncryptionDot = itemView.findViewById(R.id.tvEncryptionDot);
             tvEncryptionBadge = itemView.findViewById(R.id.tvEncryptionBadge);
+            tvFileMetadataSummary = itemView.findViewById(R.id.tvFileMetadataSummary);
             btnDownload = itemView.findViewById(R.id.btnDownload);
             btnDelete = itemView.findViewById(R.id.btnDelete);
         }

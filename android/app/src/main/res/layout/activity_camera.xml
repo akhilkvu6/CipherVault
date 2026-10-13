@@ -5,20 +5,29 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- Camera Preview -->
-    <androidx.camera.view.PreviewView
-        android:id="@+id/viewFinder"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-    <!-- Captured Photo Preview (Hidden initially) -->
-    <ImageView
-        android:id="@+id/ivCapturedPreview"
+    <!-- Camera Preview Container for Aspect Ratio Letterboxing -->
+    <FrameLayout
+        android:id="@+id/previewContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:contentDescription="Captured photo preview"
-        android:scaleType="centerCrop"
-        android:visibility="gone" />
+        android:layout_gravity="center"
+        android:background="@android:color/black">
+
+        <androidx.camera.view.PreviewView
+            android:id="@+id/viewFinder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+
+        <ImageView
+            android:id="@+id/ivCapturedPreview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:contentDescription="Captured photo preview"
+            android:scaleType="fitCenter"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <!-- Top Overlay Controls -->
     <LinearLayout

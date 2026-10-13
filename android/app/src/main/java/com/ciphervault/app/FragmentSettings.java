@@ -175,7 +175,6 @@ public class FragmentSettings extends Fragment {
             startActivity(intent);
         });
 
-        view.findViewById(R.id.btnSettingsDiagnostics).setOnClickListener(v -> showDiagnosticsDialog());
 
         View btnDisconnect = view.findViewById(R.id.btnSettingsDisconnectServer);
         if (btnDisconnect != null) {
@@ -209,6 +208,10 @@ public class FragmentSettings extends Fragment {
         MaterialSwitch switchTransfers = view.findViewById(R.id.switchTransferNotifications);
         if (switchTransfers != null) {
             switchTransfers.setOnCheckedChangeListener((btn, isChecked) -> {
+                AuditLogger.AuditEntry notifEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_NOTIFICATIONS_CHANGED, "SUCCESS", isChecked ? "Transfer notifications enabled" : "Transfer notifications silenced", null);
+                notifEntry.settingKey = "transfer_notifications";
+                notifEntry.newValue = isChecked ? "enabled" : "silenced";
+                AuditLogger.logEvent(requireContext(), notifEntry);
                 Toast.makeText(requireContext(), isChecked ? "Transfer notifications enabled" : "Transfer notifications silenced", Toast.LENGTH_SHORT).show();
             });
         }
@@ -216,6 +219,10 @@ public class FragmentSettings extends Fragment {
         MaterialSwitch switchSecurity = view.findViewById(R.id.switchSecurityAlerts);
         if (switchSecurity != null) {
             switchSecurity.setOnCheckedChangeListener((btn, isChecked) -> {
+                AuditLogger.AuditEntry secEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_SECURITY_CHANGED, "SUCCESS", isChecked ? "Security alerts enabled" : "Security alerts silenced", null);
+                secEntry.settingKey = "security_alerts";
+                secEntry.newValue = isChecked ? "enabled" : "silenced";
+                AuditLogger.logEvent(requireContext(), secEntry);
                 Toast.makeText(requireContext(), isChecked ? "Security alerts enabled" : "Security alerts silenced", Toast.LENGTH_SHORT).show();
             });
         }
@@ -260,6 +267,11 @@ public class FragmentSettings extends Fragment {
             }
             CipherVaultPreferences.saveAppearance(requireContext(), mode);
             ThemeManager.applyAppearanceMode(mode);
+
+            AuditLogger.AuditEntry themeEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_THEME_CHANGED, "SUCCESS", "Appearance theme set to " + mode.name(), null);
+            themeEntry.settingKey = "appearance_mode";
+            themeEntry.newValue = mode.name();
+            AuditLogger.logEvent(requireContext(), themeEntry);
         });
 
         MaterialSwitch switchDynamicColor = view.findViewById(R.id.switchDynamicColor);
@@ -280,6 +292,10 @@ public class FragmentSettings extends Fragment {
             }
             switchDynamicColor.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 CipherVaultPreferences.setDynamicColorEnabled(requireContext(), isChecked);
+                AuditLogger.AuditEntry dynEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_THEME_CHANGED, "SUCCESS", isChecked ? "Dynamic wallpaper colors enabled" : "Dynamic wallpaper colors disabled", null);
+                dynEntry.settingKey = "dynamic_colors";
+                dynEntry.newValue = isChecked ? "true" : "false";
+                AuditLogger.logEvent(requireContext(), dynEntry);
                 if (getActivity() != null) {
                     getActivity().recreate();
                 }
@@ -306,6 +322,11 @@ public class FragmentSettings extends Fragment {
             switchBiometricLock.setChecked(sessionManager.isBiometricEnabled());
             switchBiometricLock.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 sessionManager.setBiometricEnabled(isChecked);
+                AuditLogger.AuditEntry bioEntry = new AuditLogger.AuditEntry(isChecked ? AuditLogger.ACTION_BIOMETRIC_ENABLED : AuditLogger.ACTION_BIOMETRIC_DISABLED, "SUCCESS", isChecked ? "Biometric App Lock enabled" : "Biometric App Lock disabled", null);
+                bioEntry.authMethod = "BIOMETRIC";
+                bioEntry.settingKey = "biometric_lock";
+                bioEntry.newValue = isChecked ? "true" : "false";
+                AuditLogger.logEvent(requireContext(), bioEntry);
                 Toast.makeText(requireContext(), isChecked ? "Biometric App Lock enabled" : "Biometric App Lock disabled", Toast.LENGTH_SHORT).show();
             });
         }
@@ -497,6 +518,9 @@ public class FragmentSettings extends Fragment {
         if (btnSaveProfile != null) btnSaveProfile.setEnabled(true);
         if (btnCancelEditProfile != null) btnCancelEditProfile.setEnabled(true);
         exitProfileEditMode();
+        AuditLogger.AuditEntry profileEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_PROFILE_UPDATED, "SUCCESS", "Profile updated: " + sessionManager.getName() + " (@" + sessionManager.getUsername() + ")", null);
+        profileEntry.primaryEntity = sessionManager.getUsername();
+        AuditLogger.logEvent(requireContext(), profileEntry);
         Toast.makeText(requireContext(), "Profile updated successfully", Toast.LENGTH_SHORT).show();
     }
 
@@ -548,6 +572,9 @@ public class FragmentSettings extends Fragment {
                         if (previewBmp != null && sessionManager != null) {
                             ProfilePhotoHelper.saveProfilePhoto(requireContext(), sessionManager.getEmail(), previewBmp);
                         }
+                        AuditLogger.AuditEntry photoEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_PROFILE_PHOTO_UPDATED, "SUCCESS", "Profile photo updated", null);
+                        photoEntry.primaryEntity = sessionManager != null ? sessionManager.getUsername() : null;
+                        AuditLogger.logEvent(requireContext(), photoEntry);
                         Toast.makeText(requireContext(), "Profile photo updated", Toast.LENGTH_SHORT).show();
                         loadProfilePhoto();
                     } else {
@@ -578,6 +605,9 @@ public class FragmentSettings extends Fragment {
                     if (sessionManager != null) {
                         ProfilePhotoHelper.deleteProfilePhoto(requireContext(), sessionManager.getEmail());
                     }
+                    AuditLogger.AuditEntry remPhotoEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_PROFILE_PHOTO_REMOVED, "SUCCESS", "Profile photo removed", null);
+                    remPhotoEntry.primaryEntity = sessionManager != null ? sessionManager.getUsername() : null;
+                    AuditLogger.logEvent(requireContext(), remPhotoEntry);
                     resetAvatarToDefault();
                     Toast.makeText(requireContext(), "Profile photo removed", Toast.LENGTH_SHORT).show();
                 } else {
@@ -789,16 +819,29 @@ public class FragmentSettings extends Fragment {
                 @Override
                 public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
                     if (isAdded() && response.isSuccessful()) {
+                        AuditLogger.AuditEntry pwdEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_PASSWORD_CHANGED, "SUCCESS", "Account master password updated successfully", null);
+                        pwdEntry.authMethod = "PASSWORD";
+                        AuditLogger.logEvent(requireContext(), pwdEntry);
                         Toast.makeText(requireContext(), "Password changed successfully", Toast.LENGTH_SHORT).show();
                         dialog.dismiss();
                     } else {
+                        AuditLogger.AuditEntry pwdEntry = new AuditLogger.AuditEntry("Password Change Failed", "FAILED", "Current password incorrect or validation failed", null);
+                        pwdEntry.authMethod = "PASSWORD";
+                        pwdEntry.errorMessage = "HTTP " + response.code();
+                        AuditLogger.logEvent(requireContext(), pwdEntry);
                         Toast.makeText(requireContext(), "Current password incorrect or validation failed", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<Map<String, Object>> call, @NonNull Throwable t) {
-                    if (isAdded()) Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    if (isAdded()) {
+                        AuditLogger.AuditEntry pwdEntry = new AuditLogger.AuditEntry("Password Change Failed", "FAILED", "Password change network error", null);
+                        pwdEntry.authMethod = "PASSWORD";
+                        pwdEntry.errorMessage = t.getMessage();
+                        AuditLogger.logEvent(requireContext(), pwdEntry);
+                        Toast.makeText(requireContext(), "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         });
@@ -859,6 +902,9 @@ public class FragmentSettings extends Fragment {
                         @Override
                         public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
                             if (isAdded() && response.isSuccessful()) {
+                                AuditLogger.AuditEntry purgeEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_VAULT_PURGED, "SUCCESS", "All encrypted vault files and history purged", null);
+                                purgeEntry.authMethod = "PASSWORD";
+                                AuditLogger.logEvent(requireContext(), purgeEntry);
                                 Toast.makeText(requireContext(), "Vault data deleted successfully", Toast.LENGTH_LONG).show();
                                 dialog.dismiss();
                                 loadProfileData();
@@ -912,6 +958,9 @@ public class FragmentSettings extends Fragment {
                         @Override
                         public void onResponse(@NonNull Call<Map<String, Object>> call, @NonNull Response<Map<String, Object>> response) {
                             if (isAdded() && response.isSuccessful()) {
+                                AuditLogger.AuditEntry delEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_ACCOUNT_DELETED, "SUCCESS", "Vault account permanently deleted", null);
+                                delEntry.authMethod = "PASSWORD";
+                                AuditLogger.logEvent(requireContext(), delEntry);
                                 Toast.makeText(requireContext(), "Account deleted permanently", Toast.LENGTH_LONG).show();
                                 dialog.dismiss();
                                 sessionManager.logout();
@@ -955,7 +1004,11 @@ public class FragmentSettings extends Fragment {
                 .setMessage("Disconnect from the current backend server? The active server connection will be cleared. Your saved servers and authenticated login session will remain preserved.")
                 .setIcon(R.drawable.ic_lucide_log_out)
                 .setPositiveButton("Disconnect", (dialog, which) -> {
+                    String currentUrl = ApiClient.getBaseUrl(requireContext());
                     ServerConnectionManager.getInstance(requireContext()).disconnect(requireContext());
+                    AuditLogger.AuditEntry discEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_SERVER_DISCONNECTED, "SUCCESS", "Disconnected from server: " + currentUrl, null);
+                    discEntry.serverTarget = currentUrl;
+                    AuditLogger.logEvent(requireContext(), discEntry);
                     Toast.makeText(requireContext(), "Server disconnected", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(requireContext(), ConnectionActivity.class);
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -969,6 +1022,9 @@ public class FragmentSettings extends Fragment {
     }
 
     private void handleSignOut() {
+        AuditLogger.AuditEntry logoutEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGOUT, "SUCCESS", "User session ended / signed out", null);
+        AuditLogger.logEvent(requireContext(), logoutEntry);
+
         try {
             apiService.logout().enqueue(new Callback<Map<String, Object>>() {
                 @Override

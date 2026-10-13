@@ -49,6 +49,43 @@ public class FileSearchService {
             String author,
             String genre,
             Pageable pageable) {
+        return search(user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre, null, null, null, pageable);
+    }
+
+    public Page<StoredFile> search(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre,
+            Long minSize,
+            Long maxSize,
+            String dateTaken,
+            Pageable pageable) {
+        return search(user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre, null, minSize, maxSize, dateTaken, pageable);
+    }
+
+    public Page<StoredFile> search(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre,
+            String lens,
+            Long minSize,
+            Long maxSize,
+            String dateTaken,
+            Pageable pageable) {
 
         Specification<StoredFile> specification = buildSpecification(
                 user,
@@ -60,7 +97,11 @@ public class FileSearchService {
                 codec,
                 artist,
                 author,
-                genre
+                genre,
+                lens,
+                minSize,
+                maxSize,
+                dateTaken
         );
 
         return fileRepository.findAll(specification, pageable);
@@ -76,7 +117,43 @@ public class FileSearchService {
             String codec,
             String artist,
             String author,
-            String genre) {        if (fileMetadataRepository == null) {
+            String genre) {
+        return search(user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre, (Long) null, (Long) null, (String) null);
+    }
+
+    public List<StoredFile> search(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre,
+            Long minSize,
+            Long maxSize,
+            String dateTaken) {
+        return search(user, query, category, cameraMake, cameraModel, resolution, codec, artist, author, genre, null, minSize, maxSize, dateTaken);
+    }
+
+    public List<StoredFile> search(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre,
+            String lens,
+            Long minSize,
+            Long maxSize,
+            String dateTaken) {
+        if (fileMetadataRepository == null) {
             if (query != null && !query.isBlank()) {
                 return fileRepository
                         .findByUserAndOriginalFilenameContainingIgnoreCaseOrderByCreatedAtDesc(
@@ -98,13 +175,17 @@ public class FileSearchService {
                 codec,
                 artist,
                 author,
-                genre
+                genre,
+                lens,
+                minSize,
+                maxSize,
+                dateTaken
         );
 
         return fileRepository.findAll(specification);
     }
 
-    private Specification<StoredFile> buildSpecification(
+    public Specification<StoredFile> buildSpecification(
             User user,
             String query,
             String category,
@@ -114,7 +195,43 @@ public class FileSearchService {
             String codec,
             String artist,
             String author,
-            String genre) {
+            String genre,
+            Long minSize,
+            Long maxSize,
+            String dateTaken) {
+        return buildSpecification(
+                user,
+                query,
+                category,
+                cameraMake,
+                cameraModel,
+                resolution,
+                codec,
+                artist,
+                author,
+                genre,
+                null,
+                minSize,
+                maxSize,
+                dateTaken
+        );
+    }
+
+    public Specification<StoredFile> buildSpecification(
+            User user,
+            String query,
+            String category,
+            String cameraMake,
+            String cameraModel,
+            String resolution,
+            String codec,
+            String artist,
+            String author,
+            String genre,
+            String lens,
+            Long minSize,
+            Long maxSize,
+            String dateTaken) {
 
         return (root, cq, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -122,9 +239,19 @@ public class FileSearchService {
             // 1. Mandatory user isolation - results MUST belong only to authenticated user
             predicates.add(cb.equal(root.get("user"), user));
 
-            // Join metadata table
-            Join<StoredFile, FileMetadata> meta =
-                    root.join("metadata", JoinType.LEFT);
+            // Join metadata table (reuse existing join if already created on root)
+            Join<StoredFile, FileMetadata> meta = null;
+            for (Join<StoredFile, ?> j : root.getJoins()) {
+                if ("metadata".equals(j.getAttribute().getName())) {
+                    @SuppressWarnings("unchecked")
+                    Join<StoredFile, FileMetadata> typedJoin = (Join<StoredFile, FileMetadata>) j;
+                    meta = typedJoin;
+                    break;
+                }
+            }
+            if (meta == null) {
+                meta = root.join("metadata", JoinType.LEFT);
+            }
 
             // 2. Free-text search matching filename OR any metadata tag (case-insensitive)
             if (query != null && !query.isBlank()) {
@@ -183,13 +310,29 @@ public class FileSearchService {
                     resolution
             );
 
-            if (codec != null && !codec.isBlank()) {
-                String pattern = containsPattern(codec);
+            addMetadataFilter(
+                    predicates,
+                    cb,
+                    meta,
+                    "lens",
+                    lens
+            );
 
-                predicates.add(cb.or(
-                        likeIgnoreCase(cb, meta.get("videoCodec"), pattern),
-                        likeIgnoreCase(cb, meta.get("audioCodec"), pattern)
-                ));
+            if (codec != null && !codec.isBlank()) {
+                String[] parts = codec.split(",");
+                List<Predicate> codecPreds = new ArrayList<>();
+                for (String c : parts) {
+                    if (!c.isBlank()) {
+                        String pattern = containsPattern(c);
+                        codecPreds.add(cb.or(
+                                likeIgnoreCase(cb, meta.get("videoCodec"), pattern),
+                                likeIgnoreCase(cb, meta.get("audioCodec"), pattern)
+                        ));
+                    }
+                }
+                if (!codecPreds.isEmpty()) {
+                    predicates.add(cb.or(codecPreds.toArray(new Predicate[0])));
+                }
             }
 
             addMetadataFilter(
@@ -216,7 +359,28 @@ public class FileSearchService {
                     genre
             );
 
-            if (cq != null) {
+            if (minSize != null && minSize > 0) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("fileSize"), minSize));
+            }
+
+            if (maxSize != null && maxSize > 0) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("fileSize"), maxSize));
+            }
+
+            if (dateTaken != null && !dateTaken.isBlank()) {
+                String[] parts = dateTaken.split(",");
+                List<Predicate> datePreds = new ArrayList<>();
+                for (String part : parts) {
+                    if (!part.isBlank()) {
+                        datePreds.add(likeIgnoreCase(cb, meta.get("dateTaken"), containsPattern(part)));
+                    }
+                }
+                if (!datePreds.isEmpty()) {
+                    predicates.add(cb.or(datePreds.toArray(new Predicate[0])));
+                }
+            }
+
+            if (cq != null && cq.getResultType() == StoredFile.class) {
                 cq.distinct(true);
                 cq.orderBy(cb.desc(root.get("createdAt")));
             }
@@ -319,13 +483,22 @@ public class FileSearchService {
             String value) {
 
         if (value != null && !value.isBlank()) {
-            predicates.add(
-                    likeIgnoreCase(
-                            cb,
-                            meta.get(field),
-                            containsPattern(value)
-                    )
-            );
+            String[] parts = value.split(",");
+            List<Predicate> orPreds = new ArrayList<>();
+            for (String part : parts) {
+                if (!part.isBlank()) {
+                    orPreds.add(
+                            likeIgnoreCase(
+                                    cb,
+                                    meta.get(field),
+                                    containsPattern(part)
+                            )
+                    );
+                }
+            }
+            if (!orPreds.isEmpty()) {
+                predicates.add(cb.or(orPreds.toArray(new Predicate[0])));
+            }
         }
     }
 

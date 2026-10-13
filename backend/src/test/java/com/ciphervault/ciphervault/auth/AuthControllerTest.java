@@ -92,7 +92,77 @@ class AuthControllerTest {
         assertEquals("Login successful", body.message());
         assertEquals("mock-jwt-token", body.token());
         assertEquals("alice", body.username());
+        assertEquals("alice@example.com", body.email());
         assertEquals("Alice Cooper", body.name());
+    }
+
+    @Test
+    void loginShouldSucceedWithUsername() {
+        AuthController.LoginRequest req = new AuthController.LoginRequest();
+        req.setUsername("alice");
+        req.setPassword("Password123!");
+
+        User user = new User();
+        user.setName("Alice Cooper");
+        user.setUsername("alice");
+        user.setEmail("alice@example.com");
+        user.setPassword("hashedPassword");
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Password123!", "hashedPassword")).thenReturn(true);
+        when(jwtService.generateToken(eq("alice@example.com"), anyInt())).thenReturn("mock-jwt-token");
+
+        ResponseEntity<?> response = authController.login(req, Mockito.mock(jakarta.servlet.http.HttpServletRequest.class));
+
+        assertEquals(200, response.getStatusCode().value());
+        assertInstanceOf(AuthController.LoginResponse.class, response.getBody());
+
+        AuthController.LoginResponse body = (AuthController.LoginResponse) response.getBody();
+        assertTrue(body.success());
+        assertEquals("alice", body.username());
+        assertEquals("alice@example.com", body.email());
+        verify(loginRateLimiterService).recordSuccessfulLogin(any(), eq("alice"));
+        verify(loginRateLimiterService).recordSuccessfulLogin(any(), eq("alice@example.com"));
+    }
+
+    @Test
+    void loginShouldSucceedWithUsernameCaseInsensitive() {
+        AuthController.LoginRequest req = new AuthController.LoginRequest();
+        req.setIdentifier("ALICE");
+        req.setPassword("Password123!");
+
+        User user = new User();
+        user.setName("Alice Cooper");
+        user.setUsername("alice");
+        user.setEmail("alice@example.com");
+        user.setPassword("hashedPassword");
+
+        when(userRepository.findByUsername("ALICE")).thenReturn(Optional.empty());
+        when(userRepository.findByUsernameIgnoreCase("ALICE")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("Password123!", "hashedPassword")).thenReturn(true);
+        when(jwtService.generateToken(eq("alice@example.com"), anyInt())).thenReturn("mock-jwt-token");
+
+        ResponseEntity<?> response = authController.login(req, Mockito.mock(jakarta.servlet.http.HttpServletRequest.class));
+
+        assertEquals(200, response.getStatusCode().value());
+        assertInstanceOf(AuthController.LoginResponse.class, response.getBody());
+
+        AuthController.LoginResponse body = (AuthController.LoginResponse) response.getBody();
+        assertTrue(body.success());
+        assertEquals("alice", body.username());
+        assertEquals("alice@example.com", body.email());
+    }
+
+    @Test
+    void loginShouldFailWhenIdentifierMissing() {
+        AuthController.LoginRequest req = new AuthController.LoginRequest();
+        req.setPassword("Password123!");
+
+        ResponseEntity<?> response = authController.login(req, Mockito.mock(jakarta.servlet.http.HttpServletRequest.class));
+
+        assertEquals(400, response.getStatusCode().value());
+        Map<?, ?> body = (Map<?, ?>) response.getBody();
+        assertEquals("Email or username is required", body.get("message"));
     }
 
     @Test

@@ -67,7 +67,7 @@ public class FileComparator {
         }
     }
 
-    private static int compareDates(String d1, String d2) {
+    static int compareDates(String d1, String d2) {
         if (d1 == null && d2 == null) return 0;
         if (d1 == null || d1.trim().isEmpty()) return 1;
         if (d2 == null || d2.trim().isEmpty()) return -1;

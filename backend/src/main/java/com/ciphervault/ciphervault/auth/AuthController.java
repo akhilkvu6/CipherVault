@@ -156,11 +156,13 @@ public class AuthController {
             return badRequest("Request body is required");
         }
 
-        String email = normalizeEmail(request.getEmail());
+        String rawIdentifier = request.getIdentifier();
 
-        if (email == null) {
-            return badRequest("Email is required");
+        if (rawIdentifier == null || rawIdentifier.isBlank()) {
+            return badRequest("Email or username is required");
         }
+
+        String identifier = rawIdentifier.trim();
 
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             return badRequest("Password is required");
@@ -171,14 +173,14 @@ public class AuthController {
                 ? forwardedFor.split(",")[0].trim() 
                 : httpRequest.getRemoteAddr();
 
-        if (loginRateLimiterService.isBlocked(clientIp, email)) {
+        if (loginRateLimiterService.isBlocked(clientIp, identifier)) {
             long seconds =
-                    loginRateLimiterService.getRemainingLockoutSeconds(clientIp, email);
+                    loginRateLimiterService.getRemainingLockoutSeconds(clientIp, identifier);
             long minutes = Math.max(1, (seconds + 59) / 60);
 
             ConsoleLogger.logAuthLoginTrace(
                     requestId,
-                    email,
+                    identifier,
                     null,
                     false,
                     false,
@@ -200,7 +202,20 @@ public class AuthController {
                                             + " minute(s) before trying again."));
         }
 
-        User user = userRepository.findByEmail(email).orElse(null);
+        User user;
+        if (identifier.contains("@")) {
+            user = userRepository.findByEmail(identifier)
+                    .or(() -> userRepository.findByEmailIgnoreCase(identifier))
+                    .or(() -> userRepository.findByUsername(identifier))
+                    .or(() -> userRepository.findByUsernameIgnoreCase(identifier))
+                    .orElse(null);
+        } else {
+            user = userRepository.findByUsername(identifier)
+                    .or(() -> userRepository.findByUsernameIgnoreCase(identifier))
+                    .or(() -> userRepository.findByEmail(identifier))
+                    .or(() -> userRepository.findByEmailIgnoreCase(identifier))
+                    .orElse(null);
+        }
 
         if (user == null
                 || !passwordEncoder.matches(
@@ -208,21 +223,35 @@ public class AuthController {
                         user.getPassword())) {
             ConsoleLogger.logAuthLoginTrace(
                     requestId,
-                    email,
+                    identifier,
                     user != null ? user.getId() : null,
                     user != null,
                     false,
                     "Invalid credentials",
                     elapsed(start));
 
-            loginRateLimiterService.recordFailedAttempt(clientIp, email);
+            loginRateLimiterService.recordFailedAttempt(clientIp, identifier);
+            if (user != null) {
+                if (user.getEmail() != null && !user.getEmail().equalsIgnoreCase(identifier)) {
+                    loginRateLimiterService.recordFailedAttempt(clientIp, user.getEmail());
+                }
+                if (user.getUsername() != null && !user.getUsername().equalsIgnoreCase(identifier)) {
+                    loginRateLimiterService.recordFailedAttempt(clientIp, user.getUsername());
+                }
+            }
 
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid email or password");
         }
 
-        loginRateLimiterService.recordSuccessfulLogin(clientIp, email);
+        loginRateLimiterService.recordSuccessfulLogin(clientIp, identifier);
+        if (user.getEmail() != null && !user.getEmail().equalsIgnoreCase(identifier)) {
+            loginRateLimiterService.recordSuccessfulLogin(clientIp, user.getEmail());
+        }
+        if (user.getUsername() != null && !user.getUsername().equalsIgnoreCase(identifier)) {
+            loginRateLimiterService.recordSuccessfulLogin(clientIp, user.getUsername());
+        }
 
         // Generate a missing key for accounts created before user-key support existed.
         if (user.getUserKey() == null) {
@@ -265,6 +294,7 @@ public class AuthController {
                         "Login successful",
                         token,
                         user.getUsername(),
+                        user.getEmail(),
                         user.getName()));
     }
 
@@ -517,6 +547,9 @@ public class AuthController {
     public static class LoginRequest {
 
         private String email;
+        private String username;
+        private String identifier;
+        private String usernameOrEmail;
         private String password;
 
         public String getEmail() {
@@ -525,6 +558,39 @@ public class AuthController {
 
         public void setEmail(String email) {
             this.email = email;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getIdentifier() {
+            if (identifier != null && !identifier.isBlank()) {
+                return identifier;
+            }
+            if (usernameOrEmail != null && !usernameOrEmail.isBlank()) {
+                return usernameOrEmail;
+            }
+            if (username != null && !username.isBlank()) {
+                return username;
+            }
+            return email;
+        }
+
+        public void setIdentifier(String identifier) {
+            this.identifier = identifier;
+        }
+
+        public String getUsernameOrEmail() {
+            return usernameOrEmail;
+        }
+
+        public void setUsernameOrEmail(String usernameOrEmail) {
+            this.usernameOrEmail = usernameOrEmail;
         }
 
         public String getPassword() {
@@ -542,7 +608,17 @@ public class AuthController {
             String message,
             String token,
             String username,
+            String email,
             String name) {
+
+        public LoginResponse(
+                boolean success,
+                String message,
+                String token,
+                String username,
+                String name) {
+            this(success, message, token, username, null, name);
+        }
     }
 
     // Represent the password-change request received from the Android client.

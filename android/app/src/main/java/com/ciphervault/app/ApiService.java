@@ -82,6 +82,56 @@ public interface ApiService {
     @GET("api/files/check-duplicate")
     Call<DuplicateCheckResponse> checkDuplicate(@Query("hash") String hash);
 
+    @GET("api/files/facets")
+    Call<FileFacetsResponse> getFacets(
+            @Query("query") String query,
+            @Query("category") String category,
+            @Query("cameraMake") String cameraMake,
+            @Query("cameraModel") String cameraModel,
+            @Query("resolution") String resolution,
+            @Query("codec") String codec,
+            @Query("artist") String artist,
+            @Query("author") String author,
+            @Query("genre") String genre,
+            @Query("lens") String lens,
+            @Query("minSize") Long minSize,
+            @Query("maxSize") Long maxSize,
+            @Query("dateTaken") String dateTaken
+    );
+
+    @GET("api/files/search")
+    Call<List<StoredFile>> searchFiles(
+            @Query("query") String query,
+            @Query("category") String category,
+            @Query("cameraMake") String cameraMake,
+            @Query("cameraModel") String cameraModel,
+            @Query("resolution") String resolution,
+            @Query("codec") String codec,
+            @Query("artist") String artist,
+            @Query("author") String author,
+            @Query("genre") String genre,
+            @Query("lens") String lens,
+            @Query("minSize") Long minSize,
+            @Query("maxSize") Long maxSize,
+            @Query("dateTaken") String dateTaken
+    );
+
+    @GET("api/files/search")
+    Call<List<StoredFile>> searchFiles(
+            @Query("query") String query,
+            @Query("category") String category,
+            @Query("cameraMake") String cameraMake,
+            @Query("cameraModel") String cameraModel,
+            @Query("resolution") String resolution,
+            @Query("codec") String codec,
+            @Query("artist") String artist,
+            @Query("author") String author,
+            @Query("genre") String genre,
+            @Query("minSize") Long minSize,
+            @Query("maxSize") Long maxSize,
+            @Query("dateTaken") String dateTaken
+    );
+
     @GET("api/files/search")
     Call<List<StoredFile>> searchFiles(
             @Query("query") String query,

@@ -59,8 +59,9 @@ public class FileDetailsBottomSheet {
         TextView tvBottomSheetBadge = view.findViewById(R.id.tvBottomSheetBadge);
         TextView tvBottomSheetHash = view.findViewById(R.id.tvBottomSheetHash);
         TextView tvBottomSheetExactSize = view.findViewById(R.id.tvBottomSheetExactSize);
-        TextView tvBottomSheetAesSpec = view.findViewById(R.id.tvBottomSheetAesSpec);
         TextView tvBottomSheetMime = view.findViewById(R.id.tvBottomSheetMime);
+        View rowBottomSheetUploadDate = view.findViewById(R.id.rowBottomSheetUploadDate);
+        TextView tvBottomSheetUploadDate = view.findViewById(R.id.tvBottomSheetUploadDate);
         Button btnBottomSheetPreview = view.findViewById(R.id.btnBottomSheetPreview);
         Button btnBottomSheetDownload = view.findViewById(R.id.btnBottomSheetDownload);
         Button btnBottomSheetDelete = view.findViewById(R.id.btnBottomSheetDelete);
@@ -97,7 +98,14 @@ public class FileDetailsBottomSheet {
                     ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_video);
                     break;
                 case PDFS:
+                case DOCUMENTS:
                     ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_file_text);
+                    break;
+                case AUDIO:
+                    ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_music);
+                    break;
+                case ARCHIVES:
+                    ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_archive);
                     break;
                 default:
                     ivBottomSheetIcon.setImageResource(R.drawable.ic_lucide_file);
@@ -105,8 +113,9 @@ public class FileDetailsBottomSheet {
             }
         }
 
-        if (file.hasPreview() && file.getId() != null && ivBottomSheetThumbnail != null) {
-            ThumbnailLoader.loadThumbnail(context, file.getId(), ivBottomSheetThumbnail, ivBottomSheetIcon,
+        boolean canLoadThumb = file.getId() != null && (file.hasPreview() || ThumbnailLoader.hasCachedThumbnail(context, file.getId(), file.getSha256Checksum()));
+        if (canLoadThumb && ivBottomSheetThumbnail != null) {
+            ThumbnailLoader.loadThumbnail(context, file.getId(), file.getSha256Checksum(), file.hasPreview(), ivBottomSheetThumbnail, ivBottomSheetIcon,
                     file.getCategory() == StoredFile.FileCategory.VIDEOS ? ivBottomSheetVideoBadge : null);
         } else {
             if (ivBottomSheetThumbnail != null) ivBottomSheetThumbnail.setVisibility(View.GONE);
@@ -119,15 +128,19 @@ public class FileDetailsBottomSheet {
         }
 
         if (tvBottomSheetBadge != null) {
-            if (file.isEncrypted()) {
+            if (!file.hasEncryptionStatus()) {
+                tvBottomSheetBadge.setVisibility(View.GONE);
+            } else if (file.isEncrypted()) {
                 int encColor = ThemeManager.getEncryptedColor(context);
+                tvBottomSheetBadge.setVisibility(View.VISIBLE);
                 tvBottomSheetBadge.setText("Encrypted");
                 tvBottomSheetBadge.setTextColor(encColor);
                 tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_lucide_lock, 0, 0, 0);
                 tvBottomSheetBadge.setCompoundDrawableTintList(android.content.res.ColorStateList.valueOf(encColor));
                 tvBottomSheetBadge.setCompoundDrawablePadding((int) (4 * context.getResources().getDisplayMetrics().density));
             } else {
-                tvBottomSheetBadge.setText("Uploaded");
+                tvBottomSheetBadge.setVisibility(View.VISIBLE);
+                tvBottomSheetBadge.setText("Not encrypted");
                 tvBottomSheetBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
                 tvBottomSheetBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
             }
@@ -149,7 +162,6 @@ public class FileDetailsBottomSheet {
             });
         }
 
-
         if (tvBottomSheetExactSize != null) {
             long bytes = file.getFileSize();
             String formattedFormatted = FileUtils.formatStorageSize(bytes);
@@ -157,91 +169,105 @@ public class FileDetailsBottomSheet {
             tvBottomSheetExactSize.setText(String.format(Locale.US, "%s bytes (%s)", numberString, formattedFormatted));
         }
 
-        if (tvBottomSheetAesSpec != null) {
-            if (file.isEncrypted()) {
-                tvBottomSheetAesSpec.setText("AES-256-GCM / 128-bit Auth Tag");
-                tvBottomSheetAesSpec.setTextColor(ThemeManager.getEncryptedColor(context));
-            } else {
-                tvBottomSheetAesSpec.setText("None (Unencrypted)");
-                tvBottomSheetAesSpec.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
-            }
-        }
-
         if (tvBottomSheetMime != null) {
             String mime = file.getContentType();
             tvBottomSheetMime.setText(mime != null && !mime.trim().isEmpty() ? mime : "application/octet-stream");
         }
 
-        View layoutMetadataSection = view.findViewById(R.id.layoutMetadataSection);
-        View rowMetadataCamera = view.findViewById(R.id.rowMetadataCamera);
-        TextView tvMetadataCamera = view.findViewById(R.id.tvMetadataCamera);
-        View rowMetadataResolution = view.findViewById(R.id.rowMetadataResolution);
-        TextView tvMetadataResolution = view.findViewById(R.id.tvMetadataResolution);
-        View rowMetadataDate = view.findViewById(R.id.rowMetadataDate);
-        TextView tvMetadataDate = view.findViewById(R.id.tvMetadataDate);
-        View rowMetadataCodec = view.findViewById(R.id.rowMetadataCodec);
-        TextView tvMetadataCodec = view.findViewById(R.id.tvMetadataCodec);
-        View rowMetadataDuration = view.findViewById(R.id.rowMetadataDuration);
-        TextView tvMetadataDuration = view.findViewById(R.id.tvMetadataDuration);
-        View rowMetadataAuthor = view.findViewById(R.id.rowMetadataAuthor);
-        TextView tvMetadataAuthor = view.findViewById(R.id.tvMetadataAuthor);
-        View rowMetadataTitle = view.findViewById(R.id.rowMetadataTitle);
-        TextView tvMetadataTitle = view.findViewById(R.id.tvMetadataTitle);
+        String uploadDate = file.getCreatedAt();
+        if (uploadDate != null && !uploadDate.trim().isEmpty() && rowBottomSheetUploadDate != null && tvBottomSheetUploadDate != null) {
+            rowBottomSheetUploadDate.setVisibility(View.VISIBLE);
+            tvBottomSheetUploadDate.setText(FileUtils.formatDisplayDateTime(uploadDate));
+        } else if (rowBottomSheetUploadDate != null) {
+            rowBottomSheetUploadDate.setVisibility(View.GONE);
+        }
 
         FileMetadataDTO metadata = file.getMetadata();
         boolean hasAnyMetadata = false;
 
         if (metadata != null) {
-            String camera = file.getCameraInfo();
-            if (camera != null && !camera.trim().isEmpty() && rowMetadataCamera != null && tvMetadataCamera != null) {
-                rowMetadataCamera.setVisibility(View.VISIBLE);
-                tvMetadataCamera.setText(camera);
+            // Images: Camera make and model, lens, focal length, ISO, exposure time, F-number, date taken, and resolution
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataCamera), view.findViewById(R.id.tvMetadataCamera), file.getCameraInfo())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataLens), view.findViewById(R.id.tvMetadataLens), metadata.getLens())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataFocalLength), view.findViewById(R.id.tvMetadataFocalLength), metadata.getFocalLength())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataIso), view.findViewById(R.id.tvMetadataIso), metadata.getIso())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataExposure), view.findViewById(R.id.tvMetadataExposure), metadata.getExposureTime())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataFNumber), view.findViewById(R.id.tvMetadataFNumber), metadata.getFNumber())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataDateTaken), view.findViewById(R.id.tvMetadataDateTaken), metadata.getDateTaken())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataResolution), view.findViewById(R.id.tvMetadataResolution), file.getResolution())) {
                 hasAnyMetadata = true;
             }
 
-            String resolution = file.getResolution();
-            if (resolution != null && !resolution.trim().isEmpty() && rowMetadataResolution != null && tvMetadataResolution != null) {
-                rowMetadataResolution.setVisibility(View.VISIBLE);
-                tvMetadataResolution.setText(resolution);
+            // Videos: Duration, video codec, audio codec, framerate, and bitrate
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataDuration), view.findViewById(R.id.tvMetadataDuration), file.getDuration())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataVideoCodec), view.findViewById(R.id.tvMetadataVideoCodec), metadata.getVideoCodec())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataAudioCodec), view.findViewById(R.id.tvMetadataAudioCodec), metadata.getAudioCodec())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataFrameRate), view.findViewById(R.id.tvMetadataFrameRate), metadata.getFrameRate())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataBitrate), view.findViewById(R.id.tvMetadataBitrate), metadata.getBitrate())) {
                 hasAnyMetadata = true;
             }
 
-            String date = metadata.getDateTaken() != null ? metadata.getDateTaken() : metadata.getDocCreatedDate();
-            if (date != null && !date.trim().isEmpty() && rowMetadataDate != null && tvMetadataDate != null) {
-                rowMetadataDate.setVisibility(View.VISIBLE);
-                tvMetadataDate.setText(date);
+            // Audio: Title, artist, album, genre, release year
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataTitle), view.findViewById(R.id.tvMetadataTitle), metadata.getTitle())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataArtist), view.findViewById(R.id.tvMetadataArtist), metadata.getArtist())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataAlbum), view.findViewById(R.id.tvMetadataAlbum), metadata.getAlbum())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataGenre), view.findViewById(R.id.tvMetadataGenre), metadata.getGenre())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataReleaseYear), view.findViewById(R.id.tvMetadataReleaseYear), metadata.getReleaseYear())) {
                 hasAnyMetadata = true;
             }
 
-            String codec = file.getCodec();
-            if (codec != null && !codec.trim().isEmpty() && rowMetadataCodec != null && tvMetadataCodec != null) {
-                rowMetadataCodec.setVisibility(View.VISIBLE);
-                tvMetadataCodec.setText(codec);
+            // Documents: Author, creator, subject, keywords, creation date, modification date
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataAuthor), view.findViewById(R.id.tvMetadataAuthor), metadata.getAuthor())) {
                 hasAnyMetadata = true;
             }
-
-            String duration = file.getDuration();
-            if (duration != null && !duration.trim().isEmpty() && rowMetadataDuration != null && tvMetadataDuration != null) {
-                rowMetadataDuration.setVisibility(View.VISIBLE);
-                tvMetadataDuration.setText(duration);
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataCreator), view.findViewById(R.id.tvMetadataCreator), metadata.getCreator())) {
                 hasAnyMetadata = true;
             }
-
-            String author = file.getArtistOrAuthor();
-            if (author != null && !author.trim().isEmpty() && rowMetadataAuthor != null && tvMetadataAuthor != null) {
-                rowMetadataAuthor.setVisibility(View.VISIBLE);
-                tvMetadataAuthor.setText(author);
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataSubject), view.findViewById(R.id.tvMetadataSubject), metadata.getSubject())) {
                 hasAnyMetadata = true;
             }
-
-            String title = metadata.getTitle() != null ? metadata.getTitle() : metadata.getSubject();
-            if (title != null && !title.trim().isEmpty() && rowMetadataTitle != null && tvMetadataTitle != null) {
-                rowMetadataTitle.setVisibility(View.VISIBLE);
-                tvMetadataTitle.setText(title);
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataKeywords), view.findViewById(R.id.tvMetadataKeywords), metadata.getKeywords())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataDocCreated), view.findViewById(R.id.tvMetadataDocCreated), metadata.getDocCreatedDate())) {
+                hasAnyMetadata = true;
+            }
+            if (bindMetadataRow(view.findViewById(R.id.rowMetadataDocModified), view.findViewById(R.id.tvMetadataDocModified), metadata.getDocModifiedDate())) {
                 hasAnyMetadata = true;
             }
         }
 
+        View layoutMetadataSection = view.findViewById(R.id.layoutMetadataSection);
         if (layoutMetadataSection != null) {
             layoutMetadataSection.setVisibility(hasAnyMetadata ? View.VISIBLE : View.GONE);
         }
@@ -282,5 +308,16 @@ public class FileDetailsBottomSheet {
 
         dialog.setContentView(view);
         dialog.show();
+    }
+
+    private static boolean bindMetadataRow(View row, TextView tv, String value) {
+        if (value != null && !value.trim().isEmpty() && row != null && tv != null) {
+            row.setVisibility(View.VISIBLE);
+            tv.setText(value.trim());
+            return true;
+        } else if (row != null) {
+            row.setVisibility(View.GONE);
+        }
+        return false;
     }
 }

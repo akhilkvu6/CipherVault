@@ -37,6 +37,7 @@ public final class MetadataSearchBottomSheet {
 
     public static class FilterCriteria {
         public String query;
+        public String category = "ALL";
         public String cameraMake;
         public String cameraModel;
         public String resolution;
@@ -44,21 +45,30 @@ public final class MetadataSearchBottomSheet {
         public String artist;
         public String author;
         public String genre;
+        public Long minSize;
+        public Long maxSize;
+        public String dateTaken;
+        public String dateRange = "ANY";
 
         public boolean isEmpty() {
             return (query == null || query.trim().isEmpty())
+                    && (category == null || category.equalsIgnoreCase("ALL") || category.trim().isEmpty())
                     && (cameraMake == null || cameraMake.trim().isEmpty())
                     && (cameraModel == null || cameraModel.trim().isEmpty())
                     && (resolution == null || resolution.trim().isEmpty())
                     && (codec == null || codec.trim().isEmpty())
                     && (artist == null || artist.trim().isEmpty())
                     && (author == null || author.trim().isEmpty())
-                    && (genre == null || genre.trim().isEmpty());
+                    && (genre == null || genre.trim().isEmpty())
+                    && minSize == null
+                    && maxSize == null
+                    && (dateTaken == null || dateTaken.trim().isEmpty());
         }
 
         public int getActiveCount() {
             int count = 0;
             if (query != null && !query.trim().isEmpty()) count++;
+            if (category != null && !category.equalsIgnoreCase("ALL") && !category.trim().isEmpty()) count++;
             if (cameraMake != null && !cameraMake.trim().isEmpty()) count++;
             if (cameraModel != null && !cameraModel.trim().isEmpty()) count++;
             if (resolution != null && !resolution.trim().isEmpty()) count++;
@@ -66,11 +76,15 @@ public final class MetadataSearchBottomSheet {
             if (artist != null && !artist.trim().isEmpty()) count++;
             if (author != null && !author.trim().isEmpty()) count++;
             if (genre != null && !genre.trim().isEmpty()) count++;
+            if (minSize != null && minSize > 0) count++;
+            if (maxSize != null && maxSize > 0) count++;
+            if (dateTaken != null && !dateTaken.trim().isEmpty()) count++;
             return count;
         }
 
         public void clear() {
             query = null;
+            category = "ALL";
             cameraMake = null;
             cameraModel = null;
             resolution = null;
@@ -78,6 +92,10 @@ public final class MetadataSearchBottomSheet {
             artist = null;
             author = null;
             genre = null;
+            minSize = null;
+            maxSize = null;
+            dateTaken = null;
+            dateRange = "ANY";
         }
 
         public void copyFrom(FilterCriteria other) {
@@ -86,6 +104,7 @@ public final class MetadataSearchBottomSheet {
                 return;
             }
             this.query = other.query;
+            this.category = other.category != null ? other.category : "ALL";
             this.cameraMake = other.cameraMake;
             this.cameraModel = other.cameraModel;
             this.resolution = other.resolution;
@@ -93,6 +112,10 @@ public final class MetadataSearchBottomSheet {
             this.artist = other.artist;
             this.author = other.author;
             this.genre = other.genre;
+            this.minSize = other.minSize;
+            this.maxSize = other.maxSize;
+            this.dateTaken = other.dateTaken;
+            this.dateRange = other.dateRange != null ? other.dateRange : "ANY";
         }
     }
 

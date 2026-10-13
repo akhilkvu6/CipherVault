@@ -4,6 +4,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -13,12 +15,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Filter that establishes the RequestContext correlation ID and logs
- * HTTP request lifecycle in a clean, pure-ASCII developer console format.
+ * Filter that establishes correlation IDs via MDC and outputs concise,
+ * colour-coded HTTP access logging conforming to the CipherVault Standard.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 5)
 public class RequestLoggingFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -36,36 +40,25 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         String uri = request.getRequestURI();
         String queryString = request.getQueryString();
 
-        String fullPath = (queryString != null && !queryString.isBlank())
-                ? uri + "?" + queryString
-                : uri;
+        // Check for client-supplied correlation headers
+        String clientCorrId = request.getHeader("X-Correlation-ID");
+        if (clientCorrId == null || clientCorrId.isBlank()) {
+            clientCorrId = request.getHeader("X-Request-ID");
+        }
 
-        RequestContext.RequestInfo reqInfo = RequestContext.init();
+        RequestContext.RequestInfo reqInfo = RequestContext.init(clientCorrId);
         String reqId = reqInfo.getRequestId();
 
-        boolean isDetailedFlow =
-                uri.contains("/upload")
-                        || uri.contains("/download")
-                        || uri.contains("/login")
-                        || uri.contains("/register")
-                        || uri.contains("/search")
-                        || "DELETE".equalsIgnoreCase(method);
+        // Echo correlation ID back to the client
+        response.setHeader("X-Correlation-ID", reqId);
 
-        if (isDetailedFlow) {
-            ConsoleLogger.logHttpRequestStart(
-                    reqId,
-                    method,
-                    fullPath,
-                    null
-            );
-        }
+        // Sanitize path for safe logging (redact secrets/tokens from query parameters)
+        String safePath = sanitizePath(uri, queryString);
 
         try {
             filterChain.doFilter(request, response);
         } finally {
-            long durationMs =
-                    System.currentTimeMillis() - reqInfo.getStartTime();
-
+            long durationMs = System.currentTimeMillis() - reqInfo.getStartTime();
             int status = response.getStatus();
 
             String statusPhrase;
@@ -76,62 +69,70 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             }
 
             Long contentSize = null;
-
             if ("POST".equalsIgnoreCase(method) && uri.contains("/upload")) {
                 long requestLength = request.getContentLengthLong();
-
-                if (requestLength > 0) {
-                    contentSize = requestLength;
-                }
+                if (requestLength > 0) contentSize = requestLength;
             } else if ("GET".equalsIgnoreCase(method) && uri.contains("/download")) {
                 String responseLength = response.getHeader("Content-Length");
-
                 if (responseLength != null) {
-                    try {
-                        contentSize = Long.parseLong(responseLength);
-                    } catch (NumberFormatException ignored) {
-                        // Ignore invalid Content-Length values.
-                    }
+                    try { contentSize = Long.parseLong(responseLength); } catch (NumberFormatException ignored) {}
                 }
             }
 
-            String note = null;
+            String sizeStr = (contentSize != null && contentSize > 0)
+                    ? " | " + ConsoleLogger.formatSize(contentSize)
+                    : "";
 
-            if (status == 404) {
-                note = "Endpoint or resource not found";
-            } else if (status == 401) {
-                note = "Authentication required or invalid credentials";
-            } else if (status == 409) {
-                note = "Duplicate detected";
-            } else if (status == 429) {
-                note = "Rate limit active";
-            }
-
-            if (isDetailedFlow) {
-                ConsoleLogger.logHttpResponse(
-                        reqId,
-                        method,
-                        fullPath,
-                        status,
-                        statusPhrase,
-                        contentSize,
-                        durationMs,
-                        note
-                );
+            // Noise reduction for frequent health check probes
+            if ("/api/health".equals(uri)) {
+                if (status == 200) {
+                    log.debug("[HTTP] {} {} | {} {} | {} ms", method, safePath, status, statusPhrase, durationMs);
+                } else {
+                    log.warn("[HTTP] {} {} | {} {} | {} ms | Health check degraded", method, safePath, status, statusPhrase, durationMs);
+                }
             } else {
-                String tag = (status >= 200 && status < 400)
-                        ? ConsoleLogger.TAG_OK
-                        : ConsoleLogger.TAG_ERROR;
+                String noteStr = "";
+                if (status == 404) noteStr = " | Resource not found";
+                else if (status == 401) noteStr = " | Unauthorized";
+                else if (status == 403) noteStr = " | Access denied";
+                else if (status == 409) noteStr = " | Duplicate detected";
+                else if (status == 429) noteStr = " | Rate limit active";
 
-                String sizeStr =
-                        contentSize != null && contentSize > 0
-                                ? " | " + ConsoleLogger.formatSize(contentSize)
-                                : "";
-
-                System.out.println("[" + ConsoleLogger.BOLD + reqId + ConsoleLogger.RESET + "] " + ConsoleLogger.TAG_HTTP + " " + method + " " + fullPath + " | " + tag + " " + status + sizeStr + " | " + durationMs + " ms");
+                if (status >= 500) {
+                    log.error("[HTTP] {} {} | {} {} | {} ms{}{}", method, safePath, status, statusPhrase, durationMs, sizeStr, noteStr);
+                } else if (status >= 400) {
+                    log.warn("[HTTP] {} {} | {} {} | {} ms{}{}", method, safePath, status, statusPhrase, durationMs, sizeStr, noteStr);
+                } else {
+                    log.info("[HTTP] {} {} | {} {} | {} ms{}{}", method, safePath, status, statusPhrase, durationMs, sizeStr, noteStr);
+                }
             }
 
+            // Always clear MDC and RequestContext state
             RequestContext.clear();
         }
+    }
+
+    private String sanitizePath(String uri, String queryString) {
+        if (queryString == null || queryString.isBlank()) {
+            return uri;
+        }
+        String[] pairs = queryString.split("&");
+        StringBuilder sanitized = new StringBuilder(uri).append("?");
+        for (int i = 0; i < pairs.length; i++) {
+            if (i > 0) sanitized.append("&");
+            String pair = pairs[i];
+            int eq = pair.indexOf('=');
+            if (eq > 0) {
+                String key = pair.substring(0, eq).toLowerCase();
+                if (key.contains("password") || key.contains("secret") || key.contains("token") || key.contains("key") || key.contains("auth")) {
+                    sanitized.append(pair.substring(0, eq)).append("=[REDACTED]");
+                } else {
+                    sanitized.append(pair);
+                }
+            } else {
+                sanitized.append(pair);
+            }
+        }
+        return sanitized.toString();
     }
 }

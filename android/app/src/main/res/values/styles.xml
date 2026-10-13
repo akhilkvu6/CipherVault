@@ -156,4 +156,61 @@
         <item name="android:textSize">11sp</item>
         <item name="android:letterSpacing">0.03</item>
     </style>
+
+    <!-- =================================================================== -->
+    <!-- CIPHERVAULT CHIP STYLES                                             -->
+    <!-- Matching Vault category chips: 32dp container height, 48dp touch    -->
+    <!-- target, 8dp corner radius, LabelLarge 14sp bold typography,         -->
+    <!-- balanced horizontal padding, and M3 cream/peach/brown palette.      -->
+    <!-- =================================================================== -->
+    <style name="Widget.CipherVault.Chip.Filter" parent="Widget.Material3.Chip.Filter">
+        <item name="android:textAppearance">@style/TextAppearance.CipherVault.LabelLarge</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.Small</item>
+        <item name="chipMinHeight">32dp</item>
+        <item name="ensureMinTouchTargetSize">true</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="chipStartPadding">8dp</item>
+        <item name="chipEndPadding">8dp</item>
+        <item name="textStartPadding">4dp</item>
+        <item name="textEndPadding">4dp</item>
+        <item name="checkedIconVisible">true</item>
+    </style>
+
+    <style name="Widget.CipherVault.Chip.More" parent="Widget.Material3.Chip.Assist">
+        <item name="android:textAppearance">@style/TextAppearance.CipherVault.LabelLarge</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.Small</item>
+        <item name="chipMinHeight">32dp</item>
+        <item name="ensureMinTouchTargetSize">true</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="chipStartPadding">8dp</item>
+        <item name="chipEndPadding">8dp</item>
+        <item name="textStartPadding">4dp</item>
+        <item name="textEndPadding">4dp</item>
+        <item name="chipIconSize">16dp</item>
+        <item name="chipBackgroundColor">@color/chip_more_background</item>
+        <item name="android:textColor">@color/chip_more_text</item>
+        <item name="chipIconTint">@color/chip_more_icon</item>
+        <item name="chipStrokeColor">@color/chip_more_stroke</item>
+        <item name="chipStrokeWidth">1dp</item>
+    </style>
+
+    <style name="Widget.CipherVault.Chip.Active" parent="Widget.Material3.Chip.Input">
+        <item name="android:textAppearance">@style/TextAppearance.CipherVault.LabelMedium</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.CipherVault.Small</item>
+        <item name="chipMinHeight">32dp</item>
+        <item name="ensureMinTouchTargetSize">true</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="chipStartPadding">8dp</item>
+        <item name="chipEndPadding">8dp</item>
+        <item name="textStartPadding">4dp</item>
+        <item name="textEndPadding">4dp</item>
+        <item name="closeIconVisible">true</item>
+        <item name="closeIconSize">16dp</item>
+        <item name="chipBackgroundColor">?attr/colorSurfaceContainerHigh</item>
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="closeIconTint">?attr/colorOnSurface</item>
+        <item name="chipStrokeColor">?attr/colorOutlineVariant</item>
+        <item name="chipStrokeWidth">1dp</item>
+    </style>
 </resources>
+

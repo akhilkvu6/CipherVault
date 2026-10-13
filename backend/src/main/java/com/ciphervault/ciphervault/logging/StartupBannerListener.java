@@ -1,8 +1,11 @@
 package com.ciphervault.ciphervault.logging;
-
+ 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootVersion;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -19,10 +22,13 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Listens for ApplicationReadyEvent and prints the structured ASCII CipherVault startup console banner.
+ * Listens for ApplicationReadyEvent and prints the structured ASCII CipherVault startup console banner,
+ * and listens for ContextClosedEvent to log clean shutdown.
  */
 @Component
 public class StartupBannerListener {
+
+    private static final Logger log = LoggerFactory.getLogger(StartupBannerListener.class);
 
     private final DataSource dataSource;
     private final Environment environment;
@@ -116,6 +122,11 @@ public class StartupBannerListener {
                 dbConnected,
                 warnings
         );
+    }
+
+    @EventListener(ContextClosedEvent.class)
+    public void onContextClosed() {
+        log.info("[APP] CipherVault backend shutting down gracefully | cleaning up resources");
     }
 
     private String resolveHostIp() {

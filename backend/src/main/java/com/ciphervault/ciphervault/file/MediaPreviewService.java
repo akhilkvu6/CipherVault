@@ -277,6 +277,11 @@ public class MediaPreviewService {
                 return null;
             }
 
+            int orientation = extractOrientationWithExiftool(sourceFile.toFile());
+            if (orientation > 1) {
+                original = applyExifOrientation(original, orientation);
+            }
+
             return scaleAndEncodeJpeg(original);
 
         } catch (Exception e) {
@@ -286,6 +291,98 @@ public class MediaPreviewService {
             );
             return null;
         }
+    }
+
+    private int extractOrientationWithExiftool(File file) {
+        Process process = null;
+        try {
+            ProcessBuilder processBuilder = new ProcessBuilder(
+                    "exiftool",
+                    "-Orientation#",
+                    "-s3",
+                    file.getAbsolutePath()
+            );
+            processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD);
+            process = processBuilder.start();
+            boolean completed = process.waitFor(3, TimeUnit.SECONDS);
+            if (completed && process.exitValue() == 0) {
+                try (InputStream is = process.getInputStream()) {
+                    String str = new String(is.readAllBytes()).trim();
+                    if (!str.isEmpty()) {
+                        return Integer.parseInt(str);
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (process != null && process.isAlive()) {
+                process.destroyForcibly();
+            }
+        }
+        return 1;
+    }
+
+    private BufferedImage applyExifOrientation(BufferedImage image, int orientation) {
+        if (image == null || orientation <= 1) {
+            return image;
+        }
+
+        int w = image.getWidth();
+        int h = image.getHeight();
+
+        int newW = w;
+        int newH = h;
+        if (orientation >= 5 && orientation <= 8) {
+            newW = h;
+            newH = w;
+        }
+
+        BufferedImage transformed = new BufferedImage(newW, newH, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = transformed.createGraphics();
+
+        try {
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+
+            switch (orientation) {
+                case 2 -> {
+                    g2d.translate(w, 0);
+                    g2d.scale(-1, 1);
+                }
+                case 3 -> {
+                    g2d.translate(w, h);
+                    g2d.rotate(Math.PI);
+                }
+                case 4 -> {
+                    g2d.translate(0, h);
+                    g2d.scale(1, -1);
+                }
+                case 5 -> {
+                    g2d.translate(0, 0);
+                    g2d.rotate(Math.PI / 2);
+                    g2d.scale(-1, 1);
+                }
+                case 6 -> {
+                    g2d.translate(newW, 0);
+                    g2d.rotate(Math.PI / 2);
+                }
+                case 7 -> {
+                    g2d.translate(newW, newH);
+                    g2d.rotate(3 * Math.PI / 2);
+                    g2d.scale(-1, 1);
+                }
+                case 8 -> {
+                    g2d.translate(0, newH);
+                    g2d.rotate(3 * Math.PI / 2);
+                }
+            }
+
+            g2d.drawImage(image, 0, 0, null);
+        } finally {
+            g2d.dispose();
+        }
+
+        return transformed;
     }
 
     private byte[] generateVideoPreview(Path sourceFile) {

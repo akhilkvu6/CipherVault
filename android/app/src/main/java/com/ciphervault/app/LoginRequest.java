@@ -3,10 +3,14 @@ package com.ciphervault.app;
 public class LoginRequest {
 
     private String email;
+    private String username;
+    private String identifier;
     private String password;
 
-    public LoginRequest(String email, String password) {
-        this.email = email;
+    public LoginRequest(String emailOrUsername, String password) {
+        this.email = emailOrUsername;
+        this.username = emailOrUsername;
+        this.identifier = emailOrUsername;
         this.password = password;
     }
 
@@ -14,7 +18,31 @@ public class LoginRequest {
         return email;
     }
 
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
+    }
+
     public String getPassword() {
         return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }

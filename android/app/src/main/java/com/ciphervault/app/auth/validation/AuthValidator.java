@@ -47,6 +47,20 @@ public final class AuthValidator {
     }
 
     @Nullable
+    public static String validateLoginIdentifier(@Nullable String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return "Email or username is required";
+        }
+        String trimmed = identifier.trim();
+        if (trimmed.contains("@")) {
+            if (!EMAIL_PATTERN.matcher(trimmed).matches()) {
+                return "Please enter a valid email address";
+            }
+        }
+        return null;
+    }
+
+    @Nullable
     public static String validatePassword(@Nullable String password) {
         if (password == null || password.isEmpty()) {
             return "Password is required";

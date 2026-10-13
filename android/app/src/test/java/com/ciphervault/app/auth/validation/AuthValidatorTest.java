@@ -49,6 +49,28 @@ public class AuthValidatorTest {
     }
 
     @Test
+    public void testValidateLoginIdentifier() {
+        assertNotNull("Blank identifier should fail", AuthValidator.validateLoginIdentifier(""));
+        assertNotNull("Whitespace identifier should fail", AuthValidator.validateLoginIdentifier("   "));
+        assertNotNull("Null identifier should fail", AuthValidator.validateLoginIdentifier(null));
+        assertEquals("Email or username is required", AuthValidator.validateLoginIdentifier(""));
+
+        // Invalid email format containing @
+        assertNotNull("Invalid email format (no domain) should fail", AuthValidator.validateLoginIdentifier("test@"));
+        assertEquals("Please enter a valid email address", AuthValidator.validateLoginIdentifier("test@"));
+        assertNotNull("Invalid email format (no TLD) should fail", AuthValidator.validateLoginIdentifier("test@domain"));
+
+        // Valid emails
+        assertNull("Valid email should pass", AuthValidator.validateLoginIdentifier("alice@example.com"));
+        assertNull("Valid email with plus should pass", AuthValidator.validateLoginIdentifier("user+tag@domain.co.uk"));
+
+        // Valid usernames (no @)
+        assertNull("Valid username should pass", AuthValidator.validateLoginIdentifier("alice"));
+        assertNull("Valid username with numbers should pass", AuthValidator.validateLoginIdentifier("user123"));
+        assertNull("Valid username with underscore should pass", AuthValidator.validateLoginIdentifier("john_doe"));
+    }
+
+    @Test
     public void testValidatePasswordRequirements() {
         assertNotNull("Blank password should fail", AuthValidator.validatePassword(""));
         assertNotNull("Null password should fail", AuthValidator.validatePassword(null));

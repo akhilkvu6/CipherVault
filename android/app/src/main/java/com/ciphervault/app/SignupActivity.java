@@ -326,6 +326,11 @@ public class SignupActivity extends BaseActivity {
                     } else if (selectedPhotoUri != null) {
                         ProfilePhotoHelper.savePendingSignupPhoto(SignupActivity.this, email, selectedPhotoUri);
                     }
+                    AuditLogger.AuditEntry regEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_ACCOUNT_CREATED, "SUCCESS", "Account registered for: " + username + " (" + email + ")", null);
+                    regEntry.primaryEntity = username;
+                    regEntry.authMethod = "PASSWORD";
+                    AuditLogger.logEvent(SignupActivity.this, regEntry);
+
                     Toast.makeText(SignupActivity.this, "Account created successfully! Please sign in.", Toast.LENGTH_LONG).show();
                     Intent intent = new Intent(SignupActivity.this, LoginActivity.class);
                     startActivity(intent);
@@ -344,6 +349,12 @@ public class SignupActivity extends BaseActivity {
                             }
                         } catch (Exception ignored) {}
                     }
+                    AuditLogger.AuditEntry regFail = new AuditLogger.AuditEntry("Registration Failed", "FAILED", errorMsg + " (" + email + ")", null);
+                    regFail.primaryEntity = username;
+                    regFail.authMethod = "PASSWORD";
+                    regFail.errorMessage = errorMsg;
+                    AuditLogger.logEvent(SignupActivity.this, regFail);
+
                     Toast.makeText(SignupActivity.this, errorMsg, Toast.LENGTH_LONG).show();
                 }
             }
@@ -352,6 +363,11 @@ public class SignupActivity extends BaseActivity {
             public void onFailure(@NonNull Call<RegisterResponse> call, @NonNull Throwable t) {
                 btnRegister.setEnabled(true);
                 btnRegister.setText("Create Account");
+                AuditLogger.AuditEntry regFail = new AuditLogger.AuditEntry("Registration Failed", "FAILED", "Server unreachable: " + t.getMessage(), null);
+                regFail.primaryEntity = username;
+                regFail.authMethod = "PASSWORD";
+                regFail.errorMessage = t.getMessage();
+                AuditLogger.logEvent(SignupActivity.this, regFail);
                 com.google.android.material.snackbar.Snackbar.make(
                         findViewById(android.R.id.content),
                         "Server unreachable: " + t.getMessage(),

@@ -97,7 +97,7 @@
 
     <!-- Specific feature tokens -->
     <color name="vault_unencrypted">#BA1A1A</color>
-    <color name="vault_encrypted">#815621</color>
+    <color name="vault_encrypted">#2E7D32</color>
     <color name="cv_text_secondary">#847466</color>
     <color name="cv_primary">#815621</color>
     <color name="cv_surface">#FFF1E8</color>
@@ -108,5 +108,6 @@
     <color name="cv_indicator_active">#815621</color>
     <color name="cv_indicator_inactive">#D7C3B5</color>
     <color name="status_connected">#2E7D32</color>
+    <color name="status_success">#2E7D32</color>
     <color name="status_error">#BA1A1A</color>
 </resources>

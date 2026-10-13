@@ -50,6 +50,9 @@ public class FileController {
     private final FileSearchService fileSearchService;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private FileFacetService fileFacetService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.ciphervault.ciphervault.transfer.TransferRepository transferRepository;
 
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -59,18 +62,34 @@ public class FileController {
         this.activityService = activityService;
     }
 
+    public void setFileFacetService(FileFacetService fileFacetService) {
+        this.fileFacetService = fileFacetService;
+    }
+
     @org.springframework.beans.factory.annotation.Autowired
     public FileController(
             FileStorageService fileStorageService,
             FileRepository fileRepository,
             UserRepository userRepository,
             FileCategoryService fileCategoryService,
-            FileSearchService fileSearchService) {
+            FileSearchService fileSearchService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false)
+            FileFacetService fileFacetService) {
         this.fileStorageService = fileStorageService;
         this.fileRepository = fileRepository;
         this.userRepository = userRepository;
         this.fileCategoryService = fileCategoryService;
         this.fileSearchService = fileSearchService;
+        this.fileFacetService = fileFacetService;
+    }
+
+    public FileController(
+            FileStorageService fileStorageService,
+            FileRepository fileRepository,
+            UserRepository userRepository,
+            FileCategoryService fileCategoryService,
+            FileSearchService fileSearchService) {
+        this(fileStorageService, fileRepository, userRepository, fileCategoryService, fileSearchService, null);
     }
 
     /**
@@ -301,6 +320,7 @@ public class FileController {
                 "X-Page-Size",
                 String.valueOf(pageResult.getSize()));
 
+        log.info("[FILE] Listed files | returned={} | total={}", files.size(), pageResult.getTotalElements());
         return ResponseEntity
                 .ok()
                 .headers(headers)
@@ -349,6 +369,64 @@ public class FileController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/facets")
+    public ResponseEntity<FileFacetsResponse> getFacets(
+            @RequestParam(value = "query", required = false) String query,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "cameraMake", required = false) String cameraMake,
+            @RequestParam(value = "cameraModel", required = false) String cameraModel,
+            @RequestParam(value = "resolution", required = false) String resolution,
+            @RequestParam(value = "codec", required = false) String codec,
+            @RequestParam(value = "artist", required = false) String artist,
+            @RequestParam(value = "author", required = false) String author,
+            @RequestParam(value = "genre", required = false) String genre,
+            @RequestParam(value = "lens", required = false) String lens,
+            @RequestParam(value = "minSize", required = false) Long minSize,
+            @RequestParam(value = "maxSize", required = false) Long maxSize,
+            @RequestParam(value = "dateTaken", required = false) String dateTaken,
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
+
+        User user = userRepository
+                .findByEmail(authentication.getName())
+                .orElse(null);
+
+        if (user == null) {
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .build();
+        }
+
+        if (fileFacetService == null) {
+            return ResponseEntity.ok(new FileFacetsResponse(0, List.of()));
+        }
+
+        FileFacetsResponse facets = fileFacetService.getFacets(
+                user,
+                query,
+                category,
+                cameraMake,
+                cameraModel,
+                resolution,
+                codec,
+                artist,
+                author,
+                genre,
+                lens,
+                minSize,
+                maxSize,
+                dateTaken
+        );
+
+        log.info("[FACETS] Generated facets | matchingFiles={}", facets.getTotalMatchingFiles());
+        return ResponseEntity.ok(facets);
+    }
+
     @GetMapping("/search")
     public ResponseEntity<List<FileResponse>> searchFiles(
             @RequestParam(value = "query", required = false) String query,
@@ -360,6 +438,10 @@ public class FileController {
             @RequestParam(value = "artist", required = false) String artist,
             @RequestParam(value = "author", required = false) String author,
             @RequestParam(value = "genre", required = false) String genre,
+            @RequestParam(value = "lens", required = false) String lens,
+            @RequestParam(value = "minSize", required = false) Long minSize,
+            @RequestParam(value = "maxSize", required = false) Long maxSize,
+            @RequestParam(value = "dateTaken", required = false) String dateTaken,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false) Integer size,
             Authentication authentication) {
@@ -408,6 +490,10 @@ public class FileController {
                             artist,
                             author,
                             genre,
+                            lens,
+                            minSize,
+                            maxSize,
+                            dateTaken,
                             PageRequest.of(pageNum, pageSize));
 
             response = pageResult.getContent()
@@ -443,7 +529,11 @@ public class FileController {
                             codec,
                             artist,
                             author,
-                            genre);
+                            genre,
+                            lens,
+                            minSize,
+                            maxSize,
+                            dateTaken);
 
             response = files.stream()
                     .map(this::mapToFileResponse)
@@ -486,6 +576,12 @@ public class FileController {
         if (codec != null && !codec.isBlank()) {
             filters.append("codec=")
                     .append(codec)
+                    .append(" ");
+        }
+
+        if (lens != null && !lens.isBlank()) {
+            filters.append("lens=")
+                    .append(lens)
                     .append(" ");
         }
 
@@ -547,6 +643,10 @@ public class FileController {
                 artist,
                 author,
                 genre,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null,
                 authentication);

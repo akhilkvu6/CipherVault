@@ -14,6 +14,7 @@ public class TransferItem {
     private final String fileName;
     private final Uri uri; // For uploads
     private final Long fileId; // For downloads
+    private Long remoteFileId; // For uploads after server completion
     private long totalBytes;
     private long transferredBytes;
     private TransferState state;
@@ -72,6 +73,14 @@ public class TransferItem {
 
     public Long getFileId() {
         return fileId;
+    }
+
+    public Long getRemoteFileId() {
+        return remoteFileId != null ? remoteFileId : fileId;
+    }
+
+    public void setRemoteFileId(Long remoteFileId) {
+        this.remoteFileId = remoteFileId;
     }
 
     public long getTotalBytes() {

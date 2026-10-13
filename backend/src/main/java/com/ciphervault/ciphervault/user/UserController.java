@@ -9,6 +9,8 @@ import com.ciphervault.ciphervault.file.FileStorageConfig;
 import com.ciphervault.ciphervault.file.FileStorageService;
 import com.ciphervault.ciphervault.file.StoredFile;
 import com.ciphervault.ciphervault.transfer.TransferRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +42,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/user")
 public class UserController {
+
+    private static final Logger log = LoggerFactory.getLogger(UserController.class);
 
     private final UserRepository userRepository;
     private final FileRepository fileRepository;
@@ -165,6 +169,7 @@ public class UserController {
                 photoAvailable
         );
 
+        log.info("[AUTH] Profile retrieved | userId={} | email={}", user.getId(), user.getEmail());
         return ResponseEntity.ok(response);
     }
 
@@ -203,6 +208,7 @@ public class UserController {
 
         user.setUsername(newUsername);
         userRepository.save(user);
+        log.info("[AUTH] Username updated | userId={} | newUsername={}", user.getId(), newUsername);
 
         if (activityService != null) {
             try {
@@ -255,6 +261,7 @@ public class UserController {
 
         user.setName(newName);
         userRepository.save(user);
+        log.info("[AUTH] Name updated | userId={} | newName={}", user.getId(), newName);
 
         if (activityService != null) {
             try {
@@ -357,6 +364,7 @@ public class UserController {
         int tokenVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 1;
         user.setTokenVersion(tokenVersion + 1);
         userRepository.save(user);
+        log.info("[AUTH] Password updated | userId={}", user.getId());
 
         if (activityService != null) {
             try {
@@ -556,6 +564,7 @@ public class UserController {
             } catch (Exception ignored) {}
         }
 
+        log.info("[AUTH] User account deleted | userId={}", user.getId());
         return ResponseEntity.ok(
                 Map.of("success", true, "message", "Account deleted successfully"));
     }
@@ -643,6 +652,7 @@ public class UserController {
 
             user.setProfilePhotoPath("profile_photos/" + storedFilename);
             userRepository.save(user);
+            log.info("[AUTH] Profile photo uploaded | userId={}", user.getId());
 
             return ResponseEntity.ok(
                     Map.of(
@@ -712,6 +722,7 @@ public class UserController {
 
             user.setProfilePhotoPath(null);
             userRepository.save(user);
+            log.info("[AUTH] Profile photo deleted | userId={}", user.getId());
         }
 
         return ResponseEntity.ok(

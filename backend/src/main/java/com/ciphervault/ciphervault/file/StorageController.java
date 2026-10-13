@@ -2,6 +2,8 @@ package com.ciphervault.ciphervault.file;
 
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,6 +21,8 @@ import java.util.HashMap;
 @RestController
 @RequestMapping("/api/storage")
 public class StorageController {
+
+    private static final Logger log = LoggerFactory.getLogger(StorageController.class);
 
     private final UserRepository userRepository;
     private final FileRepository fileRepository;
@@ -55,6 +59,7 @@ public class StorageController {
         response.put("percentage", percentage);
         response.put("fileCount", fileCount);
 
+        log.info("[STORAGE] Retrieved storage summary | used={} B | total={} B", usedBytes, totalBytes);
         return ResponseEntity.ok(response);
     }
 
@@ -97,6 +102,7 @@ public class StorageController {
             result.add(map);
         }
 
+        log.info("[STORAGE] Retrieved category summary | totalBytes={}", totalBytes);
         return ResponseEntity.ok(result);
     }
 

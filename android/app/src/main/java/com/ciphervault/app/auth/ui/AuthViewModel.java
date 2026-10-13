@@ -129,7 +129,7 @@ public class AuthViewModel extends ViewModel {
         checkServerConnection();
     }
 
-    public void login(@NonNull String email, @NonNull String password) {
+    public void login(@NonNull String identifier, @NonNull String password) {
         if (Boolean.TRUE.equals(isLoading.getValue())) {
             return;
         }
@@ -140,9 +140,9 @@ public class AuthViewModel extends ViewModel {
             return;
         }
 
-        String emailErr = AuthValidator.validateEmail(email);
-        if (emailErr != null) {
-            errorMessage.setValue(emailErr);
+        String idErr = AuthValidator.validateLoginIdentifier(identifier);
+        if (idErr != null) {
+            errorMessage.setValue(idErr);
             return;
         }
 
@@ -154,7 +154,7 @@ public class AuthViewModel extends ViewModel {
         isLoading.setValue(true);
         errorMessage.setValue(null);
 
-        authRepository.login(email.trim(), password, new AuthRepository.ResultCallback<LoginResponse>() {
+        authRepository.login(identifier.trim(), password, new AuthRepository.ResultCallback<LoginResponse>() {
             @Override
             public void onSuccess(LoginResponse result) {
                 isLoading.setValue(false);

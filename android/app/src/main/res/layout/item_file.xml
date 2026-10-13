@@ -6,8 +6,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="5dp"
-    app:cardCornerRadius="18dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="0dp"
     app:strokeWidth="1dp"
     app:strokeColor="?attr/colorOutlineVariant"
@@ -18,21 +18,22 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="14dp">
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
 
-        <!-- 48dp Preview / Icon Container -->
+        <!-- 44dp Preview / Icon Container -->
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:cardCornerRadius="14dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="?attr/colorSecondaryContainer">
 
             <ImageView
                 android:id="@+id/ivFileIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
                 android:layout_gravity="center"
                 android:contentDescription="@string/app_name"
                 android:src="@drawable/ic_lucide_file"
@@ -48,8 +49,8 @@
 
             <ImageView
                 android:id="@+id/ivVideoBadge"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="14dp"
+                android:layout_height="14dp"
                 android:layout_gravity="bottom|end"
                 android:layout_margin="3dp"
                 android:visibility="gone"
@@ -57,15 +58,17 @@
                 app:tint="@android:color/white" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- File Details: Filename, Type · Size, AES-256-GCM (No timestamp) -->
+        <!-- File Details: Filename, Type · Size, Badge, Metadata Summary -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="10dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="6dp"
+            android:gravity="center_vertical"
             android:orientation="vertical">
 
+            <!-- Primary: Bold Filename, single-line with end-ellipsize -->
             <TextView
                 android:id="@+id/tvFileName"
                 android:layout_width="match_parent"
@@ -75,44 +78,63 @@
                 android:fontFamily="sans-serif-medium"
                 android:textStyle="bold"
                 android:textColor="?attr/colorOnSurface"
+                android:singleLine="true"
                 android:maxLines="1"
-                android:ellipsize="middle" />
+                android:ellipsize="end" />
 
-            <LinearLayout
+            <!-- Secondary: Metadata Row (Type • Size • Date) -->
+            <TextView
+                android:id="@+id/tvFileSize"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                tools:text="PDF • 256 KB • Oct 10, 2026"
+                android:textSize="12sp"
+                android:singleLine="true"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <!-- Dedicated Horizontal Status Badge Chip -->
+            <TextView
+                android:id="@+id/tvEncryptionBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
+                android:layout_marginTop="4dp"
+                android:background="@drawable/bg_badge_encrypted"
+                android:ellipsize="none"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:includeFontPadding="false"
+                android:maxLines="1"
+                android:paddingHorizontal="7dp"
+                android:paddingVertical="2dp"
+                android:singleLine="true"
+                android:textColor="@color/vault_encrypted"
+                android:textSize="10.5sp"
+                android:textStyle="bold"
+                tools:text="Encrypted" />
 
-                <TextView
-                    android:id="@+id/tvFileSize"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    tools:text="PDF • 256 KB"
-                    android:textSize="12sp"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
+            <TextView
+                android:id="@+id/tvEncryptionDot"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text=" • "
-                    android:textSize="11sp"
-                    android:textColor="?attr/colorOutline" />
-
-                <TextView
-                    android:id="@+id/tvEncryptionBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AES-256-GCM"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:gravity="center_vertical"
-                    android:textColor="@color/vault_encrypted" />
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tvFileMetadataSummary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textSize="11sp"
+                android:textColor="?attr/colorPrimary"
+                android:maxLines="1"
+                android:singleLine="true"
+                android:ellipsize="end"
+                android:visibility="gone"
+                tools:text="Canon EOS R5 • 4K UHD" />
         </LinearLayout>
 
-        <!-- Compact Actions: [Download] [Delete] (>= 48dp touch targets) -->
+        <!-- Compact Actions: [Download] [Delete] with 40dp footprint -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -122,16 +144,18 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDownload"
                 style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 android:padding="0dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
-                app:cornerRadius="16dp"
+                app:cornerRadius="12dp"
                 app:icon="@drawable/ic_lucide_download"
-                app:iconSize="20dp"
+                app:iconSize="18dp"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
                 android:contentDescription="@string/btn_download" />
@@ -139,17 +163,19 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDelete"
                 style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="8dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="6dp"
+                android:minWidth="0dp"
+                android:minHeight="0dp"
                 android:padding="0dp"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:insetLeft="0dp"
                 android:insetRight="0dp"
-                app:cornerRadius="16dp"
+                app:cornerRadius="12dp"
                 app:icon="@drawable/ic_lucide_trash_2"
-                app:iconSize="20dp"
+                app:iconSize="18dp"
                 app:iconTint="@color/status_error"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"

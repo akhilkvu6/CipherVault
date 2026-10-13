@@ -11,9 +11,11 @@ import androidx.core.content.ContextCompat;
 
 import com.ciphervault.app.ApiClient;
 import com.ciphervault.app.ApiService;
+import com.ciphervault.app.AuditLogger;
 import com.ciphervault.app.FileUtils;
 import com.ciphervault.app.StoredFile;
 import com.ciphervault.app.StreamingProgressRequestBody;
+import com.ciphervault.app.ThumbnailLoader;
 import com.ciphervault.app.UploadResponse;
 
 import java.io.File;
@@ -236,6 +238,30 @@ public class TransferManager {
             batch.setState(TransferState.COMPLETED);
         }
 
+        if (batch.getItems() != null && batch.getItems().size() > 1) {
+            List<AuditLogger.BatchItemDetail> batchDetails = new ArrayList<>();
+            long totalBytes = 0;
+            for (TransferItem bItem : batch.getItems()) {
+                boolean success = bItem.getState() == TransferState.COMPLETED;
+                batchDetails.add(new AuditLogger.BatchItemDetail(
+                        bItem.getFileName(),
+                        bItem.getTotalBytes(),
+                        success ? "SUCCESS" : "FAILED",
+                        bItem.getErrorMessage()
+                ));
+                totalBytes += bItem.getTotalBytes();
+            }
+            String batchAction = batch.getType() == TransferType.UPLOAD ? "Batch Upload" : "Batch Download";
+            String batchStatus = batch.getState() == TransferState.COMPLETED ? "SUCCESS" : (batch.getState() == TransferState.CANCELLED ? "CANCELLED" : "FAILED");
+            String summary = batch.getTitle() + " (" + batch.getCompletedCount() + "/" + batch.getTotalCount() + " completed)";
+            AuditLogger.AuditEntry batchEntry = new AuditLogger.AuditEntry(batchAction, batchStatus, summary, null);
+            batchEntry.batchCount = batch.getTotalCount();
+            batchEntry.fileSize = totalBytes;
+            batchEntry.batchItems = batchDetails;
+            batchEntry.transferDirection = batch.getType() == TransferType.UPLOAD ? "UPLOAD" : "DOWNLOAD";
+            AuditLogger.logEvent(appContext, batchEntry);
+        }
+
         notifyBatchCompleted(batch);
     }
 
@@ -244,6 +270,12 @@ public class TransferManager {
     private void executeUploadItem(TransferBatch batch, TransferItem item) {
         item.setState(TransferState.UPLOADING);
         notifyStateChanged(item);
+
+        AuditLogger.AuditEntry startEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_UPLOAD_START, "IN_PROGRESS", "Starting upload: " + item.getFileName(), null);
+        startEntry.primaryEntity = item.getFileName();
+        startEntry.fileSize = item.getTotalBytes();
+        startEntry.transferDirection = "UPLOAD";
+        AuditLogger.logEvent(appContext, startEntry);
 
         long[] lastSampleTime = {System.currentTimeMillis()};
         long[] lastSampleBytes = {0L};
@@ -290,7 +322,23 @@ public class TransferManager {
                 item.setTransferredBytes(item.getTotalBytes());
                 item.setState(TransferState.COMPLETED);
                 item.setCompletedAt(System.currentTimeMillis());
+
+                UploadResponse uploadResp = response.body();
+                if (uploadResp != null && uploadResp.getFileId() != null) {
+                    Long uploadedFileId = uploadResp.getFileId();
+                    item.setRemoteFileId(uploadedFileId);
+                    if (item.getUri() != null) {
+                        ThumbnailLoader.associateStagingThumbnail(appContext, item.getUri(), uploadedFileId, null);
+                    }
+                }
+
                 notifyStateChanged(item);
+
+                AuditLogger.AuditEntry doneEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_UPLOAD_COMPLETE, "SUCCESS", "Uploaded " + item.getFileName(), null);
+                doneEntry.primaryEntity = item.getFileName();
+                doneEntry.fileSize = item.getTotalBytes();
+                doneEntry.transferDirection = "UPLOAD";
+                AuditLogger.logEvent(appContext, doneEntry);
 
                 if (batch.getTotalCount() == 1) {
                     TransferNotificationHelper.postItemCompletedNotification(appContext, item);
@@ -299,6 +347,13 @@ public class TransferManager {
                 item.setState(TransferState.FAILED);
                 item.setErrorMessage("Upload failed (HTTP " + response.code() + ")");
                 notifyStateChanged(item);
+
+                AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_UPLOAD_FAILED, "FAILED", "Upload failed: " + item.getFileName(), null);
+                failEntry.primaryEntity = item.getFileName();
+                failEntry.fileSize = item.getTotalBytes();
+                failEntry.errorMessage = "HTTP " + response.code();
+                failEntry.transferDirection = "UPLOAD";
+                AuditLogger.logEvent(appContext, failEntry);
 
                 if (batch.getTotalCount() == 1) {
                     TransferNotificationHelper.postItemFailedNotification(appContext, item);
@@ -314,6 +369,13 @@ public class TransferManager {
                 item.setErrorMessage(e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Network error");
                 notifyStateChanged(item);
 
+                AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_UPLOAD_FAILED, "FAILED", "Upload failed: " + item.getFileName(), null);
+                failEntry.primaryEntity = item.getFileName();
+                failEntry.fileSize = item.getTotalBytes();
+                failEntry.errorMessage = e.getLocalizedMessage();
+                failEntry.transferDirection = "UPLOAD";
+                AuditLogger.logEvent(appContext, failEntry);
+
                 if (batch.getTotalCount() == 1) {
                     TransferNotificationHelper.postItemFailedNotification(appContext, item);
                 }
@@ -326,6 +388,12 @@ public class TransferManager {
     private void executeDownloadItem(TransferBatch batch, TransferItem item) {
         item.setState(TransferState.DOWNLOADING);
         notifyStateChanged(item);
+
+        AuditLogger.AuditEntry startEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_DOWNLOAD_START, "IN_PROGRESS", "Starting download: " + item.getFileName(), null);
+        startEntry.primaryEntity = item.getFileName();
+        startEntry.fileSize = item.getTotalBytes();
+        startEntry.transferDirection = "DOWNLOAD";
+        AuditLogger.logEvent(appContext, startEntry);
 
         long[] lastSampleTime = {System.currentTimeMillis()};
         long[] lastSampleBytes = {0L};
@@ -340,6 +408,13 @@ public class TransferManager {
                 item.setState(TransferState.FAILED);
                 item.setErrorMessage("Download error (HTTP " + response.code() + ")");
                 notifyStateChanged(item);
+
+                AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_DOWNLOAD_FAILED, "FAILED", "Download failed: " + item.getFileName(), null);
+                failEntry.primaryEntity = item.getFileName();
+                failEntry.fileSize = item.getTotalBytes();
+                failEntry.errorMessage = "HTTP " + response.code();
+                failEntry.transferDirection = "DOWNLOAD";
+                AuditLogger.logEvent(appContext, failEntry);
 
                 if (batch.getTotalCount() == 1) {
                     TransferNotificationHelper.postItemFailedNotification(appContext, item);
@@ -416,6 +491,12 @@ public class TransferManager {
             item.setCompletedAt(System.currentTimeMillis());
             notifyStateChanged(item);
 
+            AuditLogger.AuditEntry doneEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_DOWNLOAD_COMPLETE, "SUCCESS", "Downloaded " + item.getFileName(), null);
+            doneEntry.primaryEntity = item.getFileName();
+            doneEntry.fileSize = item.getTotalBytes() > 0 ? item.getTotalBytes() : outputFile.length();
+            doneEntry.transferDirection = "DOWNLOAD";
+            AuditLogger.logEvent(appContext, doneEntry);
+
             if (batch.getTotalCount() == 1) {
                 TransferNotificationHelper.postItemCompletedNotification(appContext, item);
             }
@@ -433,6 +514,13 @@ public class TransferManager {
                 item.setState(TransferState.FAILED);
                 item.setErrorMessage(e.getLocalizedMessage() != null ? e.getLocalizedMessage() : "Download failed");
                 notifyStateChanged(item);
+
+                AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_DOWNLOAD_FAILED, "FAILED", "Download failed: " + item.getFileName(), null);
+                failEntry.primaryEntity = item.getFileName();
+                failEntry.fileSize = item.getTotalBytes();
+                failEntry.errorMessage = e.getLocalizedMessage();
+                failEntry.transferDirection = "DOWNLOAD";
+                AuditLogger.logEvent(appContext, failEntry);
 
                 if (batch.getTotalCount() == 1) {
                     TransferNotificationHelper.postItemFailedNotification(appContext, item);

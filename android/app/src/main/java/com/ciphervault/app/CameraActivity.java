@@ -25,6 +25,13 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.media.ExifInterface;
+import android.view.Gravity;
+import android.widget.FrameLayout;
+import java.io.FileOutputStream;
+
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
@@ -39,7 +46,8 @@ import java.util.concurrent.Executors;
  * CameraActivity for encrypted in-app captures.
  *
  * Implements:
- * - 3:4 / 4:3 sensor capture aspect ratio.
+ * - 3:4 / 4:3 and 9:16 aspect ratio selection with letterboxed preview container.
+ * - Sensor capture aspect ratio enforcement with center crop.
  * - Real hardware flash & torch check via CameraInfo.hasFlashUnit().
  * - Real torch mode toggle via CameraControl.enableTorch().
  * - Photo capture pipeline routing DIRECTLY to staging (never auto-upload).
@@ -47,6 +55,7 @@ import java.util.concurrent.Executors;
  */
 public class CameraActivity extends BaseActivity {
 
+    private View previewContainer;
     private PreviewView viewFinder;
     private ImageView ivCapturedPreview;
     private View layoutCaptureControls;
@@ -83,12 +92,15 @@ public class CameraActivity extends BaseActivity {
 
         cameraExecutor = Executors.newSingleThreadExecutor();
 
+        previewContainer = findViewById(R.id.previewContainer);
         viewFinder = findViewById(R.id.viewFinder);
         ivCapturedPreview = findViewById(R.id.ivCapturedPreview);
         layoutCaptureControls = findViewById(R.id.layoutCaptureControls);
         layoutPostCaptureControls = findViewById(R.id.layoutPostCaptureControls);
         btnFlashToggle = findViewById(R.id.btnFlashToggle);
         toggleGroupRatio = findViewById(R.id.toggleGroupRatio);
+
+        updatePreviewDimensions();
 
         if (toggleGroupRatio != null) {
             toggleGroupRatio.check(R.id.btnRatio34);
@@ -99,6 +111,7 @@ public class CameraActivity extends BaseActivity {
                 } else if (checkedId == R.id.btnRatio169) {
                     currentAspectRatio = AspectRatio.RATIO_16_9;
                 }
+                updatePreviewDimensions();
                 bindCameraUseCases();
             });
         }
@@ -118,6 +131,41 @@ public class CameraActivity extends BaseActivity {
         }
     }
 
+    private void updatePreviewDimensions() {
+        if (previewContainer == null) return;
+        previewContainer.post(() -> {
+            View root = (View) previewContainer.getParent();
+            if (root == null) return;
+            int rootW = root.getWidth();
+            int rootH = root.getHeight();
+            if (rootW <= 0 || rootH <= 0) return;
+
+            int targetW;
+            int targetH;
+
+            if (currentAspectRatio == AspectRatio.RATIO_4_3) {
+                targetW = rootW;
+                targetH = (int) Math.round((rootW * 4.0) / 3.0);
+                if (targetH > rootH) {
+                    targetH = rootH;
+                    targetW = (int) Math.round((rootH * 3.0) / 4.0);
+                }
+            } else {
+                targetW = rootW;
+                targetH = (int) Math.round((rootW * 16.0) / 9.0);
+                if (targetH > rootH) {
+                    targetH = rootH;
+                    targetW = (int) Math.round((rootH * 9.0) / 16.0);
+                }
+            }
+
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(targetW, targetH);
+            lp.gravity = Gravity.CENTER;
+            previewContainer.setLayoutParams(lp);
+            viewFinder.setScaleType(PreviewView.ScaleType.FIT_CENTER);
+        });
+    }
+
     private void startCamera() {
         ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
@@ -132,6 +180,7 @@ public class CameraActivity extends BaseActivity {
 
     private void bindCameraUseCases() {
         if (cameraProvider == null) return;
+        updatePreviewDimensions();
 
         CameraSelector cameraSelector = new CameraSelector.Builder()
                 .requireLensFacing(lensFacing)
@@ -221,6 +270,7 @@ public class CameraActivity extends BaseActivity {
         imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(this), new ImageCapture.OnImageSavedCallback() {
             @Override
             public void onImageSaved(@NonNull ImageCapture.OutputFileResults outputFileResults) {
+                cropCapturedImageToSelectedRatio(photoFile);
                 AuditLogger.log(CameraActivity.this, "Camera Capture", "SUCCESS", "Captured " + photoFile.getName());
                 showPhotoPreview(photoFile);
             }
@@ -231,6 +281,81 @@ public class CameraActivity extends BaseActivity {
                 Toast.makeText(CameraActivity.this, "Photo capture failed: " + exception.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void cropCapturedImageToSelectedRatio(File file) {
+        if (file == null || !file.exists()) return;
+        try {
+            BitmapFactory.Options opts = new BitmapFactory.Options();
+            opts.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(file.getAbsolutePath(), opts);
+            if (opts.outWidth <= 0 || opts.outHeight <= 0) return;
+
+            int orientation = ExifInterface.ORIENTATION_NORMAL;
+            try {
+                ExifInterface exif = new ExifInterface(file.getAbsolutePath());
+                orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            } catch (Exception ignored) {}
+
+            int effectiveW = opts.outWidth;
+            int effectiveH = opts.outHeight;
+            if (orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_ROTATE_270
+                    || orientation == ExifInterface.ORIENTATION_TRANSPOSE || orientation == ExifInterface.ORIENTATION_TRANSVERSE) {
+                effectiveW = opts.outHeight;
+                effectiveH = opts.outWidth;
+            }
+
+            float currentRatio = (float) effectiveW / (float) effectiveH;
+            float targetRatio = (currentAspectRatio == AspectRatio.RATIO_4_3) ? (3.0f / 4.0f) : (9.0f / 16.0f);
+
+            if (Math.abs(currentRatio - targetRatio) < 0.02f) {
+                return;
+            }
+
+            Bitmap raw = BitmapFactory.decodeFile(file.getAbsolutePath());
+            if (raw == null) return;
+            Bitmap oriented = ThumbnailLoader.applyExifOrientation(raw, orientation);
+            if (oriented == null) return;
+
+            int bmpW = oriented.getWidth();
+            int bmpH = oriented.getHeight();
+
+            int cropW;
+            int cropH;
+            int startX;
+            int startY;
+
+            if ((float) bmpW / (float) bmpH > targetRatio) {
+                cropH = bmpH;
+                cropW = Math.round(bmpH * targetRatio);
+                startX = Math.max(0, (bmpW - cropW) / 2);
+                startY = 0;
+            } else {
+                cropW = bmpW;
+                cropH = Math.round(bmpW / targetRatio);
+                startX = 0;
+                startY = Math.max(0, (bmpH - cropH) / 2);
+            }
+
+            cropW = Math.min(cropW, bmpW - startX);
+            cropH = Math.min(cropH, bmpH - startY);
+
+            Bitmap cropped = Bitmap.createBitmap(oriented, startX, startY, cropW, cropH);
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                cropped.compress(Bitmap.CompressFormat.JPEG, 95, fos);
+            }
+
+            if (cropped != oriented) cropped.recycle();
+            if (oriented != raw) oriented.recycle();
+            raw.recycle();
+
+            try {
+                ExifInterface newExif = new ExifInterface(file.getAbsolutePath());
+                newExif.setAttribute(ExifInterface.TAG_ORIENTATION, String.valueOf(ExifInterface.ORIENTATION_NORMAL));
+                newExif.saveAttributes();
+            } catch (Exception ignored) {}
+
+        } catch (Throwable ignored) {}
     }
 
     private void showPhotoPreview(File file) {

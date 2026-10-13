@@ -110,6 +110,12 @@ public class FileViewerActivity extends BaseActivity {
         btnOpenExternal = findViewById(R.id.btnOpenExternal);
         btnOpenExternal.setOnClickListener(v -> openExternalFile());
 
+        AuditLogger.AuditEntry previewEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_PREVIEW, "SUCCESS", "Previewing: " + fileName, null);
+        previewEntry.primaryEntity = fileName;
+        if (fileSize != null && fileSize > 0) previewEntry.fileSize = fileSize;
+        previewEntry.fileCategory = contentType;
+        AuditLogger.logEvent(this, previewEntry);
+
         if (localUri != null) {
             displayLocalContent(localUri);
         } else if (fileId != null && fileId > 0) {
@@ -126,8 +132,16 @@ public class FileViewerActivity extends BaseActivity {
             @Override
             public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    AuditLogger.AuditEntry decEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DECRYPTED, "SUCCESS", "Decrypted for preview: " + fileName, null);
+                    decEntry.primaryEntity = fileName;
+                    if (fileSize != null && fileSize > 0) decEntry.fileSize = fileSize;
+                    AuditLogger.logEvent(FileViewerActivity.this, decEntry);
                     saveStreamAndDisplay(response.body());
                 } else {
+                    AuditLogger.AuditEntry decFail = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DECRYPTED, "FAILED", "Decryption failed for: " + fileName, null);
+                    decFail.primaryEntity = fileName;
+                    decFail.errorMessage = "HTTP " + response.code();
+                    AuditLogger.logEvent(FileViewerActivity.this, decFail);
                     Toast.makeText(FileViewerActivity.this, "Decryption failed (HTTP " + response.code() + ")", Toast.LENGTH_LONG).show();
                     finish();
                 }
@@ -135,6 +149,10 @@ public class FileViewerActivity extends BaseActivity {
 
             @Override
             public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                AuditLogger.AuditEntry decFail = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DECRYPTED, "FAILED", "Decryption failed for: " + fileName, null);
+                decFail.primaryEntity = fileName;
+                decFail.errorMessage = t.getLocalizedMessage();
+                AuditLogger.logEvent(FileViewerActivity.this, decFail);
                 Toast.makeText(FileViewerActivity.this, "Decryption error: " + t.getLocalizedMessage(), Toast.LENGTH_LONG).show();
                 finish();
             }

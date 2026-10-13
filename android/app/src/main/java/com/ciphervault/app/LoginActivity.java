@@ -130,7 +130,7 @@ public class LoginActivity extends BaseActivity {
             return;
         }
 
-        String email = emailInput
+        String identifier = emailInput
                 .getText()
                 .toString()
                 .trim();
@@ -139,16 +139,16 @@ public class LoginActivity extends BaseActivity {
                 .getText()
                 .toString();
 
-        // Email validation
-        if (TextUtils.isEmpty(email)) {
+        // Identifier validation
+        if (TextUtils.isEmpty(identifier)) {
 
-            emailInput.setError("Email is required");
+            emailInput.setError("Email or username is required");
             emailInput.requestFocus();
 
             return;
         }
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (identifier.contains("@") && !Patterns.EMAIL_ADDRESS.matcher(identifier).matches()) {
 
             emailInput.setError("Enter a valid email address");
             emailInput.requestFocus();
@@ -173,7 +173,7 @@ public class LoginActivity extends BaseActivity {
         }
 
         LoginRequest request =
-                new LoginRequest(email, password);
+                new LoginRequest(identifier, password);
 
         try {
 
@@ -218,6 +218,10 @@ public class LoginActivity extends BaseActivity {
                                     return;
                                 }
 
+                                String resolvedEmail = loginResponse.getEmail() != null && !loginResponse.getEmail().trim().isEmpty()
+                                        ? loginResponse.getEmail().trim()
+                                        : (identifier.contains("@") ? identifier : null);
+
                                 // Save session
                                 if (sessionManager != null) {
                                     String displayName = loginResponse.getName() != null && !loginResponse.getName().trim().isEmpty()
@@ -225,12 +229,20 @@ public class LoginActivity extends BaseActivity {
                                     sessionManager.saveLogin(
                                             token,
                                             username,
-                                            email,
+                                            resolvedEmail,
                                             displayName
                                     );
                                 }
 
-                                ProfilePhotoHelper.uploadPendingPhotoIfPresent(LoginActivity.this, email, ApiClient.getApiService(LoginActivity.this));
+                                if (resolvedEmail != null) {
+                                    ProfilePhotoHelper.uploadPendingPhotoIfPresent(LoginActivity.this, resolvedEmail, ApiClient.getApiService(LoginActivity.this));
+                                }
+
+                                String auditUser = resolvedEmail != null ? resolvedEmail : (username != null ? username : identifier);
+                                AuditLogger.AuditEntry loginEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGIN_SUCCESS, "SUCCESS", "User authenticated: " + auditUser, null);
+                                loginEntry.primaryEntity = auditUser;
+                                loginEntry.authMethod = "PASSWORD";
+                                AuditLogger.logEvent(LoginActivity.this, loginEntry);
 
                                 String welcomeName = loginResponse.getName() != null && !loginResponse.getName().trim().isEmpty()
                                         ? loginResponse.getName().trim() : username;
@@ -353,6 +365,12 @@ public class LoginActivity extends BaseActivity {
                                                     + ")";
                                 }
 
+                                AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGIN_FAILED, "FAILED", message + " (" + identifier + ")", null);
+                                failEntry.primaryEntity = identifier;
+                                failEntry.authMethod = "PASSWORD";
+                                failEntry.errorMessage = message;
+                                AuditLogger.logEvent(LoginActivity.this, failEntry);
+
                                 Toast.makeText(
                                         LoginActivity.this,
                                         message,
@@ -378,6 +396,12 @@ public class LoginActivity extends BaseActivity {
                                     "Login failure: ",
                                     t
                             );
+
+                            AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGIN_FAILED, "FAILED", "Server unreachable: " + t.getLocalizedMessage(), null);
+                            failEntry.primaryEntity = identifier;
+                            failEntry.authMethod = "PASSWORD";
+                            failEntry.errorMessage = t.getLocalizedMessage();
+                            AuditLogger.logEvent(LoginActivity.this, failEntry);
 
                             com.google.android.material.snackbar.Snackbar.make(
                                     findViewById(android.R.id.content),

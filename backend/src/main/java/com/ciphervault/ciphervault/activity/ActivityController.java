@@ -3,6 +3,9 @@ package com.ciphervault.ciphervault.activity;
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
 import com.ciphervault.ciphervault.exception.ApiException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,12 +21,19 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/activity")
 public class ActivityController {
 
-    private final ActivityEventRepository repository;
+    private static final Logger log = LoggerFactory.getLogger(ActivityController.class);
+
+    private final ActivityService activityService;
     private final UserRepository userRepository;
 
-    public ActivityController(ActivityEventRepository repository, UserRepository userRepository) {
-        this.repository = repository;
+    @Autowired
+    public ActivityController(ActivityService activityService, UserRepository userRepository) {
+        this.activityService = activityService;
         this.userRepository = userRepository;
+    }
+
+    public ActivityController(ActivityEventRepository repository, UserRepository userRepository) {
+        this(new ActivityService(repository), userRepository);
     }
 
     private User getAuthenticatedUser(Authentication authentication) {
@@ -35,7 +45,7 @@ public class ActivityController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ActivityEvent>> listActivity(
+    public ResponseEntity<Page<ActivityEventDto>> listActivity(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
             @RequestParam(required = false) EventType type,
@@ -43,7 +53,8 @@ public class ActivityController {
             Authentication authentication) {
             
         User user = getAuthenticatedUser(authentication);
-        size = Math.max(1, Math.min(size, 100)); page = Math.max(0, page);
+        size = Math.max(1, Math.min(size, 100));
+        page = Math.max(0, page);
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
         
         LocalDateTime after = null;
@@ -56,26 +67,17 @@ public class ActivityController {
             }
         }
         
-        Page<ActivityEvent> events;
-        if (type != null && after != null) {
-            events = repository.findByUserAndEventTypeAndTimestampAfter(user, type, after, pageable);
-        } else if (type != null) {
-            events = repository.findByUserAndEventType(user, type, pageable);
-        } else if (after != null) {
-            events = repository.findByUserAndTimestampAfter(user, after, pageable);
-        } else {
-            events = repository.findByUser(user, pageable);
-        }
-        
+        Page<ActivityEventDto> events = activityService.listActivity(user, type, after, pageable);
+        log.info("[ACTIVITY] Listed activity events | count={} | total={}", events.getNumberOfElements(), events.getTotalElements());
         return ResponseEntity.ok(events);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ActivityEvent> getActivityDetail(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<ActivityEventDto> getActivityDetail(@PathVariable Long id, Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
-        return repository.findByIdAndUser(id, user)
-                .map(ResponseEntity::ok)
+        ActivityEventDto event = activityService.getActivityDetail(id, user)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Activity event not found"));
+        log.info("[ACTIVITY] Retrieved activity detail | id={}", id);
+        return ResponseEntity.ok(event);
     }
 }
-

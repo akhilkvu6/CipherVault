@@ -68,25 +68,16 @@ public class MetadataSearchActivity extends BaseActivity implements FilesAdapter
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_metadata_search);
 
-        apiService = ApiClient.getApiService(this);
-
-        initViews();
-        setupToolbar();
-        setupRecyclerView();
-        setupSearchInput();
-        loadPopularSuggestions();
-        loadRecentSearches();
-
-        // Check if an initial query was passed via Intent
+        // Forward to MainActivity's embedded FragmentMetadataSearch so user remains in the main shell
+        Intent mainIntent = new Intent(this, MainActivity.class);
+        mainIntent.putExtra("EXTRA_OPEN_SEARCH_TAB", true);
         if (getIntent() != null && getIntent().hasExtra("query")) {
-            String initialQuery = getIntent().getStringExtra("query");
-            if (initialQuery != null && !initialQuery.trim().isEmpty()) {
-                etMetadataSearchQuery.setText(initialQuery.trim());
-                executeSearch(initialQuery.trim());
-            }
+            mainIntent.putExtra("query", getIntent().getStringExtra("query"));
         }
+        mainIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(mainIntent);
+        finish();
     }
 
     private void initViews() {

@@ -290,6 +290,8 @@
                         android:text="Upload"
                         android:textSize="11sp"
                         android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnPrimary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -329,6 +331,8 @@
                         android:text="Camera"
                         android:textSize="11sp"
                         android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -368,12 +372,14 @@
                         android:text="Vault"
                         android:textSize="11sp"
                         android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
                         android:textColor="?attr/colorOnSurface" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardQuickTransfers"
+                android:id="@+id/cardQuickLog"
                 android:layout_width="0dp"
                 android:layout_height="52dp"
                 android:layout_weight="1"
@@ -396,18 +402,20 @@
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
-                        android:src="@drawable/ic_lucide_arrow_down_up"
+                        android:src="@drawable/ic_lucide_activity"
                         app:tint="?attr/colorOnSurface"
-                        android:contentDescription="Transfers" />
+                        android:contentDescription="Log" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="Transfers"
+                        android:text="Log"
+                        android:textColor="?attr/colorOnSurface"
                         android:textSize="11sp"
                         android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:maxLines="1"
+                        android:ellipsize="end" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>

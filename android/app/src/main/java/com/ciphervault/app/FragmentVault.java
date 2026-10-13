@@ -124,28 +124,38 @@ public class FragmentVault extends Fragment implements TransferListener {
         adapter = new VaultFilesAdapter();
         rvVaultFiles.setAdapter(adapter);
 
+        rvVaultFiles.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                if (getActivity() == null) return;
+                View fab = getActivity().findViewById(R.id.fabUpload);
+                if (fab instanceof com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton) {
+                    com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton efab =
+                            (com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton) fab;
+                    if (dy > 4 && efab.isExtended()) {
+                        efab.shrink();
+                    } else if (dy < -4 && !efab.isExtended()) {
+                        efab.extend();
+                    }
+                }
+            }
+        });
+
         layoutActiveFilter = view.findViewById(R.id.layoutActiveFilter);
         chipActiveMetadataFilter = view.findViewById(R.id.chipActiveMetadataFilter);
 
         if (chipActiveMetadataFilter != null) {
             chipActiveMetadataFilter.setOnCloseIconClickListener(v -> clearMetadataFilters());
             chipActiveMetadataFilter.setOnClickListener(v -> {
-                Intent intent = new Intent(requireContext(), MetadataSearchActivity.class);
-                if (currentSearchQuery != null && !currentSearchQuery.trim().isEmpty()) {
-                    intent.putExtra("query", currentSearchQuery.trim());
+                if (getActivity() instanceof MainActivity) {
+                    ((MainActivity) getActivity()).selectTab(2);
+                } else {
+                    Intent intent = new Intent(requireContext(), MetadataSearchActivity.class);
+                    if (currentSearchQuery != null && !currentSearchQuery.trim().isEmpty()) {
+                        intent.putExtra("query", currentSearchQuery.trim());
+                    }
+                    startActivity(intent);
                 }
-                startActivity(intent);
-            });
-        }
-
-        View btnFilter = view.findViewById(R.id.btnFilterVault);
-        if (btnFilter != null) {
-            btnFilter.setOnClickListener(v -> {
-                Intent intent = new Intent(requireContext(), MetadataSearchActivity.class);
-                if (currentSearchQuery != null && !currentSearchQuery.trim().isEmpty()) {
-                    intent.putExtra("query", currentSearchQuery.trim());
-                }
-                startActivity(intent);
             });
         }
 
@@ -483,12 +493,11 @@ public class FragmentVault extends Fragment implements TransferListener {
                 else matchesCat = false;
             }
 
-            // Search query check
+            // Search query check (Search filenames only)
             boolean matchesSearch = true;
             if (!currentSearchQuery.isEmpty()) {
-                String name = file.getFilename().toLowerCase(Locale.US);
-                String hash = file.getSha256Hash() != null ? file.getSha256Hash().toLowerCase(Locale.US) : "";
-                matchesSearch = name.contains(currentSearchQuery) || hash.contains(currentSearchQuery);
+                String name = file.getOriginalFilename() != null ? file.getOriginalFilename().toLowerCase(Locale.US) : "";
+                matchesSearch = name.contains(currentSearchQuery);
             }
 
             if (matchesCat && matchesSearch) {
@@ -499,14 +508,21 @@ public class FragmentVault extends Fragment implements TransferListener {
         // Sort
         Collections.sort(displayedFiles, (a, b) -> {
             switch (currentSort) {
-                case NAME_ASC: return a.getFilename().compareToIgnoreCase(b.getFilename());
-                case NAME_DESC: return b.getFilename().compareToIgnoreCase(a.getFilename());
+                case NAME_ASC: return a.getOriginalFilename().compareToIgnoreCase(b.getOriginalFilename());
+                case NAME_DESC: return b.getOriginalFilename().compareToIgnoreCase(a.getOriginalFilename());
                 case SIZE_DESC: return Long.compare(b.getFileSize(), a.getFileSize());
                 case SIZE_ASC: return Long.compare(a.getFileSize(), b.getFileSize());
-                case DATE_ASC: return Long.compare(a.getId() != null ? a.getId() : 0, b.getId() != null ? b.getId() : 0);
+                case DATE_ASC: {
+                    int c = FileComparator.compareDates(a.getCreatedAt(), b.getCreatedAt());
+                    if (c != 0) return c;
+                    return Long.compare(a.getId() != null ? a.getId() : 0, b.getId() != null ? b.getId() : 0);
+                }
                 case DATE_DESC:
-                default:
+                default: {
+                    int c = FileComparator.compareDates(b.getCreatedAt(), a.getCreatedAt());
+                    if (c != 0) return c;
                     return Long.compare(b.getId() != null ? b.getId() : 0, a.getId() != null ? a.getId() : 0);
+                }
             }
         });
 
@@ -592,6 +608,10 @@ public class FragmentVault extends Fragment implements TransferListener {
         } else {
             if (layoutVaultHeader != null) layoutVaultHeader.setVisibility(View.VISIBLE);
             if (layoutMultiSelectBar != null) layoutMultiSelectBar.setVisibility(View.GONE);
+        }
+        View mainFab = getActivity() != null ? getActivity().findViewById(R.id.fabUpload) : null;
+        if (mainFab != null) {
+            mainFab.setVisibility(isMultiSelectMode ? View.GONE : View.VISIBLE);
         }
         if (adapter != null) {
             adapter.notifyDataSetChanged();
@@ -690,6 +710,9 @@ public class FragmentVault extends Fragment implements TransferListener {
                                 }
                                 if (remaining.decrementAndGet() == 0) {
                                     if (isAdded()) {
+                                        AuditLogger.AuditEntry batchDelEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DELETED, successCount.get() > 0 ? "SUCCESS" : "FAILED", "Batch deleted " + successCount.get() + " of " + totalToDelete + " files", null);
+                                        batchDelEntry.batchCount = totalToDelete;
+                                        AuditLogger.logEvent(requireContext(), batchDelEntry);
                                         Toast.makeText(requireContext(), successCount.get() + " of " + totalToDelete + " files deleted", Toast.LENGTH_SHORT).show();
                                         performMetadataSearchOrLoad();
                                     }
@@ -700,6 +723,9 @@ public class FragmentVault extends Fragment implements TransferListener {
                             public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
                                 if (remaining.decrementAndGet() == 0) {
                                     if (isAdded()) {
+                                        AuditLogger.AuditEntry batchDelEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DELETED, successCount.get() > 0 ? "SUCCESS" : "FAILED", "Batch deleted " + successCount.get() + " of " + totalToDelete + " files", null);
+                                        batchDelEntry.batchCount = totalToDelete;
+                                        AuditLogger.logEvent(requireContext(), batchDelEntry);
                                         Toast.makeText(requireContext(), successCount.get() + " of " + totalToDelete + " files deleted", Toast.LENGTH_SHORT).show();
                                         performMetadataSearchOrLoad();
                                     }
@@ -761,6 +787,18 @@ public class FragmentVault extends Fragment implements TransferListener {
                     apiService.deleteFile(file.getId()).enqueue(new Callback<ResponseBody>() {
                         @Override
                         public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                            if (response.isSuccessful()) {
+                                AuditLogger.AuditEntry delEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DELETED, "SUCCESS", "Deleted file: " + file.getOriginalFilename(), null);
+                                delEntry.primaryEntity = file.getOriginalFilename();
+                                delEntry.fileSize = file.getFileSize();
+                                AuditLogger.logEvent(requireContext(), delEntry);
+                            } else {
+                                AuditLogger.AuditEntry delEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DELETED, "FAILED", "Failed to delete: " + file.getOriginalFilename(), null);
+                                delEntry.primaryEntity = file.getOriginalFilename();
+                                delEntry.fileSize = file.getFileSize();
+                                delEntry.errorMessage = "HTTP " + response.code();
+                                AuditLogger.logEvent(requireContext(), delEntry);
+                            }
                             if (isAdded()) {
                                 Toast.makeText(requireContext(), "File deleted", Toast.LENGTH_SHORT).show();
                                 performMetadataSearchOrLoad();
@@ -768,6 +806,11 @@ public class FragmentVault extends Fragment implements TransferListener {
                         }
                         @Override
                         public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                            AuditLogger.AuditEntry delEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_FILE_DELETED, "FAILED", "Failed to delete: " + file.getOriginalFilename(), null);
+                            delEntry.primaryEntity = file.getOriginalFilename();
+                            delEntry.fileSize = file.getFileSize();
+                            delEntry.errorMessage = t.getMessage();
+                            AuditLogger.logEvent(requireContext(), delEntry);
                             if (isAdded() && getContext() != null) {
                                 Toast.makeText(requireContext(), "Delete failed: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                             }
@@ -802,21 +845,82 @@ public class FragmentVault extends Fragment implements TransferListener {
             StoredFile file = displayedFiles.get(position);
             Context ctx = holder.itemView.getContext();
 
-            holder.tvFileName.setText(file.getFilename());
-            holder.tvFileSize.setText(FileUtils.formatStorageSize(ctx, file.getFileSize()));
+            holder.tvFileName.setText(file.getOriginalFilename());
 
-            if (file.isEncrypted()) {
+            String typeLabel;
+            switch (file.getCategory()) {
+                case IMAGES: typeLabel = "Image"; break;
+                case VIDEOS: typeLabel = "Video"; break;
+                case PDFS: typeLabel = "PDF"; break;
+                case DOCUMENTS: typeLabel = "Document"; break;
+                case AUDIO: typeLabel = "Audio"; break;
+                case ARCHIVES: typeLabel = "Archive"; break;
+                default: typeLabel = "File"; break;
+            }
+
+            String sizeStr = FileUtils.formatStorageSize(ctx, file.getFileSize());
+            String dateStr = file.getCreatedAt();
+            String formattedDate = (dateStr != null && !dateStr.trim().isEmpty())
+                    ? FileUtils.formatDisplayDateOnly(dateStr) : null;
+
+            StringBuilder subtitle = new StringBuilder();
+            subtitle.append(typeLabel).append(" • ").append(sizeStr);
+            if (formattedDate != null && !formattedDate.isEmpty()) {
+                subtitle.append(" • ").append(formattedDate);
+            }
+            holder.tvFileSize.setText(subtitle.toString());
+
+            if (!file.hasEncryptionStatus()) {
+                holder.tvEncryptionBadge.setVisibility(View.GONE);
+                if (holder.tvEncryptionDot != null) holder.tvEncryptionDot.setVisibility(View.GONE);
+            } else if (file.isEncrypted()) {
                 int encColor = ThemeManager.getEncryptedColor(ctx);
-                holder.tvEncryptionBadge.setText("AES-256-GCM");
+                holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
+                holder.tvEncryptionBadge.setText("Encrypted");
                 holder.tvEncryptionBadge.setTextColor(encColor);
+                holder.tvEncryptionBadge.setBackgroundResource(R.drawable.bg_badge_encrypted);
+                holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_badge_lock, 0, 0, 0);
+                holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(encColor));
+                holder.tvEncryptionBadge.setCompoundDrawablePadding(dpToPx(ctx, 4));
+                if (holder.tvEncryptionDot != null) holder.tvEncryptionDot.setVisibility(View.GONE);
             } else {
-                holder.tvEncryptionBadge.setText("Unencrypted");
-                holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(ctx, R.color.vault_unencrypted));
+                int unencColor = ContextCompat.getColor(ctx, R.color.vault_unencrypted);
+                holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
+                holder.tvEncryptionBadge.setText("Not encrypted");
+                holder.tvEncryptionBadge.setTextColor(unencColor);
+                holder.tvEncryptionBadge.setBackgroundResource(R.drawable.bg_badge_unencrypted);
+                holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_badge_unlock, 0, 0, 0);
+                holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(unencColor));
+                holder.tvEncryptionBadge.setCompoundDrawablePadding(dpToPx(ctx, 4));
+                if (holder.tvEncryptionDot != null) holder.tvEncryptionDot.setVisibility(View.GONE);
+            }
+
+            switch (file.getCategory()) {
+                case IMAGES:
+                    holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_image);
+                    break;
+                case VIDEOS:
+                    holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_video);
+                    break;
+                case PDFS:
+                case DOCUMENTS:
+                    holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file_text);
+                    break;
+                case AUDIO:
+                    holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_music);
+                    break;
+                case ARCHIVES:
+                    holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_archive);
+                    break;
+                default:
+                    holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file);
+                    break;
             }
 
             // Thumbnail loading
-            if (file.hasPreview() && file.getId() != null) {
-                ThumbnailLoader.loadThumbnail(ctx, file.getId(), holder.ivThumbnail, holder.ivFileIcon,
+            boolean canLoadThumb = file.getId() != null && (file.hasPreview() || ThumbnailLoader.hasCachedThumbnail(ctx, file.getId(), file.getSha256Checksum()));
+            if (canLoadThumb) {
+                ThumbnailLoader.loadThumbnail(ctx, file.getId(), file.getSha256Checksum(), file.hasPreview(), holder.ivThumbnail, holder.ivFileIcon,
                         file.getCategory() == StoredFile.FileCategory.VIDEOS ? holder.ivVideoBadge : null);
             } else {
                 holder.ivThumbnail.setImageDrawable(null);
@@ -943,6 +1047,7 @@ public class FragmentVault extends Fragment implements TransferListener {
             final ImageView ivVideoBadge;
             final TextView tvFileName;
             final TextView tvFileSize;
+            final TextView tvEncryptionDot;
             final TextView tvEncryptionBadge;
             final View layoutCardActions;
             final MaterialButton btnDownload;
@@ -957,6 +1062,7 @@ public class FragmentVault extends Fragment implements TransferListener {
                 ivVideoBadge = itemView.findViewById(R.id.ivVideoBadge);
                 tvFileName = itemView.findViewById(R.id.tvFileName);
                 tvFileSize = itemView.findViewById(R.id.tvFileSize);
+                tvEncryptionDot = itemView.findViewById(R.id.tvEncryptionDot);
                 tvEncryptionBadge = itemView.findViewById(R.id.tvEncryptionBadge);
                 layoutCardActions = itemView.findViewById(R.id.layoutCardActions);
                 btnDownload = itemView.findViewById(R.id.btnDownload);

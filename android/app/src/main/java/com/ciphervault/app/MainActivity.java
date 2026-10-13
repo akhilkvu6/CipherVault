@@ -31,6 +31,7 @@ public class MainActivity extends BaseActivity {
 
     private static final String TAG_HOME = "tag_home";
     private static final String TAG_VAULT = "tag_vault";
+    private static final String TAG_SEARCH = "tag_search";
     private static final String TAG_TRANSFERS = "tag_transfers";
     private static final String TAG_SETTINGS = "tag_settings";
 
@@ -45,6 +46,7 @@ public class MainActivity extends BaseActivity {
 
     private FragmentHome fragmentHome;
     private FragmentVault fragmentVault;
+    private FragmentMetadataSearch fragmentMetadataSearch;
     private FragmentTransfers fragmentTransfers;
     private FragmentSettings fragmentSettings;
 
@@ -103,6 +105,7 @@ public class MainActivity extends BaseActivity {
         if (savedInstanceState != null) {
             fragmentHome = (FragmentHome) fm.findFragmentByTag(TAG_HOME);
             fragmentVault = (FragmentVault) fm.findFragmentByTag(TAG_VAULT);
+            fragmentMetadataSearch = (FragmentMetadataSearch) fm.findFragmentByTag(TAG_SEARCH);
             fragmentTransfers = (FragmentTransfers) fm.findFragmentByTag(TAG_TRANSFERS);
             fragmentSettings = (FragmentSettings) fm.findFragmentByTag(TAG_SETTINGS);
             currentTabIndex = savedInstanceState.getInt(KEY_CURRENT_TAB, 0);
@@ -149,14 +152,13 @@ public class MainActivity extends BaseActivity {
                 switchTabFragment(1);
                 return true;
             } else if (itemId == R.id.nav_search) {
-                Intent intent = new Intent(MainActivity.this, MetadataSearchActivity.class);
-                startActivity(intent);
-                return false;
-            } else if (itemId == R.id.nav_transfers) {
                 switchTabFragment(2);
                 return true;
-            } else if (itemId == R.id.nav_settings) {
+            } else if (itemId == R.id.nav_transfers) {
                 switchTabFragment(3);
+                return true;
+            } else if (itemId == R.id.nav_settings) {
+                switchTabFragment(4);
                 return true;
             }
             return false;
@@ -178,7 +180,15 @@ public class MainActivity extends BaseActivity {
 
     private void handleIntent(Intent intent) {
         if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_TRANSFERS_TAB", false)) {
+            selectTab(3);
+        } else if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_SEARCH_TAB", false)) {
             selectTab(2);
+            if (intent.hasExtra("query") && fragmentMetadataSearch != null) {
+                String q = intent.getStringExtra("query");
+                if (q != null && !q.trim().isEmpty()) {
+                    fragmentMetadataSearch.executeSearch(q.trim());
+                }
+            }
         } else if (intent != null && intent.getBooleanExtra("EXTRA_OPEN_FILES_TAB", false)) {
             String category = intent.getStringExtra("EXTRA_FILTER_CATEGORY");
             selectTab(1);
@@ -191,7 +201,7 @@ public class MainActivity extends BaseActivity {
     }
 
     public void selectTab(int index) {
-        if (index < 0 || index > 3) index = 0;
+        if (index < 0 || index > 4) index = 0;
         int targetId;
         switch (index) {
             case 0:
@@ -201,9 +211,12 @@ public class MainActivity extends BaseActivity {
                 targetId = R.id.nav_vault;
                 break;
             case 2:
-                targetId = R.id.nav_transfers;
+                targetId = R.id.nav_search;
                 break;
             case 3:
+                targetId = R.id.nav_transfers;
+                break;
+            case 4:
             default:
                 targetId = R.id.nav_settings;
                 break;
@@ -221,7 +234,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void switchTabFragment(int index) {
-        if (index < 0 || index > 3) index = 0;
+        if (index < 0 || index > 4) index = 0;
         currentTabIndex = index;
 
         Fragment targetFragment;
@@ -239,11 +252,16 @@ public class MainActivity extends BaseActivity {
                 targetTag = TAG_VAULT;
                 break;
             case 2:
+                if (fragmentMetadataSearch == null) fragmentMetadataSearch = new FragmentMetadataSearch();
+                targetFragment = fragmentMetadataSearch;
+                targetTag = TAG_SEARCH;
+                break;
+            case 3:
                 if (fragmentTransfers == null) fragmentTransfers = new FragmentTransfers();
                 targetFragment = fragmentTransfers;
                 targetTag = TAG_TRANSFERS;
                 break;
-            case 3:
+            case 4:
             default:
                 if (fragmentSettings == null) fragmentSettings = new FragmentSettings();
                 targetFragment = fragmentSettings;

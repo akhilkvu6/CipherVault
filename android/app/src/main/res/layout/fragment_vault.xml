@@ -44,37 +44,22 @@
 
         </LinearLayout>
 
-        <LinearLayout
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnSortVault"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnFilterVault"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_marginEnd="8dp"
-                android:text="Metadata Search"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                app:cornerRadius="20dp"
-                app:icon="@drawable/ic_lucide_sliders"
-                app:iconSize="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSortVault"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:text="Sort"
-                android:textAllCaps="false"
-                android:textSize="13sp"
-                app:cornerRadius="20dp"
-                app:icon="@drawable/ic_lucide_arrow_down_up"
-                app:iconSize="16dp" />
-
-        </LinearLayout>
+            android:layout_height="36dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingHorizontal="14dp"
+            android:text="Sort"
+            android:textAllCaps="false"
+            android:textSize="13sp"
+            app:cornerRadius="18dp"
+            app:icon="@drawable/ic_lucide_arrow_down_up"
+            app:iconSize="16dp" />
 
     </LinearLayout>
 
@@ -162,7 +147,7 @@
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="6dp"
         android:layout_marginBottom="8dp"
-        android:hint="Search files by name or hash"
+        android:hint="Search files by name"
         app:boxCornerRadiusBottomEnd="16dp"
         app:boxCornerRadiusBottomStart="16dp"
         app:boxCornerRadiusTopEnd="16dp"
@@ -194,6 +179,7 @@
             android:id="@+id/chipGroupVaultCategories"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            app:chipSpacingHorizontal="8dp"
             app:selectionRequired="true"
             app:singleLine="true"
             app:singleSelection="true">
@@ -297,7 +283,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingBottom="96dp" />
+            android:paddingBottom="128dp" />
 
         <LinearLayout
             android:id="@+id/layoutVaultEmpty"

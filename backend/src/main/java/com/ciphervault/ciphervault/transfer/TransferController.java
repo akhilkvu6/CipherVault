@@ -3,6 +3,8 @@ package com.ciphervault.ciphervault.transfer;
 import com.ciphervault.ciphervault.user.User;
 import com.ciphervault.ciphervault.user.UserRepository;
 import com.ciphervault.ciphervault.exception.ApiException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/transfers")
 public class TransferController {
+
+    private static final Logger log = LoggerFactory.getLogger(TransferController.class);
 
     private final TransferRepository repository;
     private final UserRepository userRepository;
@@ -59,6 +63,7 @@ public class TransferController {
             transfers = repository.findByUser(user, pageable);
         }
         
+        log.info("[TRANSFERS] Listed transfers | count={} | total={}", transfers.getNumberOfElements(), transfers.getTotalElements());
         return ResponseEntity.ok(transfers.map(this::toDto));
     }
 
@@ -66,7 +71,10 @@ public class TransferController {
     public ResponseEntity<Map<String, Object>> getTransferDetail(@PathVariable Long id, Authentication authentication) {
         User user = getAuthenticatedUser(authentication);
         return repository.findByIdAndUser(id, user)
-                .map(t -> ResponseEntity.ok(toDto(t)))
+                .map(t -> {
+                    log.info("[TRANSFERS] Retrieved transfer detail | id={}", id);
+                    return ResponseEntity.ok(toDto(t));
+                })
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "NOT_FOUND", "Transfer not found"));
     }
 
@@ -83,6 +91,7 @@ public class TransferController {
         transfer.setStatus(TransferStatus.CANCELLED);
         transfer.setUpdatedAt(LocalDateTime.now());
         repository.save(transfer);
+        log.info("[TRANSFERS] Cancelled transfer | id={}", id);
         
         return ResponseEntity.ok(Map.of("success", true, "message", "Transfer cancelled successfully"));
     }

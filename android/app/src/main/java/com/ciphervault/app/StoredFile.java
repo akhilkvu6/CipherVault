@@ -21,7 +21,7 @@ public class StoredFile {
     private String contentType;
 
     @SerializedName("encrypted")
-    private boolean encrypted;
+    private Boolean encrypted;
 
     @SerializedName("sha256Hash")
     private String sha256Hash;
@@ -37,6 +37,25 @@ public class StoredFile {
 
     @SerializedName("metadata")
     private FileMetadataDTO metadata;
+
+    public StoredFile() {}
+
+    public StoredFile(Long id, String filename, Long fileSize, String contentType, String createdAt, boolean hasPreview) {
+        this.id = id;
+        this.filename = filename;
+        this.fileSize = fileSize;
+        this.contentType = contentType;
+        this.createdAt = createdAt;
+        this.hasPreview = hasPreview;
+    }
+
+    public void setBackendCategory(String backendCategory) {
+        this.backendCategory = backendCategory;
+    }
+
+    public String getSha256Checksum() {
+        return sha256Hash;
+    }
 
     public Long getId() {
         return id;
@@ -100,7 +119,15 @@ public class StoredFile {
     }
 
     public boolean isEncrypted() {
+        return Boolean.TRUE.equals(encrypted);
+    }
+
+    public Boolean getEncrypted() {
         return encrypted;
+    }
+
+    public boolean hasEncryptionStatus() {
+        return encrypted != null;
     }
 
     public String getSha256Hash() {
@@ -127,6 +154,9 @@ public class StoredFile {
                 return FileCategory.DOCUMENTS;
             }
             if (cat.equals("archives") || cat.equals("archive")) {
+                if (getFilename().toLowerCase().endsWith(".apk") || getContentType().toLowerCase().contains("android.package-archive")) {
+                    return FileCategory.OTHER;
+                }
                 return FileCategory.ARCHIVES;
             }
             if (cat.equals("media")) {
@@ -178,10 +208,15 @@ public class StoredFile {
                 || name.endsWith(".md")) {
             return FileCategory.DOCUMENTS;
         }
+        // Android package archives (.apk) must be categorized as OTHER, not ARCHIVES
+        if (name.endsWith(".apk") || mime.contains("android.package-archive")) {
+            return FileCategory.OTHER;
+        }
+
         if (mime.contains("zip") || mime.contains("tar") || mime.contains("compressed")
                 || name.endsWith(".zip") || name.endsWith(".rar") || name.endsWith(".7z")
                 || name.endsWith(".tar") || name.endsWith(".gz") || name.endsWith(".bz2")
-                || name.endsWith(".xz") || name.endsWith(".iso") || name.endsWith(".apk")) {
+                || name.endsWith(".xz") || name.endsWith(".iso")) {
             return FileCategory.ARCHIVES;
         }
         return FileCategory.OTHER;

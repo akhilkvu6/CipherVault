@@ -5,6 +5,7 @@ public class LoginResponse {
     private boolean success;
     private String message;
     private String username;
+    private String email;
     private String name;
     private String token;
 
@@ -18,6 +19,10 @@ public class LoginResponse {
 
     public String getUsername() {
         return username;
+    }
+
+    public String getEmail() {
+        return email;
     }
 
     public String getName() {

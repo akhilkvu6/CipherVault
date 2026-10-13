@@ -71,4 +71,13 @@ class FileSearchServiceTest {
         assertEquals(1, suggestions.size());
         assertEquals("Canon", suggestions.get(0));
     }
+
+    @Test
+    void buildSpecificationWithMultipleOrValuesShouldBuildValidSpec() {
+        Specification<StoredFile> spec = searchService.buildSpecification(
+                testUser, null, "IMAGES", "Sony,Canon", null, "1920x1080,3840x2160", "H.264,HEVC",
+                null, null, null, "24-70mm", null, null, "2024,2023"
+        );
+        assertNotNull(spec);
+    }
 }

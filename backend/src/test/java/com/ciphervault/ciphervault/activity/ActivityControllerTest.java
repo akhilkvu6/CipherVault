@@ -60,7 +60,7 @@ class ActivityControllerTest {
         Page<ActivityEvent> page = new PageImpl<>(List.of(event1, event2));
         when(repository.findByUser(eq(user), any(Pageable.class))).thenReturn(page);
 
-        ResponseEntity<Page<ActivityEvent>> response = controller.listActivity(0, 20, null, null, authentication);
+        ResponseEntity<Page<ActivityEventDto>> response = controller.listActivity(0, 20, null, null, authentication);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -79,7 +79,7 @@ class ActivityControllerTest {
         Page<ActivityEvent> page = new PageImpl<>(List.of());
         when(repository.findByUser(eq(user), any(Pageable.class))).thenReturn(page);
 
-        ResponseEntity<Page<ActivityEvent>> response = controller.listActivity(0, 20, null, "all", authentication);
+        ResponseEntity<Page<ActivityEventDto>> response = controller.listActivity(0, 20, null, "all", authentication);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -98,7 +98,7 @@ class ActivityControllerTest {
 
         when(repository.findByIdAndUser(200L, user)).thenReturn(Optional.of(event));
 
-        ResponseEntity<ActivityEvent> response = controller.getActivityDetail(200L, authentication);
+        ResponseEntity<ActivityEventDto> response = controller.getActivityDetail(200L, authentication);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(200L, response.getBody().getId());

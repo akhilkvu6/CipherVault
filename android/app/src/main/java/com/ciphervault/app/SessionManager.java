@@ -30,6 +30,7 @@ public class SessionManager {
     private static volatile SessionManager sInstance;
 
     private final SharedPreferences preferences;
+    private final Context appContext;
 
     public static SessionManager getInstance(Context context) {
         if (sInstance == null) {
@@ -43,6 +44,7 @@ public class SessionManager {
     }
 
     public SessionManager(Context context) {
+        this.appContext = context != null ? context.getApplicationContext() : null;
         this.preferences = getOrCreatePreferences(context);
         if (sCachedToken == null && this.preferences != null) {
             sCachedToken = safelyGetString(this.preferences, KEY_TOKEN, null);
@@ -256,6 +258,10 @@ public class SessionManager {
 
     public void logout() {
         sCachedToken = null;
+        if (appContext != null) {
+            AuditLogger.AuditEntry logoutEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGOUT, "SUCCESS", "User session ended / signed out", null);
+            AuditLogger.logEvent(appContext, logoutEntry);
+        }
         if (preferences == null) return;
         try {
             preferences.edit().clear().apply();

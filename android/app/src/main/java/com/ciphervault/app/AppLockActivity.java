@@ -105,6 +105,9 @@ public class AppLockActivity extends BaseActivity {
         // Initialize UI in LOCKED state.
         // DO NOT automatically show biometric prompt! User MUST explicitly tap Unlock Vault.
         updateUiForState(LockState.LOCKED);
+        AuditLogger.AuditEntry lockEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_VAULT_LOCKED, "SUCCESS", "Vault locked by biometric security policy", null);
+        lockEntry.authMethod = "BIOMETRIC";
+        AuditLogger.logEvent(this, lockEntry);
     }
 
     private void onUnlockVaultClicked() {
@@ -184,7 +187,9 @@ public class AppLockActivity extends BaseActivity {
 
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
             // If device credential or biometric is unavailable/unsupported, allow unlocking directly
-            AuditLogger.log(this, "Unlock Vault", "SUCCESS", "Unlocked (Device credentials bypassed/unsupported)");
+            AuditLogger.AuditEntry bypassEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_VAULT_UNLOCKED, "SUCCESS", "Vault unlocked (biometrics unsupported/bypassed)", null);
+            bypassEntry.authMethod = "DEVICE_CREDENTIAL";
+            AuditLogger.logEvent(this, bypassEntry);
             updateUiForState(LockState.UNLOCKED);
             unlockAndProceed();
             return;
@@ -195,7 +200,9 @@ public class AppLockActivity extends BaseActivity {
             @Override
             public void onAuthenticationSucceeded(@NonNull BiometricPrompt.AuthenticationResult result) {
                 super.onAuthenticationSucceeded(result);
-                AuditLogger.log(AppLockActivity.this, "Unlock Vault", "SUCCESS", "Biometric/device credential verified");
+                AuditLogger.AuditEntry unlockEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_VAULT_UNLOCKED, "SUCCESS", "Vault unlocked via biometric verification", null);
+                unlockEntry.authMethod = "BIOMETRIC";
+                AuditLogger.logEvent(AppLockActivity.this, unlockEntry);
                 updateUiForState(LockState.UNLOCKED);
                 unlockAndProceed();
             }
@@ -203,7 +210,10 @@ public class AppLockActivity extends BaseActivity {
             @Override
             public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                 super.onAuthenticationError(errorCode, errString);
-                AuditLogger.log(AppLockActivity.this, "Failed Unlock", "ERROR", "Authentication error: " + errString);
+                AuditLogger.AuditEntry errEntry = new AuditLogger.AuditEntry("Biometric Authentication Error", "ERROR", "Biometric error: " + errString, null);
+                errEntry.authMethod = "BIOMETRIC";
+                errEntry.errorMessage = String.valueOf(errString);
+                AuditLogger.logEvent(AppLockActivity.this, errEntry);
                 updateUiForState(LockState.LOCKED);
                 if (errorCode != BiometricPrompt.ERROR_USER_CANCELED && errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
                     Toast.makeText(AppLockActivity.this, "Authentication error: " + errString, Toast.LENGTH_SHORT).show();
@@ -213,7 +223,10 @@ public class AppLockActivity extends BaseActivity {
             @Override
             public void onAuthenticationFailed() {
                 super.onAuthenticationFailed();
-                AuditLogger.log(AppLockActivity.this, "Failed Unlock", "FAILED", "Fingerprint or credential mismatch");
+                AuditLogger.AuditEntry failEntry = new AuditLogger.AuditEntry("Biometric Authentication Failed", "FAILED", "Fingerprint or credential mismatch", null);
+                failEntry.authMethod = "BIOMETRIC";
+                failEntry.errorMessage = "Credential mismatch";
+                AuditLogger.logEvent(AppLockActivity.this, failEntry);
                 updateUiForState(LockState.LOCKED);
                 Toast.makeText(AppLockActivity.this, "Authentication failed. Try again.", Toast.LENGTH_SHORT).show();
             }
@@ -236,7 +249,8 @@ public class AppLockActivity extends BaseActivity {
     }
 
     private void handleSignOut() {
-        AuditLogger.log(this, "Logout", "SUCCESS", "Explicit user sign out from lock screen");
+        AuditLogger.AuditEntry logoutEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_LOGOUT, "SUCCESS", "User signed out from lock screen", null);
+        AuditLogger.logEvent(this, logoutEntry);
         try {
             apiService.logout().enqueue(new Callback<Map<String, Object>>() {
                 @Override

@@ -13,10 +13,11 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
         android:paddingTop="20dp"
-        android:paddingBottom="8dp"
+        android:paddingBottom="12dp"
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/tvLogTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
@@ -30,155 +31,72 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:text="Active transfers and unified security activity history"
+            android:fontFamily="sans-serif"
+            android:text="Your activity and security history"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:textSize="13sp" />
 
     </LinearLayout>
-
-    <!-- Tab Selector -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabLayoutTransfers"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorSurface"
-        app:tabIndicatorColor="?attr/colorPrimary"
-        app:tabIndicatorFullWidth="false"
-        app:tabSelectedTextColor="?attr/colorPrimary"
-        app:tabTextColor="?attr/colorOnSurfaceVariant">
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Active Transfers" />
-
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Activity History" />
-
-    </com.google.android.material.tabs.TabLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="?attr/colorOutlineVariant" />
 
-    <!-- Content Container -->
+    <!-- Unified Single Timeline Container -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-        <!-- Tab 1: Active Transfers View -->
-        <FrameLayout
-            android:id="@+id/containerActiveTransfers"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvUnifiedLog"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:visibility="visible">
+            android:clipToPadding="false"
+            android:paddingTop="8dp"
+            android:paddingBottom="96dp" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvActiveTransfers"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="96dp" />
-
-            <LinearLayout
-                android:id="@+id/layoutTransfersEmpty"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="32dp"
-                android:visibility="gone">
-
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:contentDescription="No transfers"
-                    android:src="@drawable/ic_lucide_arrow_down_up"
-                    app:tint="?attr/colorOutline" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="No active transfers"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:gravity="center"
-                    android:text="Chunked AES-256-GCM uploads and\ndownloads will be monitored in real-time here."
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-        </FrameLayout>
-
-        <!-- Tab 2: Audit Log View -->
-        <FrameLayout
-            android:id="@+id/containerAuditLog"
+        <!-- Empty State Container -->
+        <LinearLayout
+            android:id="@+id/layoutLogEmpty"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
             android:visibility="gone">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvAuditLog"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:clipToPadding="false"
-                android:paddingTop="8dp"
-                android:paddingBottom="96dp" />
+            <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:contentDescription="No activity"
+                android:src="@drawable/ic_lucide_activity"
+                app:tint="?attr/colorOutline" />
 
-            <LinearLayout
-                android:id="@+id/layoutAuditEmpty"
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvLogEmptyTitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
+                android:layout_marginTop="16dp"
+                android:fontFamily="sans-serif-medium"
+                android:text="No activity recorded yet"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvLogEmptyMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:orientation="vertical"
-                android:padding="32dp"
-                android:visibility="gone">
+                android:text="File transfers, authentication, and security events\nwill appear in this chronological timeline."
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="13sp" />
 
-                <ImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:contentDescription="No activity"
-                    android:src="@drawable/ic_lucide_activity"
-                    app:tint="?attr/colorOutline" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:fontFamily="sans-serif-medium"
-                    android:text="No security audit events recorded"
-                    android:textColor="?attr/colorOnSurface"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:gravity="center"
-                    android:text="Logins, password changes, uploads, and deletions\nare securely logged and displayed here."
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-        </FrameLayout>
+        </LinearLayout>
 
     </FrameLayout>
 

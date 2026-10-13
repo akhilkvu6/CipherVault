@@ -358,6 +358,10 @@ public class ConnectionActivity extends BaseActivity {
                     btnTestConnection.setText("Connected");
                     btnTestConnection.setIconResource(R.drawable.ic_lucide_check_circle);
 
+                    AuditLogger.AuditEntry connEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_CONNECTION_TEST_SUCCESS, "SUCCESS", "Connection verified to " + targetUrl + " (" + latency + " ms)", null);
+                    connEntry.serverTarget = targetUrl;
+                    AuditLogger.logEvent(ConnectionActivity.this, connEntry);
+
                     tvStatusTitle.setText("Backend Connected (" + latency + " ms)");
                     tvStatusTitle.setTextColor(ContextCompat.getColor(ConnectionActivity.this, R.color.cv_security_success));
                     tvStatusServer.setText("Target: " + targetUrl);
@@ -367,6 +371,11 @@ public class ConnectionActivity extends BaseActivity {
                 } else {
                     btnTestConnection.setText("Test Failed (Retry)");
                     btnTestConnection.setIconResource(R.drawable.ic_lucide_alert_triangle);
+
+                    AuditLogger.AuditEntry connFail = new AuditLogger.AuditEntry(AuditLogger.ACTION_CONNECTION_TEST_FAILED, "FAILED", "Connection test failed for " + targetUrl, null);
+                    connFail.serverTarget = targetUrl;
+                    connFail.errorMessage = "HTTP " + response.code();
+                    AuditLogger.logEvent(ConnectionActivity.this, connFail);
 
                     tvStatusTitle.setText("Connection Error (HTTP " + response.code() + ")");
                     tvStatusTitle.setTextColor(ContextCompat.getColor(ConnectionActivity.this, R.color.status_error));
@@ -382,6 +391,11 @@ public class ConnectionActivity extends BaseActivity {
 
                 btnTestConnection.setText("Test Failed (Retry)");
                 btnTestConnection.setIconResource(R.drawable.ic_lucide_alert_triangle);
+
+                AuditLogger.AuditEntry connFail = new AuditLogger.AuditEntry(AuditLogger.ACTION_CONNECTION_TEST_FAILED, "FAILED", "Connection failed for " + targetUrl, null);
+                connFail.serverTarget = targetUrl;
+                connFail.errorMessage = t.getMessage();
+                AuditLogger.logEvent(ConnectionActivity.this, connFail);
 
                 tvStatusTitle.setText("Connection Failed");
                 tvStatusTitle.setTextColor(ContextCompat.getColor(ConnectionActivity.this, R.color.status_error));
@@ -420,7 +434,9 @@ public class ConnectionActivity extends BaseActivity {
         ServerConnectionManager.getInstance(this).recordServerUsed(verifiedUrl);
 
         Toast.makeText(this, "Connected: " + verifiedUrl, Toast.LENGTH_SHORT).show();
-        AuditLogger.log(this, "Connect Server", "SUCCESS", "Connected to " + verifiedUrl);
+        AuditLogger.AuditEntry srvEntry = new AuditLogger.AuditEntry(AuditLogger.ACTION_SERVER_CONNECTED, "SUCCESS", "Connected to " + verifiedUrl, null);
+        srvEntry.serverTarget = verifiedUrl;
+        AuditLogger.logEvent(this, srvEntry);
 
         SessionManager sm = SessionManager.getInstance(this);
         Intent intent;

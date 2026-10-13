@@ -1,6 +1,7 @@
 package com.ciphervault.ciphervault.activity;
 
 import com.ciphervault.ciphervault.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -15,6 +16,7 @@ public class ActivityEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -56,6 +58,7 @@ public class ActivityEvent {
     // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
+    @JsonIgnore
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
     public EventType getEventType() { return eventType; }

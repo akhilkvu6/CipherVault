@@ -56,6 +56,33 @@ public class FileUtils {
         return formatStorageSize(bytes);
     }
 
+    public static String formatDisplayDateOnly(String rawDate) {
+        if (rawDate == null || rawDate.trim().isEmpty()) return "";
+        try {
+            String cleaned = rawDate.trim().replace("Z", "").replace("T", " ");
+            if (cleaned.length() >= 10) {
+                return cleaned.substring(0, 10);
+            }
+            return cleaned;
+        } catch (Exception e) {
+            return rawDate;
+        }
+    }
+
+    public static String formatDisplayDateTime(String rawDate) {
+        if (rawDate == null || rawDate.trim().isEmpty()) return "";
+        try {
+            String cleaned = rawDate.trim().replace("Z", "").replace("T", " ");
+            int dotIdx = cleaned.indexOf('.');
+            if (dotIdx > 0) {
+                cleaned = cleaned.substring(0, dotIdx);
+            }
+            return cleaned;
+        } catch (Exception e) {
+            return rawDate;
+        }
+    }
+
     public static String getFileName(Context context, Uri uri) {
         String result = "unknown_file";
         if (uri.getScheme() != null && uri.getScheme().equals("content")) {

@@ -38,6 +38,8 @@ class FileCategoryServiceTest {
         assertEquals("Media", categoryService.determineCategory("clip.mp4", "video/mp4"));
         assertEquals("Archives", categoryService.determineCategory("backup.zip", "application/zip"));
         assertEquals("Archives", categoryService.determineCategory("bundle.tar.gz", "application/gzip"));
+        assertEquals("Other", categoryService.determineCategory("app-release.apk", "application/vnd.android.package-archive"));
+        assertEquals("Other", categoryService.determineCategory("app-debug.apk", "application/zip"));
         assertEquals("Other", categoryService.determineCategory("program.exe", "application/octet-stream"));
         assertEquals("Other", categoryService.determineCategory("binary.dat", null));
     }

@@ -84,7 +84,7 @@ public class FragmentHome extends Fragment implements TransferListener {
         if (cardHomeProfileAvatar != null) {
             cardHomeProfileAvatar.setOnClickListener(v -> {
                 if (requireActivity() instanceof MainActivity) {
-                    ((MainActivity) requireActivity()).navigateToTab(3);
+                    ((MainActivity) requireActivity()).navigateToTab(4);
                 }
             });
         }
@@ -108,7 +108,7 @@ public class FragmentHome extends Fragment implements TransferListener {
         MaterialCardView cardQuickUpload = view.findViewById(R.id.cardQuickUpload);
         MaterialCardView cardQuickCamera = view.findViewById(R.id.cardQuickCamera);
         MaterialCardView cardViewFiles = view.findViewById(R.id.cardViewFiles);
-        MaterialCardView cardQuickTransfers = view.findViewById(R.id.cardQuickTransfers);
+        MaterialCardView cardQuickLog = view.findViewById(R.id.cardQuickLog);
         Button btnUploadFirstFile = view.findViewById(R.id.btnUploadFirstFile);
         MaterialCardView cardVaultStorage = view.findViewById(R.id.cardVaultStorage);
 
@@ -138,10 +138,10 @@ public class FragmentHome extends Fragment implements TransferListener {
             });
         }
 
-        if (cardQuickTransfers != null) {
-            cardQuickTransfers.setOnClickListener(v -> {
+        if (cardQuickLog != null) {
+            cardQuickLog.setOnClickListener(v -> {
                 if (requireActivity() instanceof MainActivity) {
-                    ((MainActivity) requireActivity()).navigateToTab(2);
+                    ((MainActivity) requireActivity()).navigateToTab(3);
                 }
             });
         }
@@ -560,9 +560,21 @@ public class FragmentHome extends Fragment implements TransferListener {
                 default: typeLabel = "File"; break;
             }
 
-            holder.tvFileSize.setText(typeLabel + " • " + FileUtils.formatStorageSize(context, file.getFileSize()));
+            String sizeStr = FileUtils.formatStorageSize(context, file.getFileSize());
+            String dateStr = file.getCreatedAt();
+            String formattedDate = (dateStr != null && !dateStr.trim().isEmpty())
+                    ? FileUtils.formatDisplayDateOnly(dateStr) : null;
 
-            if (file.isEncrypted()) {
+            StringBuilder subtitle = new StringBuilder();
+            subtitle.append(typeLabel).append(" • ").append(sizeStr);
+            if (formattedDate != null && !formattedDate.isEmpty()) {
+                subtitle.append(" • ").append(formattedDate);
+            }
+            holder.tvFileSize.setText(subtitle.toString());
+
+            if (!file.hasEncryptionStatus()) {
+                holder.tvEncryptionBadge.setVisibility(View.GONE);
+            } else if (file.isEncrypted()) {
                 int encColor = ThemeManager.getEncryptedColor(context);
                 holder.tvEncryptionBadge.setText("Encrypted");
                 holder.tvEncryptionBadge.setTextColor(encColor);
@@ -570,8 +582,9 @@ public class FragmentHome extends Fragment implements TransferListener {
                 holder.tvEncryptionBadge.setCompoundDrawableTintList(ColorStateList.valueOf(encColor));
                 holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             } else {
-                holder.tvEncryptionBadge.setText("Uploaded");
+                holder.tvEncryptionBadge.setText("Not encrypted");
                 holder.tvEncryptionBadge.setTextColor(ContextCompat.getColor(context, R.color.vault_unencrypted));
+                holder.tvEncryptionBadge.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
                 holder.tvEncryptionBadge.setVisibility(View.VISIBLE);
             }
 
@@ -585,8 +598,9 @@ public class FragmentHome extends Fragment implements TransferListener {
                 default: holder.ivFileIcon.setImageResource(R.drawable.ic_lucide_file); break;
             }
 
-            if (file.hasPreview() && file.getId() != null) {
-                ThumbnailLoader.loadThumbnail(context, file.getId(), holder.ivThumbnail, holder.ivFileIcon,
+            boolean canLoadThumb = file.getId() != null && (file.hasPreview() || ThumbnailLoader.hasCachedThumbnail(context, file.getId(), file.getSha256Checksum()));
+            if (canLoadThumb) {
+                ThumbnailLoader.loadThumbnail(context, file.getId(), file.getSha256Checksum(), file.hasPreview(), holder.ivThumbnail, holder.ivFileIcon,
                         file.getCategory() == StoredFile.FileCategory.VIDEOS ? holder.ivVideoBadge : null);
             } else {
                 holder.ivThumbnail.setImageDrawable(null);

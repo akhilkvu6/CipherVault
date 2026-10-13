@@ -223,11 +223,11 @@ public class MetadataExtractionService {
 
         // Image and camera metadata.
         metadata.setCameraMake(
-                getTagString(tags, "Make")
+                getTagString(tags, "Make", "Manufacturer")
         );
 
         metadata.setCameraModel(
-                getTagString(tags, "Model")
+                getTagString(tags, "Model", "ModelName")
         );
 
         metadata.setLens(
@@ -243,35 +243,43 @@ public class MetadataExtractionService {
                 getTagString(tags, "FocalLength")
         );
 
-        metadata.setIso(
-                getTagString(tags, "ISO")
-        );
+        String iso = getTagString(tags, "ISO");
+        if (iso != null && (iso.equalsIgnoreCase("undef") || iso.equals("0") || iso.equalsIgnoreCase("undefined"))) {
+            iso = null;
+        }
+        metadata.setIso(iso);
 
-        metadata.setExposureTime(
-                getTagString(
-                        tags,
-                        "ExposureTime",
-                        "ShutterSpeed"
-                )
+        String exposure = getTagString(
+                tags,
+                "ExposureTime",
+                "ShutterSpeed"
         );
+        if (exposure != null && (exposure.equalsIgnoreCase("undef") || exposure.equals("0") || exposure.equalsIgnoreCase("undefined"))) {
+            exposure = null;
+        }
+        metadata.setExposureTime(exposure);
 
-        metadata.setFNumber(
-                getTagString(
-                        tags,
-                        "FNumber",
-                        "ApertureValue",
-                        "Aperture"
-                )
+        String fNumber = getTagString(
+                tags,
+                "FNumber",
+                "ApertureValue",
+                "Aperture"
         );
+        if (fNumber != null && (fNumber.equalsIgnoreCase("undef") || fNumber.equals("0") || fNumber.equalsIgnoreCase("undefined"))) {
+            fNumber = null;
+        }
+        metadata.setFNumber(fNumber);
 
-        metadata.setDateTaken(
-                getTagString(
-                        tags,
-                        "DateTimeOriginal",
-                        "CreateDate",
-                        "DateCreated"
-                )
+        String dateTaken = getTagString(
+                tags,
+                "DateTimeOriginal",
+                "CreateDate",
+                "DateCreated"
         );
+        if (dateTaken != null && (dateTaken.startsWith("0000:00:00") || dateTaken.startsWith("0000-00-00") || dateTaken.startsWith("0000:"))) {
+            dateTaken = null;
+        }
+        metadata.setDateTaken(dateTaken);
 
         // Image dimensions.
         Integer width =
@@ -596,12 +604,26 @@ public class MetadataExtractionService {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private String getTagString(
             Map<String, Object> tags,
             String... tagNames) {
 
         for (String tagName : tagNames) {
             Object value = tags.get(tagName);
+
+            if (value == null) {
+                // Check 1-level nested maps (e.g. "Device" -> {"Manufacturer": "Sony", "ModelName": "ILCE-7M3"})
+                for (Object mapVal : tags.values()) {
+                    if (mapVal instanceof Map<?, ?> nestedMap) {
+                        Object nestedVal = nestedMap.get(tagName);
+                        if (nestedVal != null) {
+                            value = nestedVal;
+                            break;
+                        }
+                    }
+                }
+            }
 
             if (value == null) {
                 continue;

@@ -14,23 +14,40 @@ import java.io.FileNotFoundException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-// Centralize exception handling and keep API error responses consistent.
+/**
+ * Centralized exception handling ensuring consistent JSON error bodies,
+ * single-point logging, preservation of causal chains in diagnostic logs,
+ * and zero internal stack trace leakage to clients.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<Map<String, Object>> handleApiException(ApiException exc) {
+        if (exc.getStatus().is5xxServerError()) {
+            log.error("[ERROR] [API] Server error [{}]: {}", exc.getCode(), exc.getMessage(), exc);
+        } else {
+            log.warn("[WARN] [API] Client error [{}]: {}", exc.getCode(), exc.getMessage());
+        }
+        return errorResponse(
+                exc.getStatus(),
+                exc.getCode(),
+                exc.getMessage());
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, Object>> handleMaxSizeException(MaxUploadSizeExceededException exc) {
-        log.warn("Upload rejected: File exceeds configured limit of 500MB");
+        log.warn("[WARN] [UPLOAD] Upload rejected: File exceeds configured limit of 2GB");
         return errorResponse(
                 HttpStatus.PAYLOAD_TOO_LARGE,
                 "MAX_UPLOAD_SIZE_EXCEEDED",
-                "File exceeds the maximum allowable upload limit of 500MB");
+                "File exceeds the maximum allowable upload limit of 2GB");
     }
 
     @ExceptionHandler(DuplicateFileException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicateFileException(DuplicateFileException exc) {
-        log.warn("Upload conflict: Duplicate SHA-256 {}", exc.getSha256Hash());
+        log.warn("[WARN] [UPLOAD] [DUP] Upload conflict: Duplicate SHA-256 {}", exc.getSha256Hash());
 
         Map<String, Object> body = errorBody(
                 "DUPLICATE_FILE",
@@ -42,15 +59,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(StorageQuotaExceededException.class)
     public ResponseEntity<Map<String, Object>> handleQuotaException(StorageQuotaExceededException exc) {
-        log.warn("Storage quota exceeded: {}", exc.getMessage());
+        log.warn("[WARN] [QUOTA] Storage quota exceeded: {}", exc.getMessage());
         return errorResponse(
                 HttpStatus.INSUFFICIENT_STORAGE,
                 "STORAGE_QUOTA_EXCEEDED",
-                "Storage quota exceeded. Your maximum capacity is 1 GB.");
+                "Storage quota exceeded. Your maximum capacity is 10 GB.");
     }
 
     @ExceptionHandler(FileNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleFileNotFoundException(FileNotFoundException exc) {
+        log.warn("[WARN] [FILE] File not found: {}", exc.getMessage());
         return errorResponse(
                 HttpStatus.NOT_FOUND,
                 "FILE_NOT_FOUND",
@@ -59,6 +77,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException exc) {
+        log.warn("[WARN] [API] Bad request argument: {}", exc.getMessage());
         return errorResponse(
                 HttpStatus.BAD_REQUEST,
                 "BAD_REQUEST",
@@ -67,7 +86,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception exc) {
-        log.error("Unhandled exception: {}", exc.getMessage(), exc);
+        log.error("[ERROR] [API] Unhandled exception: {}", exc.getMessage(), exc);
         return errorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "INTERNAL_SERVER_ERROR",
