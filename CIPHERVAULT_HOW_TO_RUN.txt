@@ -39,7 +39,7 @@ Expected: HTTP 200 OK, status: "UP", 6 healthy components.
 4. LAUNCH DESKTOP SERVER CONTROL GUI (OPTIONAL)
 --------------------------------------------------------------------------------
 PowerShell:
-  cd server-control
+  cd scripts\server-control
   pip install -r requirements.txt
   .\run.bat
 

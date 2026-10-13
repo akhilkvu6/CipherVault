@@ -129,40 +129,63 @@ curl http://localhost:8080/api/health
 
 ```text
 CipherVault/
+├── README.md                  # Project overview and entry point (this file)
+├── .gitignore                 # Git ignore rules for Android, Spring Boot, and Python
+├── CIPHERVAULT_HOW_TO_RUN.txt # Plaintext quick-reference command cheat sheet
 ├── android/                   # Native Android application (Java 21, Gradle, Material 3)
 │   ├── app/src/main/java/     # Activities, Fragments, Adapters, Network Clients, Services
 │   ├── app/src/main/res/      # Layouts, Drawables (Lucide icons), Themes, Values
-│   └── build.gradle           # Android Gradle configuration
+│   ├── build.gradle.kts       # Android Gradle configuration
+│   └── gradlew / gradlew.bat  # Gradle wrapper
 ├── backend/                   # Spring Boot 3.3.4 REST API & Cryptographic Engine
 │   ├── src/main/java/         # Controllers, Entities, Repositories, Security, Storage
 │   ├── src/main/resources/    # application.properties (Port 8080, DB settings, limits)
 │   ├── mvnw.cmd               # Maven Wrapper for Windows
 │   └── pom.xml                # Backend dependencies (Spring Security, JPA, MySQL, JJWT)
 ├── database/                  # Relational database resources
-│   └── schema.sql             # Authoritative database schema & indexes
+│   ├── schema.sql             # Authoritative database schema & indexes
+│   ├── migrations/            # Versioned SQL migrations
+│   └── backups/               # Full database backups
+├── scripts/                   # Build, testing, documentation, and control utilities
+│   ├── build/                 # Build scripts and packaging helpers
+│   ├── testing/               # Test runners and test suites
+│   ├── documentation/         # Report generation & architecture diagram generators
+│   └── server-control/        # Optional Python PySide6 Desktop Server Control Utility
 ├── docs/                      # Comprehensive technical documentation
-│   ├── HOW_TO_RUN.md          # Exhaustive step-by-step setup and operations guide
-│   ├── CONNECTION.md          # Deep networking, firewall, and connection guide
-│   ├── api/                   # REST API contracts & specifications
-│   ├── architecture/          # High-level and module architecture documentation
-│   ├── database/              # Schema design, foreign keys, and indexes
-│   ├── security/              # Cryptographic model, key derivation, and token policies
-│   └── setup/                 # Initial environment setup guide
-├── server-control/            # Optional Python PySide6 Desktop Server Control Utility
-│   ├── app/                   # PySide6 UI windows, widgets, and background threads
-│   ├── main.py                # Server Control entry point
-│   ├── requirements.txt       # Dependencies (PySide6, requests, psutil)
-│   └── run.bat                # Windows launcher batch script
-├── CIPHERVAULT_HOW_TO_RUN.txt # Plaintext quick-reference command cheat sheet
-└── README.md                  # Project overview and entry point (this file)
+│   ├── architecture/          # System architecture & component diagrams
+│   ├── setup-and-usage/       # How-to-run, connection, and troubleshooting manuals
+│   ├── api-and-database/      # REST API contracts & MySQL schema reference
+│   ├── security-and-encryption/# Zero-knowledge AES-256-GCM & threat model
+│   ├── testing-and-qa/        # Comprehensive test plans, audit ledgers, & QA reports
+│   └── project-reports/       # Screen implementations, final verification report, & 112p MCA report
+└── evidence/                  # Centralized test verification evidence and logs
+    ├── screenshots/           # Centralized visual verification screenshots (9 categories)
+    │   ├── onboarding/        # Splash, onboarding walkthrough, QR server scan
+    │   ├── authentication/    # Dual login, signup checklist, biometric AppLock
+    │   ├── home-and-vault/    # 10 GB storage card, vault cards, empty states
+    │   ├── upload-and-download/# Camera capture, upload staging (1 GB limit), transfers
+    │   ├── file-details-and-metadata/# Bottom sheet, SHA-256 checksums, Exif data
+    │   ├── search/            # Faceted search, category filters, query history
+    │   ├── settings-and-profile/# Server endpoints, biometrics, dark/light themes
+    │   ├── deletion/          # File deletion confirmation dialogs & state refresh
+    │   └── errors-and-diagnostics/# Benchmarks, validation error states, diagnostics
+    ├── logs/                  # System, audit, and logcat execution logs
+    ├── test-results/          # Debug APK artifacts and XML hierarchy dumps
+    └── test-data/             # Test payloads and fixtures
 ```
 
 ---
 
 ## Detailed Documentation Guides
 
-- [**Complete How-To-Run Manual**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/HOW_TO_RUN.md): Step-by-step guide from zero to a running cluster, covering manual server launch, GUI launcher, unit testing, APK compilation, and graceful teardown.
-- [**Connection & Networking Guide**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/CONNECTION.md): Complete reference on USB ADB reverse, Emulator, Wi-Fi LAN, Hotspot setups, Windows Firewall configuration, and connection failure troubleshooting.
-- [**API Specification**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/api/API_SPECIFICATION.md): Full documentation of all authentication, file storage, transfer, and health REST endpoints.
-- [**Security Model**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/security/SECURITY_MODEL.md): Technical deep-dive into the AES-256-GCM encryption architecture and PBKDF2 key schedule.
-- [**Database Schema**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/database/DATABASE_SCHEMA.md): Relational tables, indexing strategy, and constraints.
+- [**Complete How-To-Run Manual**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/setup-and-usage/HOW_TO_RUN.md): Step-by-step guide from zero to a running cluster, covering manual server launch, GUI launcher, unit testing, APK compilation, and graceful teardown.
+- [**Connection & Networking Guide**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/setup-and-usage/CONNECTION.md): Complete reference on USB ADB reverse, Emulator, Wi-Fi LAN, Hotspot setups, Windows Firewall configuration, and connection failure troubleshooting.
+- [**Setup & Troubleshooting Reference**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/setup-and-usage/CIPHERVAULT_SETUP_CONNECTION_AND_TROUBLESHOOTING.md): Exhaustive production troubleshooting and ADB commands.
+- [**System Architecture**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/architecture/CIPHERVAULT_SYSTEM_ARCHITECTURE.md): Multi-tier architecture, component communication, and high-level sequence diagrams.
+- [**API Specification**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/api-and-database/API_SPECIFICATION.md): Full documentation of all authentication, file storage, transfer, and health REST endpoints.
+- [**Database Reference**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/api-and-database/CIPHERVAULT_BACKEND_API_DATABASE_REFERENCE.md): Relational tables, indexing strategy, and constraints.
+- [**Security & Cryptography Model**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/security-and-encryption/CIPHERVAULT_SECURITY_AND_ENCRYPTION.md): Technical deep-dive into client-side AES-256-GCM encryption, PBKDF2 key schedule, and zero-knowledge guarantees.
+- [**Comprehensive Test Plan**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/testing-and-qa/CIPHERVAULT_COMPREHENSIVE_TEST_PLAN.md): Full 211-test suite execution matrix, quota boundaries, and edge cases.
+- [**Final Verification Report**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/project-reports/CIPHERVAULT_FINAL_VERIFICATION_REPORT.md): Audit sign-off, live emulator test evidence, and verification milestones.
+- [**Screen-by-Screen Implementation**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/docs/project-reports/CIPHERVAULT_SCREEN_BY_SCREEN_IMPLEMENTATION.md): Complete breakdown of every UI view, layout ID, and lifecycle state.
+- [**Screenshot Evidence Catalog**](file:///c:/Users/akhil/OneDrive/Desktop/CipherVault/evidence/screenshots/): 146 unique verification screenshots categorized across 9 feature areas.
